@@ -497,44 +497,27 @@ END TRG_MEGA_HOA_DON;
 -- =====================================================
 -- MEGA-TRIGGER 5: TRG_MEGA_CT_HOA_DON
 -- Bảng: CT_HOA_DON (Chi tiết hóa đơn - bảng nghiệp vụ TRỌNG YẾU nhất)
-<<<<<<< HEAD
 -- Gom: Validate tồn kho + hạn SD (BEFORE) + Trừ kho + Cộng tổng tiền (AFTER)
 -- Thay thế triggers cũ: TRG_LOGIC_CT_HOA_DON + TRG_UPDATE_KHO_BAN + TRG_SUM_HOADON
 -- FIX: Phân biệt INSERTING vs UPDATING để tính delta kho và TONGTIEN chính xác
 --      INSERT → trừ :NEW.SOLUONG
 --      UPDATE → hoàn :OLD.SOLUONG rồi trừ :NEW.SOLUONG (delta = NEW - OLD)
-=======
--- Gom: Validate tồn kho + hạn SD (BEFORE INSERT) + Trừ kho + Cộng tổng tiền (AFTER INSERT)
--- Thay thế triggers cũ: TRG_LOGIC_CT_HOA_DON + TRG_UPDATE_KHO_BAN + TRG_SUM_HOADON
--- Điểm đặc biệt: Dùng 1 SELECT duy nhất lấy cả SOLUONGTON lẫn NGAYHETHAN → tối ưu I/O
->>>>>>> 0cc05dc62a48c3006a19bcceb8ffb68da2f71f51
 -- =====================================================
 
 CREATE OR REPLACE TRIGGER TRG_MEGA_CT_HOA_DON
 FOR INSERT OR UPDATE ON CT_HOA_DON
 COMPOUND TRIGGER
 
-<<<<<<< HEAD
     v_ton    LO_HANG.SOLUONGTON%TYPE;
     v_hsd    LO_HANG.NGAYHETHAN%TYPE;
     v_tensp  SAN_PHAM.TENSP%TYPE;
     -- v_ton đọc từ DB TRƯỚC khi trừ → cần tính tồn kho thực (đã hoàn OLD nếu UPDATE)
     v_ton_effective NUMBER;
-=======
-    -- Biến cache thông tin lô hàng (SELECT 1 lần, dùng cho cả BEFORE lẫn AFTER)
-    v_ton     LO_HANG.SOLUONGTON%TYPE;
-    v_hsd     LO_HANG.NGAYHETHAN%TYPE;
-    v_tensp   SAN_PHAM.TENSP%TYPE;
->>>>>>> 0cc05dc62a48c3006a19bcceb8ffb68da2f71f51
 
     -- ── BEFORE EACH ROW: Validate toàn bộ điều kiện an toàn ────────────────────
     BEFORE EACH ROW IS
     BEGIN
-<<<<<<< HEAD
         -- 1 SELECT lấy đủ thông tin lô hàng (tối ưu I/O)
-=======
-        -- 1 SELECT duy nhất lấy đủ dữ liệu cần thiết (giảm I/O so với 2 trigger riêng lẻ)
->>>>>>> 0cc05dc62a48c3006a19bcceb8ffb68da2f71f51
         SELECT lh.SOLUONGTON, lh.NGAYHETHAN, sp.TENSP
         INTO   v_ton, v_hsd, v_tensp
         FROM   LO_HANG lh JOIN SAN_PHAM sp ON lh.MASP = sp.MASP
@@ -543,7 +526,6 @@ COMPOUND TRIGGER
         -- [1] Chặn bán hàng hết hạn sử dụng
         IF v_hsd < SYSDATE THEN
             RAISE_APPLICATION_ERROR(-20006,
-<<<<<<< HEAD
                 'LỖI: Lô [' || :NEW.MALO || '] - "' || v_tensp
                 || '" đã hết hạn ngày ' || TO_CHAR(v_hsd, 'DD/MM/YYYY') || '!');
         END IF;
@@ -598,39 +580,6 @@ COMPOUND TRIGGER
                               + (:NEW.SOLUONG * :NEW.DONGIA)
             WHERE  MAHD = :NEW.MAHD;
         END IF;
-=======
-                'LỖI: Lô [' || :NEW.MALO || '] - Sản phẩm "' || v_tensp
-                || '" đã hết hạn ngày ' || TO_CHAR(v_hsd, 'DD/MM/YYYY') || '!');
-        END IF;
-
-        -- [2] Chặn bán vượt tồn kho
-        IF :NEW.SOLUONG > v_ton THEN
-            RAISE_APPLICATION_ERROR(-20005,
-                'LỖI: Lô [' || :NEW.MALO || '] - "' || v_tensp
-                || '" không đủ hàng! Yêu cầu: ' || :NEW.SOLUONG
-                || ' | Tồn kho: ' || v_ton);
-        END IF;
-
-        -- [3] Chặn số lượng âm hoặc bằng 0
-        IF :NEW.SOLUONG <= 0 THEN
-            RAISE_APPLICATION_ERROR(-20014,
-                'LỖI: Số lượng bán phải lớn hơn 0!');
-        END IF;
-    END BEFORE EACH ROW;
-
-    -- ── AFTER EACH ROW: Cập nhật kho và tổng tiền sau khi row đã commit ────────
-    AFTER EACH ROW IS
-    BEGIN
-        -- [4] Tự động trừ kho của lô hàng tương ứng
-        UPDATE LO_HANG
-        SET    SOLUONGTON = SOLUONGTON - :NEW.SOLUONG
-        WHERE  MALO = :NEW.MALO;
-
-        -- [5] Tự động cộng dồn tổng tiền vào hóa đơn
-        UPDATE HOA_DON
-        SET    TONGTIEN = NVL(TONGTIEN, 0) + (:NEW.SOLUONG * :NEW.DONGIA)
-        WHERE  MAHD = :NEW.MAHD;
->>>>>>> 0cc05dc62a48c3006a19bcceb8ffb68da2f71f51
     END AFTER EACH ROW;
 
 END TRG_MEGA_CT_HOA_DON;
@@ -859,7 +808,6 @@ BEGIN
     FROM   HOA_DON
     WHERE  MAHD = p_mahd;
 
-<<<<<<< HEAD
     -- Bước 2: Chỉ INSERT vào THANH_TOAN.
     --         TRG_MEGA_THANH_TOAN (AFTER EACH ROW) sẽ tự động UPDATE HOA_DON.TRANGTHAI
     --         → tránh duplicate logic giữa SP và trigger
@@ -867,28 +815,11 @@ BEGIN
     VALUES (p_matt, p_mahd, SYSTIMESTAMP, v_tongtien, p_phuong_thuc, N'Thành công');
 
     -- Bước 3: Sinh Phiếu Xuất Kho (trigger không cover bước này → SP vẫn cần xử lý)
-=======
-    -- Bước 2: Cập nhật trạng thái hóa đơn
-    -- (Trigger TRG_LOCK_HOADON sẽ khóa hóa đơn này sau bước này)
-    UPDATE HOA_DON
-    SET    TRANGTHAI = N'Đã thanh toán'
-    WHERE  MAHD = p_mahd;
-
-    -- Bước 3: Ghi nhận dòng tiền vào THANH_TOAN
-    INSERT INTO THANH_TOAN (MATT, MAHD, NGAYTHANHTOAN, SOTIEN, PHUONGTHUC, TRANGTHAI)
-    VALUES (p_matt, p_mahd, SYSTIMESTAMP, v_tongtien, p_phuong_thuc, N'Thành công');
-
-    -- Bước 4: Tự động sinh Phiếu Xuất Kho
->>>>>>> 0cc05dc62a48c3006a19bcceb8ffb68da2f71f51
     v_mapx := 'PX_' || p_mahd;
     INSERT INTO PHIEU_XUAT (MAPX, MAHD, MANS, NGAYXUAT)
     VALUES (v_mapx, p_mahd, p_mans_xuat, SYSTIMESTAMP);
 
-<<<<<<< HEAD
     -- Bước 4: Copy CT_HOA_DON → CT_PHIEU_XUAT
-=======
-    -- Bước 5: Copy toàn bộ dòng CT_HOA_DON sang CT_PHIEU_XUAT
->>>>>>> 0cc05dc62a48c3006a19bcceb8ffb68da2f71f51
     INSERT INTO CT_PHIEU_XUAT (MAPX, MALO, SOLUONGXUAT)
     SELECT v_mapx, MALO, SOLUONG
     FROM   CT_HOA_DON
@@ -1027,7 +958,6 @@ END SP_THONG_KE_DOANH_THU_THANG;
 /
 
 -- ============================================================
-<<<<<<< HEAD
 -- PHẦN IV: SEQUENCES (Auto-increment Production Style)
 -- ============================================================
 -- Lý do dùng SEQUENCE thay vì nhập tay:
@@ -1146,7 +1076,3 @@ CREATE INDEX IDX_NS_MATK    ON NHAN_SU (MATK);                  -- Lookup theo t
 -- ============================================================
 -- END OF V1__Initial_Setup.sql
 -- ============================================================
-=======
--- END OF V1__Initial_Setup.sql
--- ============================================================
->>>>>>> 0cc05dc62a48c3006a19bcceb8ffb68da2f71f51
