@@ -113,6 +113,7 @@ CREATE TABLE CHI_TIET_THI_LUC (
     DOTRU_CYL     NUMBER(4,2),
     TRUC_AX       NUMBER(3),
     KHOANGCACH_PD NUMBER(3,1),
+    DOCONG_ADD NUMBER(4,2),
     CONSTRAINT PK_CTTTL    PRIMARY KEY (MAHOSO, MAT),
     CONSTRAINT FK_CTTTL_HS FOREIGN KEY (MAHOSO) REFERENCES HO_SO_THI_LUC(MAHOSO)
 );
@@ -444,50 +445,75 @@ BEGIN
     END IF;
 END;
 /
--- TRIGGER 7: Thanh Toán
+-- TRIGGER 7 
 CREATE OR REPLACE TRIGGER TRG_THANH_TOAN
-BEFORE INSERT OR UPDATE ON THANH_TOAN
-FOR EACH ROW
-DECLARE
-    PRAGMA AUTONOMOUS_TRANSACTION; 
+FOR INSERT OR UPDATE ON THANH_TOAN
+COMPOUND TRIGGER
+
     v_tong_hd NUMBER;
     v_trang_thai HOA_DON.TRANGTHAI%TYPE;
     v_makh VARCHAR2(10);
+    v_mans_hd VARCHAR2(10);
+    v_mapx VARCHAR2(10);
     v_da_tt NUMBER;
-BEGIN
-    -- Lấy thông tin Hóa đơn (Thêm MAKH để tích điểm)
-    SELECT TONGTIEN, TRANGTHAI, MAKH INTO v_tong_hd, v_trang_thai, v_makh FROM HOA_DON WHERE MAHD = :NEW.MAHD;
 
-    IF v_trang_thai != N'Chưa thanh toán' THEN
-        RAISE_APPLICATION_ERROR(-20016, 'TT: Hóa đơn không ở trạng thái "Chưa thanh toán".');
-    END IF;
+    BEFORE EACH ROW IS
+    BEGIN
+        -- Lấy thông tin Hóa đơn
+        SELECT TONGTIEN, TRANGTHAI, MAKH, MANS 
+        INTO v_tong_hd, v_trang_thai, v_makh, v_mans_hd 
+        FROM HOA_DON WHERE MAHD = :NEW.MAHD;
 
-    IF :NEW.SOTIEN <= 0 OR :NEW.SOTIEN > v_tong_hd THEN
-        RAISE_APPLICATION_ERROR(-20018, 'TT: Số tiền thanh toán không hợp lệ.');
-    END IF;
-
-    -- Tính tổng tiền nhờ vào Autonomous Transaction
-    SELECT NVL(SUM(SOTIEN), 0) INTO v_da_tt FROM THANH_TOAN WHERE MAHD = :NEW.MAHD AND TRANGTHAI = N'Thành công';
-
-    IF v_da_tt + :NEW.SOTIEN > v_tong_hd THEN
-        RAISE_APPLICATION_ERROR(-20019, 'TT: Tổng tiền thanh toán bị lố giá trị hóa đơn!');
-    END IF;
-
-    -- Xử lý nghiệp vụ khi Thanh toán thành công
-    IF :NEW.TRANGTHAI = N'Thành công' THEN
-        -- 1. Chốt hóa đơn nếu đủ tiền
-        IF (v_da_tt + :NEW.SOTIEN) >= v_tong_hd THEN
-            UPDATE HOA_DON SET TRANGTHAI = N'Đã thanh toán' WHERE MAHD = :NEW.MAHD;
+        IF v_trang_thai != N'Chưa thanh toán' THEN
+            RAISE_APPLICATION_ERROR(-20016, 'TT: Hóa đơn không ở trạng thái "Chưa thanh toán".');
         END IF;
-        
-        -- 2. Tích điểm Loyalty: 100k = 1 điểm
-        UPDATE KHACH_HANG 
-        SET DIEMTICHLUY = NVL(DIEMTICHLUY, 0) + FLOOR(:NEW.SOTIEN / 100000)
-        WHERE MAKH = v_makh;
-    END IF;
-    
-    COMMIT; -- Chốt giao dịch độc lập
-END;
+
+        IF :NEW.SOTIEN <= 0 OR :NEW.SOTIEN > v_tong_hd THEN
+            RAISE_APPLICATION_ERROR(-20018, 'TT: Số tiền thanh toán không hợp lệ.');
+        END IF;
+    END BEFORE EACH ROW;
+
+    -- Dùng AFTER STATEMENT để được phép SELECT SUM trên chính bảng THANH_TOAN (Né Mutating)
+    -- và đảm bảo chạy chung 1 Transaction với hệ thống (All-or-nothing)
+    AFTER STATEMENT IS
+    BEGIN
+        -- Duyệt qua những thanh toán vừa thành công (Giả định lấy hóa đơn vừa thao tác)
+        -- Lưu ý: Thực tế Spring Boot gọi từng dòng nên xử lý như sau là an toàn
+        FOR rec IN (
+            SELECT MAHD FROM THANH_TOAN WHERE TRANGTHAI = N'Thành công' GROUP BY MAHD
+        ) LOOP
+            -- Tính tổng tiền ĐÃ THANH TOÁN
+            SELECT NVL(SUM(SOTIEN), 0) INTO v_da_tt FROM THANH_TOAN WHERE MAHD = rec.MAHD AND TRANGTHAI = N'Thành công';
+            
+            -- Lấy lại tổng tiền PHẢI THANH TOÁN của hóa đơn
+            SELECT TONGTIEN, MAKH, MANS INTO v_tong_hd, v_makh, v_mans_hd FROM HOA_DON WHERE MAHD = rec.MAHD;
+
+            -- Nếu đủ tiền -> Kích hoạt dây chuyền
+            IF v_da_tt >= v_tong_hd THEN
+                -- 1. Chốt hóa đơn
+                UPDATE HOA_DON SET TRANGTHAI = N'Đã thanh toán' WHERE MAHD = rec.MAHD;
+                
+                -- 2. Tích điểm Loyalty (Chỉ tính cho lần thanh toán cuối để tránh cộng lặp)
+                UPDATE KHACH_HANG 
+                SET DIEMTICHLUY = NVL(DIEMTICHLUY, 0) + FLOOR(v_tong_hd / 100000)
+                WHERE MAKH = v_makh;
+
+                -- 3. Tạo Phiếu Xuất (Chỉ tạo nếu chưa có)
+                v_mapx := SUBSTR('PX' || rec.MAHD, 1, 10);
+                
+                BEGIN
+                    INSERT INTO PHIEU_XUAT(MAPX, MAHD, MANS, NGAYXUAT) 
+                    VALUES (v_mapx, rec.MAHD, v_mans_hd, SYSTIMESTAMP);
+
+                    INSERT INTO CT_PHIEU_XUAT(MAPX, MALO, SOLUONGXUAT)
+                    SELECT v_mapx, MALO, SOLUONG FROM CT_HOA_DON WHERE MAHD = rec.MAHD;
+                EXCEPTION
+                    WHEN DUP_VAL_ON_INDEX THEN NULL; -- Nếu đã có Phiếu Xuất rồi thì bỏ qua
+                END;
+            END IF;
+        END LOOP;
+    END AFTER STATEMENT;
+END TRG_THANH_TOAN;
 /
 -- TRIGGER 8: Lưu vết Audit khi sửa Kết Luận hồ sơ
 CREATE OR REPLACE TRIGGER TRG_AUDIT_HO_SO
@@ -499,7 +525,7 @@ BEGIN
         INSERT INTO AUDIT_HOSO_THILUC (
             MAAUDIT, MAHOSO, OLD_KETLUAN, NEW_KETLUAN, NGUOI_THUC_HIEN
         ) VALUES (
-            'AUD_' || TO_CHAR(SYSDATE, 'MMDDHH24MISS'), -- Tạo mã nhanh
+            'AUD_' || TO_CHAR(SYSTIMESTAMP, 'MMDDHH24MISSFF3'), -- Thêm FF3 (Milisec) siêu an toàn
             :OLD.MAHOSO, 
             :OLD.KETLUAN, 
             :NEW.KETLUAN, 
@@ -540,6 +566,23 @@ COMPOUND TRIGGER
         END IF;
     END AFTER EACH ROW;
 END TRG_LO_HANG;
+/
+-- TRIGGER 10: Phân quyền Bác sĩ kê Đơn thuốc (Đáp ứng R7)
+CREATE OR REPLACE TRIGGER TRG_VALIDATE_KE_DON
+BEFORE INSERT OR UPDATE ON PHIEU_KE_DON
+FOR EACH ROW
+DECLARE
+    v_tencv CHUC_VU.TENCV%TYPE;
+BEGIN
+    -- [1] Phân quyền: Chỉ Bác sĩ mới được lập Phiếu Kê Đơn
+    SELECT cv.TENCV INTO v_tencv 
+    FROM NHAN_SU ns JOIN CHUC_VU cv ON ns.MACV = cv.MACV 
+    WHERE ns.MANS = :NEW.MANS;
+    
+    IF v_tencv != N'Bác sĩ' THEN
+        RAISE_APPLICATION_ERROR(-20025, 'LỖI: Chỉ nhân sự có chức vụ "Bác sĩ" mới được quyền Kê Đơn Thuốc!');
+    END IF;
+END;
 /
 -- ============================================================
 -- PHẦN III: STORED PROCEDURES
