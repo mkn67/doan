@@ -79,7 +79,8 @@ CREATE TABLE KHACH_HANG (
     NGAYSINH DATE,
     GIOITINH NVARCHAR2(10),
     SDT      VARCHAR2(15)  UNIQUE,
-    DIACHI   NVARCHAR2(255)
+    DIACHI   NVARCHAR2(255),
+    DIEMTICHLUY NUMBER DEFAULT 0
 );
 
 -- Bảng Lịch Hẹn Khám / Tư Vấn
@@ -283,453 +284,263 @@ CREATE TABLE CT_PHIEU_XUAT (
 
 
 -- ============================================================
--- PHẦN II: MEGA-TRIGGERS (RÀNG BUỘC NGHIỆP VỤ & BẢO MẬT)
--- ============================================================
--- Chiến lược: Gom toàn bộ logic của một bảng vào 1 Compound Trigger duy nhất.
--- Lợi ích:
---   (1) Giảm context switch: Oracle chỉ parse/compile 1 trigger thay vì N triggers nhỏ
---   (2) Dùng chung biến DECLARE: tránh SELECT lặp lại nhiều lần cho cùng 1 row
---   (3) Dễ maintain: toàn bộ logic 1 bảng nằm ở 1 chỗ, không cần tìm khắp nơi
---   (4) Kiểm soát thứ tự thực thi: BEFORE check -> AFTER update, đảm bảo nhất quán
--- ============================================================
-
-
--- =====================================================
--- MEGA-TRIGGER 1: TRG_MEGA_NHAN_SU
--- Bảng: NHAN_SU
--- Gom: Kiểm tra tuổi >= 18 (INSERT/UPDATE) + Chặn tài khoản trùng (INSERT)
--- Thay thế triggers cũ: TRG_CHECK_AGE_NS + TRG_ONE_ACC_ONE_NS
--- =====================================================
-
-CREATE OR REPLACE TRIGGER TRG_MEGA_NHAN_SU
-FOR INSERT OR UPDATE ON NHAN_SU
-COMPOUND TRIGGER
-
-    -- Biến dùng chung trong toàn bộ trigger (khai báo 1 lần, dùng cho mọi timing point)
-    v_tuoi   NUMBER;
-    v_count  NUMBER;
-
-    -- ── BEFORE EACH ROW: Chạy trước khi ghi dữ liệu vào bảng ──────────────────
-    BEFORE EACH ROW IS
-    BEGIN
-        -- [1] Kiểm tra tuổi lao động tối thiểu 18 (áp dụng cho cả INSERT lẫn UPDATE)
-        v_tuoi := MONTHS_BETWEEN(SYSDATE, :NEW.NGAYSINH) / 12;
-        IF v_tuoi < 18 THEN
-            RAISE_APPLICATION_ERROR(-20010,
-                'LỖI: Nhân viên [' || :NEW.HOTEN || '] chưa đủ 18 tuổi! (Hiện tại: '
-                || TRUNC(v_tuoi) || ' tuổi)');
-        END IF;
-
-        -- [2] Mỗi tài khoản chỉ được gán cho 1 nhân viên duy nhất (chỉ kiểm tra khi INSERT)
-        IF INSERTING THEN
-            SELECT COUNT(*) INTO v_count FROM NHAN_SU WHERE MATK = :NEW.MATK;
-            IF v_count > 0 THEN
-                RAISE_APPLICATION_ERROR(-20009,
-                    'LỖI: Tài khoản [' || :NEW.MATK || '] đã được gán cho nhân viên khác!');
-            END IF;
-        END IF;
-    END BEFORE EACH ROW;
-
-END TRG_MEGA_NHAN_SU;
-/
-
-
--- =====================================================
--- MEGA-TRIGGER 2: TRG_MEGA_KHACH_HANG
--- Bảng: KHACH_HANG
--- Gom: Validate SĐT (INSERT/UPDATE) + Chặn xóa KH có lịch hẹn (DELETE)
--- Thay thế triggers cũ: TRG_CHECK_PHONE + TRG_PREVENT_DEL_KH
--- =====================================================
-
-CREATE OR REPLACE TRIGGER TRG_MEGA_KHACH_HANG
-FOR INSERT OR UPDATE OR DELETE ON KHACH_HANG
-COMPOUND TRIGGER
-
+-- PHẦN II: Trigger
+-- 1. Trigger nhân sự
+CREATE OR REPLACE TRIGGER TRG_VALIDATE_NHAN_SU
+BEFORE INSERT OR UPDATE ON NHAN_SU
+FOR EACH ROW
+DECLARE
+    v_tuoi  NUMBER;
     v_count NUMBER;
+BEGIN
+    -- [1] Kiểm tra tuổi lao động tối thiểu 18
+    v_tuoi := MONTHS_BETWEEN(SYSDATE, :NEW.NGAYSINH) / 12;
+    IF v_tuoi < 18 THEN
+        RAISE_APPLICATION_ERROR(-20010, 'LỖI: Nhân viên [' || :NEW.HOTEN || '] chưa đủ 18 tuổi!');
+    END IF;
 
-    -- ── BEFORE EACH ROW ─────────────────────────────────────────────────────────
-    BEFORE EACH ROW IS
-    BEGIN
-        -- [1] Validate định dạng số điện thoại: chỉ chứa ký số, 9-11 chữ số
-        IF INSERTING OR UPDATING THEN
-            IF NOT REGEXP_LIKE(:NEW.SDT, '^[0-9]{9,11}$') THEN
-                RAISE_APPLICATION_ERROR(-20013,
-                    'LỖI: Số điện thoại [' || :NEW.SDT || '] không hợp lệ! Chỉ chứa 9-11 chữ số.');
-            END IF;
+    -- [2] Khóa MATK (Chỉ kiểm tra khi tạo mới)
+    IF INSERTING THEN
+        SELECT COUNT(*) INTO v_count FROM NHAN_SU WHERE MATK = :NEW.MATK;
+        IF v_count > 0 THEN
+            RAISE_APPLICATION_ERROR(-20009, 'LỖI: Tài khoản này đã được gán cho người khác!');
         END IF;
-
-        -- [2] Chặn xóa khách hàng đang có lịch hẹn chưa xử lý
-        IF DELETING THEN
-            SELECT COUNT(*) INTO v_count
-            FROM   LICH_HEN
-            WHERE  MAKH = :OLD.MAKH AND TRANGTHAI = N'Mới';
-
-            IF v_count > 0 THEN
-                RAISE_APPLICATION_ERROR(-20011,
-                    'LỖI: Không thể xóa KH [' || :OLD.MAKH || '] - Đang có '
-                    || v_count || ' lịch hẹn chưa xử lý!');
-            END IF;
-        END IF;
-    END BEFORE EACH ROW;
-
-END TRG_MEGA_KHACH_HANG;
+    END IF;
+END;
 /
-
-
--- =====================================================
--- MEGA-TRIGGER 3: TRG_MEGA_HO_SO_THI_LUC
--- Bảng: HO_SO_THI_LUC
--- Gom: Phân quyền Bác sĩ (INSERT/UPDATE) + Chặn tự khám (INSERT) + Audit Trail CDC (UPDATE KETLUAN)
--- Thay thế triggers cũ: TRG_CHECK_BS_HOSO + TRG_ANTI_SELF_EXAM + TRG_AUDIT_KETLUAN
--- Điểm đặc biệt: Dùng cả BEFORE (validate) lẫn AFTER (audit log) trong cùng 1 trigger
--- =====================================================
-
-CREATE OR REPLACE TRIGGER TRG_MEGA_HO_SO_THI_LUC
-FOR INSERT OR UPDATE ON HO_SO_THI_LUC
-COMPOUND TRIGGER
-
-    v_tencv  CHUC_VU.TENCV%TYPE;
-    v_tk_ns  VARCHAR2(10);
-    v_tk_kh  VARCHAR2(10);
-
-    -- ── BEFORE EACH ROW: Validate quyền hạn và nghiệp vụ ──────────────────────
-    BEFORE EACH ROW IS
-    BEGIN
-        -- [1] Phân quyền: Chỉ Bác sĩ mới được lập/sửa hồ sơ khám
-        SELECT cv.TENCV INTO v_tencv
-        FROM   NHAN_SU ns JOIN CHUC_VU cv ON ns.MACV = cv.MACV
-        WHERE  ns.MANS = :NEW.MANS;
-
-        IF v_tencv != N'Bác sĩ' THEN
-            RAISE_APPLICATION_ERROR(-20001,
-                'LỖI: Nhân sự [' || :NEW.MANS || '] không có quyền lập Hồ Sơ Khám! '
-                || '(Chức vụ hiện tại: ' || v_tencv || ')');
+-- 2. Trigger Khách Hàng
+CREATE OR REPLACE TRIGGER TRG_VALIDATE_KHACH_HANG
+BEFORE INSERT OR UPDATE OR DELETE ON KHACH_HANG
+FOR EACH ROW
+DECLARE
+    v_count NUMBER;
+BEGIN
+    -- [1] Validate SĐT
+    IF INSERTING OR UPDATING THEN
+        IF NOT REGEXP_LIKE(:NEW.SDT, '^[0-9]{9,11}$') THEN
+            RAISE_APPLICATION_ERROR(-20013, 'LỖI: Số điện thoại không hợp lệ!');
         END IF;
+    END IF;
 
-        -- [2] Anti-self-exam: Bác sĩ không được tự khám cho bản thân
-        IF INSERTING THEN
-            SELECT MATK INTO v_tk_ns FROM NHAN_SU WHERE MANS = :NEW.MANS;
-            BEGIN
-                SELECT ns.MATK INTO v_tk_kh
-                FROM   NHAN_SU ns JOIN KHACH_HANG kh ON ns.CCCD = kh.CCCD
-                WHERE  kh.MAKH = :NEW.MAKH;
-
-                IF v_tk_ns = v_tk_kh THEN
-                    RAISE_APPLICATION_ERROR(-20012,
-                        'LỖI: Bác sĩ [' || :NEW.MANS || '] không được tự lập hồ sơ khám cho bản thân!');
-                END IF;
-            EXCEPTION
-                WHEN NO_DATA_FOUND THEN NULL; -- Khách hàng thông thường, không phải nhân viên → OK
-            END;
+    -- [2] Chặn xóa khách có lịch hẹn
+    IF DELETING THEN
+        SELECT COUNT(*) INTO v_count FROM LICH_HEN WHERE MAKH = :OLD.MAKH AND TRANGTHAI = N'Mới';
+        IF v_count > 0 THEN
+            RAISE_APPLICATION_ERROR(-20011, 'LỖI: Không thể xóa khách hàng đang có lịch hẹn chờ!');
         END IF;
-    END BEFORE EACH ROW;
-
-    -- ── AFTER EACH ROW: Ghi Audit Log sau khi dữ liệu đã được cập nhật ─────────
-    AFTER EACH ROW IS
-    BEGIN
-        -- [3] CDC Audit Trail: Ghi vết mỗi khi KETLUAN bị thay đổi
-        --     Dùng AFTER để đảm bảo chỉ ghi log khi UPDATE thực sự thành công
-        IF UPDATING('KETLUAN') AND
-           (    :OLD.KETLUAN IS NULL AND :NEW.KETLUAN IS NOT NULL
-             OR :OLD.KETLUAN IS NOT NULL AND :NEW.KETLUAN IS NULL
-             OR :OLD.KETLUAN != :NEW.KETLUAN )
-        THEN
-            INSERT INTO AUDIT_HOSO_THILUC (
-                MAAUDIT, MAHOSO, OLD_KETLUAN, NEW_KETLUAN, THOI_GIAN, NGUOI_THUC_HIEN
-            ) VALUES (
-                'AUD_' || :OLD.MAHOSO || '_' || TO_CHAR(SYSTIMESTAMP, 'YYYYMMDDHH24MISS'),
-                :OLD.MAHOSO,
-                :OLD.KETLUAN,
-                :NEW.KETLUAN,
-                SYSTIMESTAMP,
-                USER
-            );
-        END IF;
-    END AFTER EACH ROW;
-
-END TRG_MEGA_HO_SO_THI_LUC;
+    END IF;
+END;
 /
-
-
--- =====================================================
--- MEGA-TRIGGER 4: TRG_MEGA_HOA_DON
--- Bảng: HOA_DON
--- Gom: Phân quyền Thu ngân/Quản lý (INSERT/UPDATE) + Khóa hóa đơn đã TT (UPDATE/DELETE)
--- Thay thế triggers cũ: TRG_CHECK_THUNGAN_HOADON + TRG_LOCK_HOADON
--- =====================================================
-
-CREATE OR REPLACE TRIGGER TRG_MEGA_HOA_DON
-FOR INSERT OR UPDATE OR DELETE ON HOA_DON
-COMPOUND TRIGGER
-
+-- 3. Trigger Hồ Sơ Thị Lực
+CREATE OR REPLACE TRIGGER TRG_VALIDATE_HO_SO
+BEFORE INSERT OR UPDATE ON HO_SO_THI_LUC
+FOR EACH ROW
+DECLARE
     v_tencv CHUC_VU.TENCV%TYPE;
-
-    -- ── BEFORE EACH ROW ─────────────────────────────────────────────────────────
-    BEFORE EACH ROW IS
-    BEGIN
-        -- [1] Phân quyền: Chỉ Thu ngân hoặc Quản lý mới được tạo/sửa hóa đơn
-        IF INSERTING OR UPDATING THEN
-            SELECT cv.TENCV INTO v_tencv
-            FROM   NHAN_SU ns JOIN CHUC_VU cv ON ns.MACV = cv.MACV
-            WHERE  ns.MANS = :NEW.MANS;
-
-            IF v_tencv NOT IN (N'Thu ngân', N'Quản lý') THEN
-                RAISE_APPLICATION_ERROR(-20003,
-                    'LỖI: Nhân sự [' || :NEW.MANS || '] không có quyền lập Hóa Đơn! '
-                    || '(Chức vụ hiện tại: ' || v_tencv || ')');
-            END IF;
-        END IF;
-
-        -- [2] Bảo toàn hóa đơn: Chặn mọi thay đổi/xóa khi đã thanh toán xong
-        IF UPDATING OR DELETING THEN
-            IF :OLD.TRANGTHAI = N'Đã thanh toán' THEN
-                RAISE_APPLICATION_ERROR(-20007,
-                    'LỖI: Hóa đơn [' || :OLD.MAHD || '] đã thanh toán - không thể '
-                    || CASE WHEN UPDATING THEN 'chỉnh sửa' ELSE 'xóa' END || '!');
-            END IF;
-        END IF;
-    END BEFORE EACH ROW;
-
-END TRG_MEGA_HOA_DON;
+BEGIN
+    -- [1] Phân quyền Bác sĩ: Chỉ Bác sĩ mới được lập/sửa Hồ Sơ Khám
+    SELECT cv.TENCV INTO v_tencv 
+    FROM NHAN_SU ns JOIN CHUC_VU cv ON ns.MACV = cv.MACV 
+    WHERE ns.MANS = :NEW.MANS;
+    
+    IF v_tencv != N'Bác sĩ' THEN
+        RAISE_APPLICATION_ERROR(-20001, 'LỖI: Chỉ nhân sự có chức vụ "Bác sĩ" mới được lập Hồ Sơ Khám!');
+    END IF;
+END;
 /
+-- 4.Trigger Hóa Đơn
+CREATE OR REPLACE TRIGGER TRG_VALIDATE_HOA_DON
+BEFORE INSERT OR UPDATE OR DELETE ON HOA_DON
+FOR EACH ROW
+DECLARE
+    v_tencv CHUC_VU.TENCV%TYPE;
+BEGIN
+    -- [1] Phân quyền Thu ngân
+    IF INSERTING OR UPDATING THEN
+        SELECT cv.TENCV INTO v_tencv FROM NHAN_SU ns JOIN CHUC_VU cv ON ns.MACV = cv.MACV WHERE ns.MANS = :NEW.MANS;
+        IF v_tencv NOT IN (N'Thu ngân', N'Quản lý') THEN
+            RAISE_APPLICATION_ERROR(-20003, 'LỖI: Chỉ Thu ngân hoặc Quản lý mới được tạo Hóa Đơn!');
+        END IF;
+    END IF;
 
-
--- =====================================================
--- MEGA-TRIGGER 5: TRG_MEGA_CT_HOA_DON
--- Bảng: CT_HOA_DON (Chi tiết hóa đơn - bảng nghiệp vụ TRỌNG YẾU nhất)
--- Gom: Validate tồn kho + hạn SD (BEFORE) + Trừ kho + Cộng tổng tiền (AFTER)
--- Thay thế triggers cũ: TRG_LOGIC_CT_HOA_DON + TRG_UPDATE_KHO_BAN + TRG_SUM_HOADON
--- FIX: Phân biệt INSERTING vs UPDATING để tính delta kho và TONGTIEN chính xác
---      INSERT → trừ :NEW.SOLUONG
---      UPDATE → hoàn :OLD.SOLUONG rồi trừ :NEW.SOLUONG (delta = NEW - OLD)
--- =====================================================
-
-CREATE OR REPLACE TRIGGER TRG_MEGA_CT_HOA_DON
-FOR INSERT OR UPDATE ON CT_HOA_DON
+    -- [2] Đóng băng hóa đơn đã thanh toán
+    IF UPDATING OR DELETING THEN
+        IF :OLD.TRANGTHAI = N'Đã thanh toán' THEN
+            RAISE_APPLICATION_ERROR(-20007, 'LỖI: Hóa đơn đã thanh toán, không thể can thiệp!');
+        END IF;
+    END IF;
+END;
+/
+-- TRIGGER 5: Chi tiết hóa đơn
+CREATE OR REPLACE TRIGGER TRG_CT_HOA_DON
+FOR INSERT OR UPDATE OR DELETE ON CT_HOA_DON
 COMPOUND TRIGGER
+    v_ton  LO_HANG.SOLUONGTON%TYPE;
+    v_hsd  LO_HANG.NGAYHETHAN%TYPE;
 
-    v_ton    LO_HANG.SOLUONGTON%TYPE;
-    v_hsd    LO_HANG.NGAYHETHAN%TYPE;
-    v_tensp  SAN_PHAM.TENSP%TYPE;
-    -- v_ton đọc từ DB TRƯỚC khi trừ → cần tính tồn kho thực (đã hoàn OLD nếu UPDATE)
-    v_ton_effective NUMBER;
-
-    -- ── BEFORE EACH ROW: Validate toàn bộ điều kiện an toàn ────────────────────
     BEFORE EACH ROW IS
     BEGIN
-        -- 1 SELECT lấy đủ thông tin lô hàng (tối ưu I/O)
-        SELECT lh.SOLUONGTON, lh.NGAYHETHAN, sp.TENSP
-        INTO   v_ton, v_hsd, v_tensp
-        FROM   LO_HANG lh JOIN SAN_PHAM sp ON lh.MASP = sp.MASP
-        WHERE  lh.MALO = :NEW.MALO;
+        -- Chặn can thiệp khi Hóa đơn đã đóng
+        FOR rec IN (SELECT TRANGTHAI FROM HOA_DON WHERE MAHD = NVL(:NEW.MAHD, :OLD.MAHD)) LOOP
+            IF rec.TRANGTHAI IN (N'Đã thanh toán', N'Đã hủy') THEN
+                RAISE_APPLICATION_ERROR(-20033, 'CTHD: Hóa đơn đã đóng, không thể thay đổi!');
+            END IF;
+        END LOOP;
 
-        -- [1] Chặn bán hàng hết hạn sử dụng
-        IF v_hsd < SYSDATE THEN
-            RAISE_APPLICATION_ERROR(-20006,
-                'LỖI: Lô [' || :NEW.MALO || '] - "' || v_tensp
-                || '" đã hết hạn ngày ' || TO_CHAR(v_hsd, 'DD/MM/YYYY') || '!');
-        END IF;
+        IF INSERTING OR UPDATING THEN
+            SELECT SOLUONGTON, NGAYHETHAN INTO v_ton, v_hsd FROM LO_HANG WHERE MALO = :NEW.MALO;
 
-        -- [2] Chặn số lượng âm hoặc bằng 0
-        IF :NEW.SOLUONG <= 0 THEN
-            RAISE_APPLICATION_ERROR(-20014, 'LỖI: Số lượng bán phải lớn hơn 0!');
-        END IF;
+            IF v_hsd < SYSDATE THEN
+                RAISE_APPLICATION_ERROR(-20006, 'CTHD: Lô hàng đã hết hạn sử dụng!');
+            END IF;
 
-        -- [3] Chặn bán vượt tồn kho
-        --     Khi UPDATE: tồn kho "hiệu dụng" = tồn hiện tại + OLD.SOLUONG (vì AFTER sẽ hoàn lại)
-        --     Khi INSERT: tồn hiệu dụng = tồn hiện tại (chưa có giao dịch nào)
-        IF UPDATING THEN
-            v_ton_effective := v_ton + :OLD.SOLUONG;
-        ELSE
-            v_ton_effective := v_ton;
-        END IF;
+            IF :NEW.SOLUONG <= 0 THEN
+                RAISE_APPLICATION_ERROR(-20014, 'CTHD: Số lượng phải lớn hơn 0.');
+            END IF;
 
-        IF :NEW.SOLUONG > v_ton_effective THEN
-            RAISE_APPLICATION_ERROR(-20005,
-                'LỖI: Lô [' || :NEW.MALO || '] - "' || v_tensp
-                || '" không đủ hàng! Yêu cầu: ' || :NEW.SOLUONG
-                || ' | Tồn kho hiệu dụng: ' || v_ton_effective);
+            -- Kiểm tra tồn kho (Nếu Update thì cộng trả lại số cũ trước khi check)
+            IF :NEW.SOLUONG > (CASE WHEN UPDATING THEN v_ton + :OLD.SOLUONG ELSE v_ton END) THEN
+                RAISE_APPLICATION_ERROR(-20005, 'CTHD: Không đủ hàng trong kho!');
+            END IF;
         END IF;
     END BEFORE EACH ROW;
 
-    -- ── AFTER EACH ROW: Cập nhật kho và tổng tiền ──────────────────────────────
     AFTER EACH ROW IS
     BEGIN
+        -- Xử lý Tồn kho & Tổng tiền 1 lần gọn gàng
         IF INSERTING THEN
-            -- [4a] INSERT: trừ thẳng số lượng mới
-            UPDATE LO_HANG
-            SET    SOLUONGTON = SOLUONGTON - :NEW.SOLUONG
-            WHERE  MALO = :NEW.MALO;
-
-            -- [5a] INSERT: cộng thêm thành tiền mới vào hóa đơn
-            UPDATE HOA_DON
-            SET    TONGTIEN = NVL(TONGTIEN, 0) + (:NEW.SOLUONG * :NEW.DONGIA)
-            WHERE  MAHD = :NEW.MAHD;
-
+            UPDATE LO_HANG SET SOLUONGTON = SOLUONGTON - :NEW.SOLUONG WHERE MALO = :NEW.MALO;
+            UPDATE HOA_DON SET TONGTIEN = NVL(TONGTIEN, 0) + (:NEW.SOLUONG * :NEW.DONGIA) WHERE MAHD = :NEW.MAHD;
         ELSIF UPDATING THEN
-            -- [4b] UPDATE: hoàn lại OLD rồi trừ NEW → net delta = NEW - OLD
-            UPDATE LO_HANG
-            SET    SOLUONGTON = SOLUONGTON + :OLD.SOLUONG - :NEW.SOLUONG
-            WHERE  MALO = :NEW.MALO;
-
-            -- [5b] UPDATE: trừ thành tiền cũ, cộng thành tiền mới
-            --      Xử lý cả trường hợp đổi DONGIA lẫn đổi SOLUONG
-            UPDATE HOA_DON
-            SET    TONGTIEN = NVL(TONGTIEN, 0)
-                              - (:OLD.SOLUONG * :OLD.DONGIA)
-                              + (:NEW.SOLUONG * :NEW.DONGIA)
-            WHERE  MAHD = :NEW.MAHD;
+            UPDATE LO_HANG SET SOLUONGTON = SOLUONGTON + :OLD.SOLUONG - :NEW.SOLUONG WHERE MALO = :NEW.MALO;
+            UPDATE HOA_DON SET TONGTIEN = NVL(TONGTIEN, 0) - (:OLD.SOLUONG * :OLD.DONGIA) + (:NEW.SOLUONG * :NEW.DONGIA) WHERE MAHD = :NEW.MAHD;
+        ELSIF DELETING THEN
+            UPDATE LO_HANG SET SOLUONGTON = SOLUONGTON + :OLD.SOLUONG WHERE MALO = :OLD.MALO;
+            UPDATE HOA_DON SET TONGTIEN = NVL(TONGTIEN, 0) - (:OLD.SOLUONG * :OLD.DONGIA) WHERE MAHD = :OLD.MAHD;
         END IF;
     END AFTER EACH ROW;
-
-END TRG_MEGA_CT_HOA_DON;
+END TRG_CT_HOA_DON;
 /
-
-
--- =====================================================
--- MEGA-TRIGGER 6: TRG_MEGA_PHIEU_NHAP  [TRIGGER MỚI]
--- Bảng: PHIEU_NHAP
--- Gom: Phân quyền Thủ kho/Quản lý + Tự động cập nhật TONGTIEN phiếu nhập
---      khi chi tiết lô hàng được thêm vào
--- Thay thế triggers cũ: TRG_CHECK_THUKHO_PHIEUNHAP
--- Mở rộng: Thêm logic tính tổng tiền phiếu nhập tự động từ LO_HANG
--- =====================================================
-
-CREATE OR REPLACE TRIGGER TRG_MEGA_PHIEU_NHAP
-FOR INSERT OR UPDATE ON PHIEU_NHAP
-COMPOUND TRIGGER
-
+-- TRIGGER 6: Phiếu Nhập
+CREATE OR REPLACE TRIGGER TRG_PHIEU_NHAP
+BEFORE INSERT OR UPDATE ON PHIEU_NHAP
+FOR EACH ROW
+DECLARE
     v_tencv CHUC_VU.TENCV%TYPE;
+    v_lo_daban NUMBER;
+BEGIN
+    -- [1] Phân quyền
+    SELECT cv.TENCV INTO v_tencv FROM NHAN_SU ns JOIN CHUC_VU cv ON ns.MACV = cv.MACV WHERE ns.MANS = :NEW.MANS;
+    IF v_tencv NOT IN (N'Thủ kho', N'Quản lý') THEN
+        RAISE_APPLICATION_ERROR(-20004, 'PN: Chỉ Thủ kho hoặc Quản lý mới được lập phiếu nhập.');
+    END IF;
 
-    -- ── BEFORE EACH ROW ─────────────────────────────────────────────────────────
-    BEFORE EACH ROW IS
-    BEGIN
-        -- [1] Phân quyền: Chỉ Thủ kho hoặc Quản lý mới được tạo phiếu nhập
-        SELECT cv.TENCV INTO v_tencv
-        FROM   NHAN_SU ns JOIN CHUC_VU cv ON ns.MACV = cv.MACV
-        WHERE  ns.MANS = :NEW.MANS;
-
-        IF v_tencv NOT IN (N'Thủ kho', N'Quản lý') THEN
-            RAISE_APPLICATION_ERROR(-20004,
-                'LỖI: Nhân sự [' || :NEW.MANS || '] không có quyền lập Phiếu Nhập! '
-                || '(Chức vụ hiện tại: ' || v_tencv || ')');
+    -- [2] Không sửa phiếu đã giao dịch
+    IF UPDATING THEN
+        SELECT COUNT(*) INTO v_lo_daban FROM LO_HANG WHERE MAPN = :OLD.MAPN AND SOLUONGTON < SOLUONGNHAP;
+        IF v_lo_daban > 0 THEN
+            RAISE_APPLICATION_ERROR(-20015, 'PN: Phiếu nhập đã có lô hàng được bán, không thể sửa.');
         END IF;
-
-        -- [2] Chặn sửa/xóa phiếu nhập đã hoàn tất (có lô hàng đang được bán)
-        IF UPDATING THEN
-            DECLARE
-                v_lo_daban NUMBER;
-            BEGIN
-                SELECT COUNT(*) INTO v_lo_daban
-                FROM   LO_HANG lh
-                WHERE  lh.MAPN = :OLD.MAPN
-                  AND  lh.SOLUONGTON < lh.SOLUONGNHAP; -- Lô đã bị trừ hàng = đã có giao dịch
-                IF v_lo_daban > 0 THEN
-                    RAISE_APPLICATION_ERROR(-20015,
-                        'LỖI: Phiếu nhập [' || :OLD.MAPN || '] đã có '
-                        || v_lo_daban || ' lô hàng đang giao dịch - không thể sửa!');
-                END IF;
-            END;
-        END IF;
-    END BEFORE EACH ROW;
-
-    -- ── AFTER EACH ROW: Đồng bộ TONGTIEN từ các lô hàng thực tế ───────────────
-    AFTER EACH ROW IS
-    BEGIN
-        -- [3] Tự động tính lại TONGTIEN phiếu nhập dựa trên tổng giá trị các lô
-        --     Dùng SELECT SUM thay vì cộng dồn để đảm bảo tính chính xác tuyệt đối
-        UPDATE PHIEU_NHAP
-        SET    TONGTIEN = (
-                   SELECT NVL(SUM(SOLUONGNHAP * GIANHAP), 0)
-                   FROM   LO_HANG
-                   WHERE  MAPN = :NEW.MAPN
-               )
-        WHERE  MAPN = :NEW.MAPN;
-    END AFTER EACH ROW;
-
-END TRG_MEGA_PHIEU_NHAP;
+    END IF;
+END;
 /
+-- TRIGGER 7: Thanh Toán
+CREATE OR REPLACE TRIGGER TRG_THANH_TOAN
+BEFORE INSERT OR UPDATE ON THANH_TOAN
+FOR EACH ROW
+DECLARE
+    PRAGMA AUTONOMOUS_TRANSACTION; 
+    v_tong_hd NUMBER;
+    v_trang_thai HOA_DON.TRANGTHAI%TYPE;
+    v_makh VARCHAR2(10);
+    v_da_tt NUMBER;
+BEGIN
+    -- Lấy thông tin Hóa đơn (Thêm MAKH để tích điểm)
+    SELECT TONGTIEN, TRANGTHAI, MAKH INTO v_tong_hd, v_trang_thai, v_makh FROM HOA_DON WHERE MAHD = :NEW.MAHD;
 
+    IF v_trang_thai != N'Chưa thanh toán' THEN
+        RAISE_APPLICATION_ERROR(-20016, 'TT: Hóa đơn không ở trạng thái "Chưa thanh toán".');
+    END IF;
 
--- =====================================================
--- MEGA-TRIGGER 7: TRG_MEGA_THANH_TOAN  [TRIGGER MỚI]
--- Bảng: THANH_TOAN
--- Gom: Validate số tiền + Chặn thanh toán trùng + Tự động cập nhật trạng thái HD
--- Logic mới hoàn toàn - không có trigger nào tương đương trước đây
--- =====================================================
+    IF :NEW.SOTIEN <= 0 OR :NEW.SOTIEN > v_tong_hd THEN
+        RAISE_APPLICATION_ERROR(-20018, 'TT: Số tiền thanh toán không hợp lệ.');
+    END IF;
 
-CREATE OR REPLACE TRIGGER TRG_MEGA_THANH_TOAN
-FOR INSERT OR UPDATE ON THANH_TOAN
+    -- Tính tổng tiền nhờ vào Autonomous Transaction
+    SELECT NVL(SUM(SOTIEN), 0) INTO v_da_tt FROM THANH_TOAN WHERE MAHD = :NEW.MAHD AND TRANGTHAI = N'Thành công';
+
+    IF v_da_tt + :NEW.SOTIEN > v_tong_hd THEN
+        RAISE_APPLICATION_ERROR(-20019, 'TT: Tổng tiền thanh toán bị lố giá trị hóa đơn!');
+    END IF;
+
+    -- Xử lý nghiệp vụ khi Thanh toán thành công
+    IF :NEW.TRANGTHAI = N'Thành công' THEN
+        -- 1. Chốt hóa đơn nếu đủ tiền
+        IF (v_da_tt + :NEW.SOTIEN) >= v_tong_hd THEN
+            UPDATE HOA_DON SET TRANGTHAI = N'Đã thanh toán' WHERE MAHD = :NEW.MAHD;
+        END IF;
+        
+        -- 2. Tích điểm Loyalty: 100k = 1 điểm
+        UPDATE KHACH_HANG 
+        SET DIEMTICHLUY = NVL(DIEMTICHLUY, 0) + FLOOR(:NEW.SOTIEN / 100000)
+        WHERE MAKH = v_makh;
+    END IF;
+    
+    COMMIT; -- Chốt giao dịch độc lập
+END;
+/
+-- TRIGGER 8: Lưu vết Audit khi sửa Kết Luận hồ sơ
+CREATE OR REPLACE TRIGGER TRG_AUDIT_HO_SO
+AFTER UPDATE OF KETLUAN ON HO_SO_THI_LUC
+FOR EACH ROW
+BEGIN
+    -- Chỉ lưu nếu kết luận thực sự bị thay đổi
+    IF NVL(:OLD.KETLUAN, '~~NULL~~') != NVL(:NEW.KETLUAN, '~~NULL~~') THEN
+        INSERT INTO AUDIT_HOSO_THILUC (
+            MAAUDIT, MAHOSO, OLD_KETLUAN, NEW_KETLUAN, NGUOI_THUC_HIEN
+        ) VALUES (
+            'AUD_' || TO_CHAR(SYSDATE, 'MMDDHH24MISS'), -- Tạo mã nhanh
+            :OLD.MAHOSO, 
+            :OLD.KETLUAN, 
+            :NEW.KETLUAN, 
+            USER
+        );
+    END IF;
+END;
+/
+-- TRIGGER 9: Quản lý Lô Hàng (Tồn kho & Tính tiền Phiếu Nhập)
+CREATE OR REPLACE TRIGGER TRG_LO_HANG
+FOR INSERT OR UPDATE ON LO_HANG
 COMPOUND TRIGGER
 
-    v_tong_hd       NUMBER;
-    v_da_thanhtoan  NUMBER;
-    v_trangthai_hd  NVARCHAR2(50);
-
-    -- ── BEFORE EACH ROW: Validate toàn bộ điều kiện thanh toán ─────────────────
     BEFORE EACH ROW IS
     BEGIN
-        -- Đọc trạng thái và tổng tiền hóa đơn 1 lần duy nhất
-        SELECT TONGTIEN, TRANGTHAI
-        INTO   v_tong_hd, v_trangthai_hd
-        FROM   HOA_DON
-        WHERE  MAHD = :NEW.MAHD;
-
-        -- [1] Chặn thanh toán cho hóa đơn đã thanh toán rồi
-        IF v_trangthai_hd = N'Đã thanh toán' THEN
-            RAISE_APPLICATION_ERROR(-20016,
-                'LỖI: Hóa đơn [' || :NEW.MAHD || '] đã được thanh toán trước đó!');
+        -- Tự động gán Tồn = Nhập khi mới nạp hàng vào kho
+        IF INSERTING THEN
+            :NEW.SOLUONGTON := :NEW.SOLUONGNHAP;
         END IF;
-
-        -- [2] Chặn thanh toán cho hóa đơn đã bị hủy
-        IF v_trangthai_hd = N'Đã hủy' THEN
-            RAISE_APPLICATION_ERROR(-20017,
-                'LỖI: Hóa đơn [' || :NEW.MAHD || '] đã bị hủy, không thể thanh toán!');
-        END IF;
-
-        -- [3] Chặn số tiền vượt tổng hóa đơn
-        IF :NEW.SOTIEN > v_tong_hd THEN
-            RAISE_APPLICATION_ERROR(-20008,
-                'LỖI: Số tiền thanh toán (' || :NEW.SOTIEN
-                || ') vượt quá tổng hóa đơn (' || v_tong_hd || ')!');
-        END IF;
-
-        -- [4] Chặn số tiền âm hoặc bằng 0
-        IF :NEW.SOTIEN <= 0 THEN
-            RAISE_APPLICATION_ERROR(-20018,
-                'LỖI: Số tiền thanh toán phải lớn hơn 0!');
-        END IF;
-
-        -- [5] Kiểm tra tổng tiền đã thanh toán trước đó (chặn thanh toán trùng lặp)
-        SELECT NVL(SUM(SOTIEN), 0) INTO v_da_thanhtoan
-        FROM   THANH_TOAN
-        WHERE  MAHD = :NEW.MAHD AND TRANGTHAI = N'Thành công';
-
-        IF v_da_thanhtoan + :NEW.SOTIEN > v_tong_hd THEN
-            RAISE_APPLICATION_ERROR(-20019,
-                'LỖI: Tổng tiền thanh toán (' || (v_da_thanhtoan + :NEW.SOTIEN)
-                || ') vượt quá giá trị hóa đơn (' || v_tong_hd || ')! '
-                || 'Đã thanh toán trước: ' || v_da_thanhtoan);
+        
+        -- Chặn nhập hàng quá hạn hoặc sắp hết hạn (cảnh báo)
+        IF :NEW.NGAYHETHAN <= SYSDATE THEN
+            RAISE_APPLICATION_ERROR(-20029, 'LH: Không được nhập lô hàng đã hết hạn!');
         END IF;
     END BEFORE EACH ROW;
 
-    -- ── AFTER EACH ROW: Tự động cập nhật trạng thái Hóa Đơn ───────────────────
     AFTER EACH ROW IS
     BEGIN
-        -- [6] Nếu thanh toán thành công và đủ số tiền → tự động chốt hóa đơn
-        --     Đây là "cầu nối" giữa bảng THANH_TOAN và HOA_DON, không cần SP can thiệp
-        IF :NEW.TRANGTHAI = N'Thành công' THEN
-            UPDATE HOA_DON
-            SET    TRANGTHAI = N'Đã thanh toán'
-            WHERE  MAHD = :NEW.MAHD
-              AND  TONGTIEN <= :NEW.SOTIEN; -- Chỉ chốt khi số tiền thanh toán >= tổng hóa đơn
+        -- Đồng bộ tổng tiền lên Phiếu Nhập một cách mượt mà (Delta update)
+        IF INSERTING THEN
+            UPDATE PHIEU_NHAP 
+            SET TONGTIEN = NVL(TONGTIEN, 0) + (:NEW.SOLUONGNHAP * :NEW.GIANHAP) 
+            WHERE MAPN = :NEW.MAPN;
+        ELSIF UPDATING THEN
+            UPDATE PHIEU_NHAP 
+            SET TONGTIEN = NVL(TONGTIEN, 0) - (:OLD.SOLUONGNHAP * :OLD.GIANHAP) + (:NEW.SOLUONGNHAP * :NEW.GIANHAP) 
+            WHERE MAPN = :NEW.MAPN;
         END IF;
     END AFTER EACH ROW;
-
-END TRG_MEGA_THANH_TOAN;
+END TRG_LO_HANG;
 /
-
-
 -- ============================================================
 -- PHẦN III: STORED PROCEDURES
 -- ============================================================
