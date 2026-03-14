@@ -1,0 +1,67 @@
+# Hướng dẫn Import CSV vào Oracle
+
+## THỨ TỰ INSERT (theo FK dependency)
+```
+01_NHOM → 02_VAITRO → 03_NHOM_VAITRO
+04_TAI_KHOAN → 05_CHUC_VU → 06_NHAN_SU
+07_KHACH_HANG → 08_LICH_HEN
+09_HO_SO_THI_LUC → 10_CHI_TIET_THI_LUC → 11_DON_THUOC
+12_LOAI_SAN_PHAM → 13_SAN_PHAM → 14_PHIEU_KE_DON → 15_CT_KE_DON
+16_NHA_CUNG_CAP → 17_PHIEU_NHAP → 18_LO_HANG
+19_HOA_DON → 20_CT_HOA_DON → 21_THANH_TOAN
+22_PHIEU_XUAT → 23_CT_PHIEU_XUAT
+```
+
+## CÁCH 1: Import qua Spring Boot (khuyên dùng khi dev)
+Tạo DataInitializer.java đọc CSV từ classpath rồi gọi JdbcTemplate.batchUpdate().
+Xem file TriggerIntegration_SpringBoot.md để biết cách handle lỗi trigger.
+
+## CÁCH 2: SQL*Loader (Oracle native - nhanh nhất)
+```bash
+sqlldr userid=user/pass@db control=01_NHOM.ctl log=01_NHOM.log
+```
+File .ctl mẫu:
+```
+LOAD DATA
+INFILE '01_NHOM.csv'
+APPEND INTO TABLE NHOM
+FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '"'
+TRAILING NULLCOLS
+(MANHOM, TENNHOM CHAR(200))
+```
+
+## CÁCH 3: SQL INSERT trực tiếp (nhanh cho dev)
+Disable trigger trước khi seed, enable lại sau:
+```sql
+-- Disable tất cả trigger (để bypass validation khi seed)
+ALTER TABLE NHAN_SU        DISABLE ALL TRIGGERS;
+ALTER TABLE KHACH_HANG     DISABLE ALL TRIGGERS;
+ALTER TABLE HO_SO_THI_LUC  DISABLE ALL TRIGGERS;
+ALTER TABLE CT_HOA_DON     DISABLE ALL TRIGGERS;
+ALTER TABLE LO_HANG        DISABLE ALL TRIGGERS;
+ALTER TABLE LICH_HEN       DISABLE ALL TRIGGERS;
+ALTER TABLE PHIEU_KE_DON   DISABLE ALL TRIGGERS;
+ALTER TABLE PHIEU_NHAP     DISABLE ALL TRIGGERS;
+ALTER TABLE THANH_TOAN     DISABLE ALL TRIGGERS;
+-- ... import CSV ...
+-- Enable lại
+ALTER TABLE NHAN_SU        ENABLE ALL TRIGGERS;
+ALTER TABLE KHACH_HANG     ENABLE ALL TRIGGERS;
+ALTER TABLE HO_SO_THI_LUC  ENABLE ALL TRIGGERS;
+ALTER TABLE CT_HOA_DON     ENABLE ALL TRIGGERS;
+ALTER TABLE LO_HANG        ENABLE ALL TRIGGERS;
+ALTER TABLE LICH_HEN       ENABLE ALL TRIGGERS;
+ALTER TABLE PHIEU_KE_DON   ENABLE ALL TRIGGERS;
+ALTER TABLE PHIEU_NHAP     ENABLE ALL TRIGGERS;
+ALTER TABLE THANH_TOAN     ENABLE ALL TRIGGERS;
+```
+
+## LƯU Ý CỘT NULL
+- KHACH_HANG.MATK: chuỗi rỗng "" → cần map thành NULL khi insert
+- CHI_TIET_THI_LUC.DOCONG_ADD: chuỗi rỗng "" → NULL
+- HOA_DON.MAHOSO, MADONTHUOC: chuỗi rỗng "" → NULL
+- NHAN_SU.CHUYENKHOA: chuỗi rỗng "" → NULL
+
+## DIEMTICHLUY
+Cột này có DEFAULT 0 trong DDL.
+Các KH trong file CSV đã có điểm tích lũy phản ánh lịch sử mua hàng thực tế.
