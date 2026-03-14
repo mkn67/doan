@@ -1,8 +1,8 @@
-version: '3.8'
+version: "3.8"
 
 services:
 
-  # 1. DATABASE: Oracle 21c Express Edition
+  # DATABASE
   oracle-db:
     image: container-registry.oracle.com/database/express:21.3.0-xe
     container_name: oracle_21c
@@ -15,7 +15,7 @@ services:
     networks:
       - nhom15-network
 
-  # 2. BACKEND: Spring Boot
+  # BACKEND
   backend:
     build:
       context: ./backend
@@ -33,9 +33,14 @@ services:
     networks:
       - nhom15-network
 
-networks:
-  nhom15-network:
-    driver: bridge
-
-volumes:
-  oracle-data:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: react_frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - nhom15-network
