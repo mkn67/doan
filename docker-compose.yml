@@ -1,8 +1,8 @@
 services:
-  # DATABASE
+  # DATABASE - Dùng bản gvenzl/oracle-xe:21-slim cực nhẹ
   oracle-db:
-    image: container-registry.oracle.com/database/express:21.3.0-xe
-    container_name: oracle_21c
+    image: gvenzl/oracle-xe:21-slim
+    container_name: oracle_21c_slim
     ports:
       - "1521:1521"
     environment:
@@ -13,7 +13,7 @@ services:
       - nhom15-network
     restart: always
 
-  # BACKEND
+  # BACKEND - Spring Boot
   backend:
     build:
       context: ./backend
@@ -32,7 +32,7 @@ services:
       - nhom15-network
     restart: always
 
-  # FRONTEND
+  # FRONTEND - React
   frontend:
     build:
       context: ./frontend
@@ -46,11 +46,9 @@ services:
       - nhom15-network
     restart: always
 
-# KHAI BÁO NETWORKS (Chỗ này m thiếu nè)
 networks:
   nhom15-network:
     driver: bridge
 
-# KHAI BÁO VOLUMES
 volumes:
   oracle-data:
