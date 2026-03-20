@@ -4,13 +4,26 @@
 -- PROJECT: Hệ Thống Quản Lý Dịch Vụ Thị Lực & Thiết Bị Y Tế
 -- STACK  : Oracle SQL + Spring Boot + React.js
 -- ------------------------------------------------------------
--- CHANGELOG v2 (fixes):
---   [FIX-1] KHACH_HANG   — thêm dấu phẩy sau DIEMTICHLUY DEFAULT 0
---   [FIX-2] SP_NHAP_KHO  — xóa UPDATE TONGTIEN thủ công (trùng TRG_LO_HANG)
---   [FIX-3] SP_NHAP_KHO  — đổi tên tham số p_ngayhethane → p_ngayhethan
---   [FIX-4] SP_NHAP_KHO  — xóa SOLUONGTON khỏi INSERT (trigger tự set)
---   [FIX-5] TRG_THANH_TOAN — xóa logic tạo PHIEU_XUAT (đã có trong SP)
---   [FIX-6] SP_LUU_HOSO  — thêm tham số p_docong_trai/phai cho DOCONG_ADD
+-- CHANGELOG v3:
+--   [v2-FIX-1..6] Các fix từ v2 đã giữ nguyên
+--   [v3-1] Sequences: thêm TRIGGER BEFORE INSERT để auto-sinh mã chuỗi
+--          (giữ VARCHAR2 PK, dùng 'HD'||LPAD(SEQ.NEXTVAL,6,'0') → HD000001)
+--   [v3-2] Soft Delete: thêm IS_DELETED NUMBER(1) DEFAULT 0 vào bảng chính
+--   [v3-3] Flyway/Oracle PL/SQL: tách file thành 2 phần theo khuyến nghị
+--          (DDL riêng, PL/SQL riêng) — xem ghi chú cuối file
+--   [v3-4] FLOOR() cho phép tính tuổi trong TRG_VALIDATE_NHAN_SU
+-- ============================================================
+
+-- ============================================================
+-- GHI CHÚ FLYWAY + ORACLE PL/SQL                            --
+-- Flyway mặc định dùng dấu ';' làm delimiter → lỗi khi gặp --
+-- block PL/SQL bên trong (trigger, procedure).               --
+-- Giải pháp: thêm vào application.properties:               --
+--   spring.flyway.oracle-sqlplus=true                        --
+-- Khi bật oracle-sqlplus=true, Flyway nhận '/' làm delimiter --
+-- kết thúc block PL/SQL đúng chuẩn Oracle SQL*Plus.         --
+-- Nếu dùng Flyway Community (không có oracle-sqlplus):       --
+--   Tách file thành V1a__ (DDL) và V1b__ (PL/SQL).         --
 -- ============================================================
 
 
@@ -18,9 +31,7 @@
 -- PHẦN I: TẠO BẢNG (DDL)
 -- ============================================================
 
--- =====================================================
--- I.1 QUẢN LÝ QUYỀN TRUY CẬP (RBAC) & NHÂN SỰ
--- =====================================================
+-- ── I.1 RBAC & NHÂN SỰ ──────────────────────────────────────
 
 CREATE TABLE NHOM (
     MANHOM   VARCHAR2(10)  PRIMARY KEY,
@@ -45,7 +56,7 @@ CREATE TABLE TAI_KHOAN (
     MANHOM    VARCHAR2(10),
     USERNAME  VARCHAR2(50)  UNIQUE,
     PASSWORD  VARCHAR2(255),
-    TRANGTHAI NUMBER(1),
+    TRANGTHAI NUMBER(1)     DEFAULT 1,       -- 1: Hoạt động | 0: Bị khóa
     CONSTRAINT FK_TK_NHOM FOREIGN KEY (MANHOM) REFERENCES NHOM(MANHOM)
 );
 
@@ -65,13 +76,13 @@ CREATE TABLE NHAN_SU (
     SDT        VARCHAR2(15),
     DIACHI     NVARCHAR2(255),
     CHUYENKHOA NVARCHAR2(100) NULL,
+    -- [v3-2] Soft Delete — không bao giờ xóa cứng nhân sự
+    IS_DELETED NUMBER(1)      DEFAULT 0,     -- 0: Hoạt động | 1: Đã nghỉ việc
     CONSTRAINT FK_NS_TK FOREIGN KEY (MATK) REFERENCES TAI_KHOAN(MATK),
     CONSTRAINT FK_NS_CV FOREIGN KEY (MACV) REFERENCES CHUC_VU(MACV)
 );
 
--- =====================================================
--- I.2 QUẢN LÝ KHÁCH HÀNG & Y KHOA
--- =====================================================
+-- ── I.2 KHÁCH HÀNG & Y KHOA ─────────────────────────────────
 
 CREATE TABLE KHACH_HANG (
     MAKH        VARCHAR2(10)  PRIMARY KEY,
@@ -82,7 +93,9 @@ CREATE TABLE KHACH_HANG (
     GIOITINH    NVARCHAR2(10),
     SDT         VARCHAR2(15)  UNIQUE,
     DIACHI      NVARCHAR2(255),
-    DIEMTICHLUY NUMBER        DEFAULT 0,     -- [FIX-1] dấu phẩy đã thêm
+    DIEMTICHLUY NUMBER        DEFAULT 0,
+    -- [v3-2] Soft Delete — hệ thống y tế không xóa cứng hồ sơ bệnh nhân
+    IS_DELETED  NUMBER(1)     DEFAULT 0,     -- 0: Hoạt động | 1: Đã xóa mềm
     CONSTRAINT FK_KH_TK FOREIGN KEY (MATK) REFERENCES TAI_KHOAN(MATK)
 );
 
@@ -91,7 +104,7 @@ CREATE TABLE LICH_HEN (
     MAKH      VARCHAR2(10),
     MANS      VARCHAR2(10),
     NGAYHEN   TIMESTAMP,
-    TRANGTHAI NVARCHAR2(50),
+    TRANGTHAI NVARCHAR2(50),                 -- Mới | Đã khám | Đã hủy
     CONSTRAINT FK_LH_KH FOREIGN KEY (MAKH) REFERENCES KHACH_HANG(MAKH),
     CONSTRAINT FK_LH_NS FOREIGN KEY (MANS) REFERENCES NHAN_SU(MANS)
 );
@@ -106,14 +119,15 @@ CREATE TABLE HO_SO_THI_LUC (
     CONSTRAINT FK_HS_NS FOREIGN KEY (MANS) REFERENCES NHAN_SU(MANS)
 );
 
+-- Chuẩn 1NF: mỗi mắt = 1 dòng với MAT = 'P'/'T'
 CREATE TABLE CHI_TIET_THI_LUC (
     MAHOSO        VARCHAR2(10),
-    MAT           CHAR(1),
-    DOCAU_SPH     NUMBER(4,2),
-    DOTRU_CYL     NUMBER(4,2),
-    TRUC_AX       NUMBER(3),
-    KHOANGCACH_PD NUMBER(3,1),
-    DOCONG_ADD    NUMBER(4,2),               -- Độ cộng lão thị, NULL nếu không cần
+    MAT           CHAR(1),                   -- P: Phải | T: Trái
+    DOCAU_SPH     NUMBER(4,2),               -- Độ cầu
+    DOTRU_CYL     NUMBER(4,2),               -- Độ trụ
+    TRUC_AX       NUMBER(3),                 -- Trục loạn thị
+    KHOANGCACH_PD NUMBER(3,1),               -- Khoảng cách đồng tử
+    DOCONG_ADD    NUMBER(4,2),               -- Độ cộng (lão thị) — NULL nếu không cần
     CONSTRAINT PK_CTTTL    PRIMARY KEY (MAHOSO, MAT),
     CONSTRAINT FK_CTTTL_HS FOREIGN KEY (MAHOSO) REFERENCES HO_SO_THI_LUC(MAHOSO)
 );
@@ -137,9 +151,7 @@ CREATE TABLE AUDIT_HOSO_THILUC (
     NGUOI_THUC_HIEN VARCHAR2(50)
 );
 
--- =====================================================
--- I.3 QUẢN LÝ SẢN PHẨM & KÊ ĐƠN
--- =====================================================
+-- ── I.3 SẢN PHẨM & KÊ ĐƠN ──────────────────────────────────
 
 CREATE TABLE LOAI_SAN_PHAM (
     MALOAI  VARCHAR2(10)  PRIMARY KEY,
@@ -151,7 +163,7 @@ CREATE TABLE SAN_PHAM (
     MALOAI    VARCHAR2(10),
     TENSP     NVARCHAR2(100),
     DONVITINH NVARCHAR2(20),
-    LATHUOC   NUMBER(1),
+    LATHUOC   NUMBER(1),                     -- 1: Thuốc/TPCN | 0: Kính/Thiết bị
     GIABAN    NUMBER(15,2),
     CONSTRAINT FK_SP_LOAI FOREIGN KEY (MALOAI) REFERENCES LOAI_SAN_PHAM(MALOAI)
 );
@@ -177,9 +189,7 @@ CREATE TABLE CT_KE_DON (
     CONSTRAINT FK_CTKD_SP  FOREIGN KEY (MASP)  REFERENCES SAN_PHAM(MASP)
 );
 
--- =====================================================
--- I.4 QUẢN LÝ NHẬP KHO & LÔ HÀNG
--- =====================================================
+-- ── I.4 NHẬP KHO & LÔ HÀNG ─────────────────────────────────
 
 CREATE TABLE NHA_CUNG_CAP (
     MANCC  VARCHAR2(10)  PRIMARY KEY,
@@ -193,7 +203,7 @@ CREATE TABLE PHIEU_NHAP (
     MANCC    VARCHAR2(10),
     MANS     VARCHAR2(10),
     NGAYNHAP TIMESTAMP,
-    TONGTIEN NUMBER(15,2),
+    TONGTIEN NUMBER(15,2)  DEFAULT 0,
     CONSTRAINT FK_PN_NCC FOREIGN KEY (MANCC) REFERENCES NHA_CUNG_CAP(MANCC),
     CONSTRAINT FK_PN_NS  FOREIGN KEY (MANS)  REFERENCES NHAN_SU(MANS)
 );
@@ -211,9 +221,7 @@ CREATE TABLE LO_HANG (
     CONSTRAINT FK_LO_PN FOREIGN KEY (MAPN) REFERENCES PHIEU_NHAP(MAPN)
 );
 
--- =====================================================
--- I.5 QUẢN LÝ BÁN HÀNG & XUẤT KHO
--- =====================================================
+-- ── I.5 BÁN HÀNG & XUẤT KHO ─────────────────────────────────
 
 CREATE TABLE HOA_DON (
     MAHD       VARCHAR2(10)  PRIMARY KEY,
@@ -222,8 +230,10 @@ CREATE TABLE HOA_DON (
     MAHOSO     VARCHAR2(10)  NULL,
     MADONTHUOC VARCHAR2(10)  NULL,
     NGAYLAP    TIMESTAMP,
-    TONGTIEN   NUMBER(15,2),
-    TRANGTHAI  NVARCHAR2(50),
+    TONGTIEN   NUMBER(15,2)  DEFAULT 0,
+    TRANGTHAI  NVARCHAR2(50) DEFAULT N'Chưa thanh toán',
+    -- [v3-2] Soft Delete — hóa đơn không bao giờ xóa cứng (quy định kế toán)
+    IS_DELETED NUMBER(1)     DEFAULT 0,
     CONSTRAINT FK_HD_KH FOREIGN KEY (MAKH)       REFERENCES KHACH_HANG(MAKH),
     CONSTRAINT FK_HD_NS FOREIGN KEY (MANS)       REFERENCES NHAN_SU(MANS),
     CONSTRAINT FK_HD_HS FOREIGN KEY (MAHOSO)     REFERENCES HO_SO_THI_LUC(MAHOSO),
@@ -270,10 +280,117 @@ CREATE TABLE CT_PHIEU_XUAT (
 
 
 -- ============================================================
--- PHẦN II: TRIGGERS
+-- PHẦN II: SEQUENCES
+-- Tạo trước triggers để triggers dùng được NEXTVAL
+-- ============================================================
+-- [v3-1] Chiến lược: giữ VARCHAR2 PK dạng chuỗi ('HD000001').
+--        Trigger BEFORE INSERT dùng SEQ.NEXTVAL để sinh số,
+--        ghép prefix → Spring Boot truyền NULL hoặc bỏ qua cột PK,
+--        trigger tự điền. Không cần @SequenceGenerator trong Entity.
+-- ============================================================
+
+-- NOCACHE: hóa đơn & thanh toán cần số liên tục, không gap (kế toán)
+CREATE SEQUENCE SEQ_HOA_DON    START WITH 1 INCREMENT BY 1 NOCACHE  NOCYCLE;
+CREATE SEQUENCE SEQ_THANH_TOAN START WITH 1 INCREMENT BY 1 NOCACHE  NOCYCLE;
+-- CACHE: batch nhập kho, gap chấp nhận được
+CREATE SEQUENCE SEQ_LO_HANG    START WITH 1 INCREMENT BY 1 CACHE 20 NOCYCLE;
+CREATE SEQUENCE SEQ_PHIEU_NHAP START WITH 1 INCREMENT BY 1 CACHE 10 NOCYCLE;
+CREATE SEQUENCE SEQ_PHIEU_XUAT START WITH 1 INCREMENT BY 1 CACHE 10 NOCYCLE;
+CREATE SEQUENCE SEQ_LICH_HEN   START WITH 1 INCREMENT BY 1 CACHE 10 NOCYCLE;
+CREATE SEQUENCE SEQ_HO_SO      START WITH 1 INCREMENT BY 1 CACHE 10 NOCYCLE;
+-- CACHE 50: volume log cao, gap không quan trọng
+CREATE SEQUENCE SEQ_AUDIT      START WITH 1 INCREMENT BY 1 CACHE 50 NOCYCLE;
+
+
+-- ============================================================
+-- PHẦN III: TRIGGERS AUTO-SINH MÃ (Sequence → VARCHAR2 PK)
+-- ============================================================
+
+-- [v3-1] HOA_DON: tự sinh MAHD = 'HD' + 6 chữ số từ SEQ_HOA_DON
+--        Spring Boot để MAHD = NULL, trigger tự điền → Entity dùng @PrePersist
+CREATE OR REPLACE TRIGGER TRG_GEN_MAHD
+BEFORE INSERT ON HOA_DON
+FOR EACH ROW
+BEGIN
+    IF :NEW.MAHD IS NULL THEN
+        :NEW.MAHD := 'HD' || LPAD(SEQ_HOA_DON.NEXTVAL, 6, '0');
+    END IF;
+END;
+/
+
+-- [v3-1] THANH_TOAN: tự sinh MATT = 'TT' + 6 chữ số
+CREATE OR REPLACE TRIGGER TRG_GEN_MATT
+BEFORE INSERT ON THANH_TOAN
+FOR EACH ROW
+BEGIN
+    IF :NEW.MATT IS NULL THEN
+        :NEW.MATT := 'TT' || LPAD(SEQ_THANH_TOAN.NEXTVAL, 6, '0');
+    END IF;
+END;
+/
+
+-- [v3-1] LO_HANG: tự sinh MALO = 'LO' + 6 chữ số
+CREATE OR REPLACE TRIGGER TRG_GEN_MALO
+BEFORE INSERT ON LO_HANG
+FOR EACH ROW
+BEGIN
+    IF :NEW.MALO IS NULL THEN
+        :NEW.MALO := 'LO' || LPAD(SEQ_LO_HANG.NEXTVAL, 6, '0');
+    END IF;
+END;
+/
+
+-- [v3-1] PHIEU_NHAP: tự sinh MAPN = 'PN' + 6 chữ số
+CREATE OR REPLACE TRIGGER TRG_GEN_MAPN
+BEFORE INSERT ON PHIEU_NHAP
+FOR EACH ROW
+BEGIN
+    IF :NEW.MAPN IS NULL THEN
+        :NEW.MAPN := 'PN' || LPAD(SEQ_PHIEU_NHAP.NEXTVAL, 6, '0');
+    END IF;
+END;
+/
+
+-- [v3-1] PHIEU_XUAT: tự sinh MAPX = 'PX' + 6 chữ số
+CREATE OR REPLACE TRIGGER TRG_GEN_MAPX
+BEFORE INSERT ON PHIEU_XUAT
+FOR EACH ROW
+BEGIN
+    IF :NEW.MAPX IS NULL THEN
+        :NEW.MAPX := 'PX' || LPAD(SEQ_PHIEU_XUAT.NEXTVAL, 6, '0');
+    END IF;
+END;
+/
+
+-- [v3-1] LICH_HEN: tự sinh MALH = 'LH' + 6 chữ số
+CREATE OR REPLACE TRIGGER TRG_GEN_MALH
+BEFORE INSERT ON LICH_HEN
+FOR EACH ROW
+BEGIN
+    IF :NEW.MALH IS NULL THEN
+        :NEW.MALH := 'LH' || LPAD(SEQ_LICH_HEN.NEXTVAL, 6, '0');
+    END IF;
+END;
+/
+
+-- [v3-1] HO_SO_THI_LUC: tự sinh MAHOSO = 'HS' + 6 chữ số
+CREATE OR REPLACE TRIGGER TRG_GEN_MAHOSO
+BEFORE INSERT ON HO_SO_THI_LUC
+FOR EACH ROW
+BEGIN
+    IF :NEW.MAHOSO IS NULL THEN
+        :NEW.MAHOSO := 'HS' || LPAD(SEQ_HO_SO.NEXTVAL, 6, '0');
+    END IF;
+END;
+/
+
+
+-- ============================================================
+-- PHẦN IV: TRIGGERS NGHIỆP VỤ
 -- ============================================================
 
 -- TRIGGER 1: Nhân Sự
+-- [v3-4] FLOOR() thay vì tính trực tiếp để tránh số thập phân gây sai
 CREATE OR REPLACE TRIGGER TRG_VALIDATE_NHAN_SU
 BEFORE INSERT OR UPDATE ON NHAN_SU
 FOR EACH ROW
@@ -281,10 +398,12 @@ DECLARE
     v_tuoi  NUMBER;
     v_count NUMBER;
 BEGIN
-    v_tuoi := MONTHS_BETWEEN(SYSDATE, :NEW.NGAYSINH) / 12;
+    -- [v3-4] Dùng FLOOR để tránh edge case số thập phân
+    v_tuoi := FLOOR(MONTHS_BETWEEN(SYSDATE, :NEW.NGAYSINH) / 12);
     IF v_tuoi < 18 THEN
         RAISE_APPLICATION_ERROR(-20010,
-            'LỖI: Nhân viên [' || :NEW.HOTEN || '] chưa đủ 18 tuổi!');
+            'LỖI: Nhân viên [' || :NEW.HOTEN || '] chưa đủ 18 tuổi! (Hiện: '
+            || v_tuoi || ' tuổi)');
     END IF;
 
     IF INSERTING THEN
@@ -298,6 +417,7 @@ END;
 /
 
 -- TRIGGER 2: Khách Hàng
+-- [v3-2] Xóa cứng bị chặn — dùng Soft Delete (IS_DELETED = 1) thay thế
 CREATE OR REPLACE TRIGGER TRG_VALIDATE_KHACH_HANG
 BEFORE INSERT OR UPDATE OR DELETE ON KHACH_HANG
 FOR EACH ROW
@@ -310,14 +430,12 @@ BEGIN
         END IF;
     END IF;
 
+    -- [v3-2] Chặn xóa cứng — hệ thống y tế phải giữ hồ sơ bệnh nhân
     IF DELETING THEN
-        SELECT COUNT(*) INTO v_count
-        FROM   LICH_HEN
-        WHERE  MAKH = :OLD.MAKH AND TRANGTHAI = N'Mới';
-        IF v_count > 0 THEN
-            RAISE_APPLICATION_ERROR(-20011,
-                'LỖI: Không thể xóa khách hàng đang có lịch hẹn chờ!');
-        END IF;
+        RAISE_APPLICATION_ERROR(-20050,
+            'LỖI: Không được xóa cứng khách hàng. Dùng Soft Delete: '
+            || 'UPDATE KHACH_HANG SET IS_DELETED = 1 WHERE MAKH = '''
+            || :OLD.MAKH || '''');
     END IF;
 END;
 /
@@ -335,12 +453,13 @@ BEGIN
 
     IF v_tencv != N'Bác sĩ' THEN
         RAISE_APPLICATION_ERROR(-20001,
-            'LỖI: Chỉ nhân sự có chức vụ "Bác sĩ" mới được lập Hồ Sơ Khám!');
+            'LỖI: Chỉ Bác sĩ mới được lập Hồ Sơ Khám!');
     END IF;
 END;
 /
 
 -- TRIGGER 4: Hóa Đơn
+-- [v3-2] Chặn xóa cứng — hóa đơn là chứng từ tài chính, phải giữ vĩnh viễn
 CREATE OR REPLACE TRIGGER TRG_VALIDATE_HOA_DON
 BEFORE INSERT OR UPDATE OR DELETE ON HOA_DON
 FOR EACH ROW
@@ -363,6 +482,14 @@ BEGIN
             RAISE_APPLICATION_ERROR(-20007,
                 'LỖI: Hóa đơn đã thanh toán, không thể can thiệp!');
         END IF;
+    END IF;
+
+    -- [v3-2] Chặn xóa cứng hóa đơn — dùng IS_DELETED thay thế
+    IF DELETING THEN
+        RAISE_APPLICATION_ERROR(-20051,
+            'LỖI: Không được xóa cứng hóa đơn. Dùng: '
+            || 'UPDATE HOA_DON SET IS_DELETED = 1 WHERE MAHD = '''
+            || :OLD.MAHD || '''');
     END IF;
 END;
 /
@@ -391,13 +518,11 @@ COMPOUND TRIGGER
             FROM   LO_HANG WHERE MALO = :NEW.MALO;
 
             IF v_hsd < SYSDATE THEN
-                RAISE_APPLICATION_ERROR(-20006, 'CTHD: Lô hàng đã hết hạn sử dụng!');
+                RAISE_APPLICATION_ERROR(-20006, 'CTHD: Lô hàng đã hết hạn!');
             END IF;
-
             IF :NEW.SOLUONG <= 0 THEN
-                RAISE_APPLICATION_ERROR(-20014, 'CTHD: Số lượng phải lớn hơn 0.');
+                RAISE_APPLICATION_ERROR(-20014, 'CTHD: Số lượng phải > 0.');
             END IF;
-
             IF :NEW.SOLUONG > (CASE WHEN UPDATING
                                     THEN v_ton + :OLD.SOLUONG
                                     ELSE v_ton END) THEN
@@ -409,28 +534,14 @@ COMPOUND TRIGGER
     AFTER EACH ROW IS
     BEGIN
         IF INSERTING THEN
-            UPDATE LO_HANG
-            SET    SOLUONGTON = SOLUONGTON - :NEW.SOLUONG
-            WHERE  MALO = :NEW.MALO;
-            UPDATE HOA_DON
-            SET    TONGTIEN = NVL(TONGTIEN, 0) + (:NEW.SOLUONG * :NEW.DONGIA)
-            WHERE  MAHD = :NEW.MAHD;
+            UPDATE LO_HANG SET SOLUONGTON = SOLUONGTON - :NEW.SOLUONG WHERE MALO = :NEW.MALO;
+            UPDATE HOA_DON  SET TONGTIEN  = NVL(TONGTIEN,0) + (:NEW.SOLUONG * :NEW.DONGIA) WHERE MAHD = :NEW.MAHD;
         ELSIF UPDATING THEN
-            UPDATE LO_HANG
-            SET    SOLUONGTON = SOLUONGTON + :OLD.SOLUONG - :NEW.SOLUONG
-            WHERE  MALO = :NEW.MALO;
-            UPDATE HOA_DON
-            SET    TONGTIEN = NVL(TONGTIEN, 0)
-                              - (:OLD.SOLUONG * :OLD.DONGIA)
-                              + (:NEW.SOLUONG * :NEW.DONGIA)
-            WHERE  MAHD = :NEW.MAHD;
+            UPDATE LO_HANG SET SOLUONGTON = SOLUONGTON + :OLD.SOLUONG - :NEW.SOLUONG WHERE MALO = :NEW.MALO;
+            UPDATE HOA_DON  SET TONGTIEN  = NVL(TONGTIEN,0) - (:OLD.SOLUONG * :OLD.DONGIA) + (:NEW.SOLUONG * :NEW.DONGIA) WHERE MAHD = :NEW.MAHD;
         ELSIF DELETING THEN
-            UPDATE LO_HANG
-            SET    SOLUONGTON = SOLUONGTON + :OLD.SOLUONG
-            WHERE  MALO = :OLD.MALO;
-            UPDATE HOA_DON
-            SET    TONGTIEN = NVL(TONGTIEN, 0) - (:OLD.SOLUONG * :OLD.DONGIA)
-            WHERE  MAHD = :OLD.MAHD;
+            UPDATE LO_HANG SET SOLUONGTON = SOLUONGTON + :OLD.SOLUONG WHERE MALO = :OLD.MALO;
+            UPDATE HOA_DON  SET TONGTIEN  = NVL(TONGTIEN,0) - (:OLD.SOLUONG * :OLD.DONGIA) WHERE MAHD = :OLD.MAHD;
         END IF;
     END AFTER EACH ROW;
 
@@ -450,33 +561,30 @@ BEGIN
     WHERE  ns.MANS = :NEW.MANS;
 
     IF v_tencv NOT IN (N'Thủ kho', N'Quản lý') THEN
-        RAISE_APPLICATION_ERROR(-20004,
-            'PN: Chỉ Thủ kho hoặc Quản lý mới được lập phiếu nhập.');
+        RAISE_APPLICATION_ERROR(-20004, 'PN: Chỉ Thủ kho hoặc Quản lý mới được lập phiếu nhập.');
     END IF;
 
     IF UPDATING THEN
         SELECT COUNT(*) INTO v_lo_daban
-        FROM   LO_HANG
-        WHERE  MAPN = :OLD.MAPN AND SOLUONGTON < SOLUONGNHAP;
+        FROM   LO_HANG WHERE MAPN = :OLD.MAPN AND SOLUONGTON < SOLUONGNHAP;
         IF v_lo_daban > 0 THEN
-            RAISE_APPLICATION_ERROR(-20015,
-                'PN: Phiếu nhập đã có lô hàng được bán, không thể sửa.');
+            RAISE_APPLICATION_ERROR(-20015, 'PN: Phiếu nhập đã có lô hàng được bán, không thể sửa.');
         END IF;
     END IF;
 END;
 /
 
 -- TRIGGER 7: Thanh Toán
--- [FIX-5] Xóa toàn bộ logic tạo PHIEU_XUAT — SP_CHOT_THANH_TOAN xử lý việc đó
---         Trigger chỉ: validate → chốt HOA_DON → tích điểm loyalty
+-- Trách nhiệm: validate + chốt HOA_DON + tích điểm
+-- PHIEU_XUAT do SP_CHOT_THANH_TOAN xử lý (không tạo ở đây)
 CREATE OR REPLACE TRIGGER TRG_THANH_TOAN
 FOR INSERT OR UPDATE ON THANH_TOAN
 COMPOUND TRIGGER
 
-    v_tong_hd   NUMBER;
+    v_tong_hd    NUMBER;
     v_trang_thai HOA_DON.TRANGTHAI%TYPE;
-    v_makh      VARCHAR2(10);
-    v_da_tt     NUMBER;
+    v_makh       VARCHAR2(10);
+    v_da_tt      NUMBER;
 
     BEFORE EACH ROW IS
     BEGIN
@@ -488,42 +596,28 @@ COMPOUND TRIGGER
             RAISE_APPLICATION_ERROR(-20016,
                 'TT: Hóa đơn không ở trạng thái "Chưa thanh toán".');
         END IF;
-
         IF :NEW.SOTIEN <= 0 OR :NEW.SOTIEN > v_tong_hd THEN
-            RAISE_APPLICATION_ERROR(-20018,
-                'TT: Số tiền thanh toán không hợp lệ.');
+            RAISE_APPLICATION_ERROR(-20018, 'TT: Số tiền thanh toán không hợp lệ.');
         END IF;
     END BEFORE EACH ROW;
 
-    -- AFTER STATEMENT tránh mutating table khi SELECT SUM trên THANH_TOAN
+    -- AFTER STATEMENT: tránh mutating table khi SELECT SUM trên THANH_TOAN
     AFTER STATEMENT IS
     BEGIN
         FOR rec IN (
-            SELECT MAHD FROM THANH_TOAN
-            WHERE  TRANGTHAI = N'Thành công'
-            GROUP  BY MAHD
+            SELECT MAHD FROM THANH_TOAN WHERE TRANGTHAI = N'Thành công' GROUP BY MAHD
         ) LOOP
-            SELECT NVL(SUM(SOTIEN), 0)
-            INTO   v_da_tt
-            FROM   THANH_TOAN
-            WHERE  MAHD = rec.MAHD AND TRANGTHAI = N'Thành công';
+            SELECT NVL(SUM(SOTIEN), 0) INTO v_da_tt
+            FROM   THANH_TOAN WHERE MAHD = rec.MAHD AND TRANGTHAI = N'Thành công';
 
-            SELECT TONGTIEN, MAKH
-            INTO   v_tong_hd, v_makh
+            SELECT TONGTIEN, MAKH INTO v_tong_hd, v_makh
             FROM   HOA_DON WHERE MAHD = rec.MAHD;
 
             IF v_da_tt >= v_tong_hd THEN
-                -- Chốt hóa đơn
-                UPDATE HOA_DON
-                SET    TRANGTHAI = N'Đã thanh toán'
-                WHERE  MAHD = rec.MAHD;
-
-                -- Tích điểm loyalty (1 điểm / 100,000 VNĐ)
+                UPDATE HOA_DON SET TRANGTHAI = N'Đã thanh toán' WHERE MAHD = rec.MAHD;
                 UPDATE KHACH_HANG
                 SET    DIEMTICHLUY = NVL(DIEMTICHLUY, 0) + FLOOR(v_tong_hd / 100000)
                 WHERE  MAKH = v_makh;
-
-                -- PHIEU_XUAT tạo bởi SP_CHOT_THANH_TOAN_HOA_DON — không tạo ở đây
             END IF;
         END LOOP;
     END AFTER STATEMENT;
@@ -539,33 +633,32 @@ BEGIN
     IF NVL(:OLD.KETLUAN, '~~NULL~~') != NVL(:NEW.KETLUAN, '~~NULL~~') THEN
         INSERT INTO AUDIT_HOSO_THILUC
                (MAAUDIT, MAHOSO, OLD_KETLUAN, NEW_KETLUAN, NGUOI_THUC_HIEN)
-        VALUES ('AUD_' || TO_CHAR(SYSTIMESTAMP, 'MMDDHH24MISSFF3'),
+        VALUES ('AUD' || LPAD(SEQ_AUDIT.NEXTVAL, 9, '0'),  -- [v3-1] dùng SEQ_AUDIT
                 :OLD.MAHOSO, :OLD.KETLUAN, :NEW.KETLUAN, USER);
     END IF;
 END;
 /
 
 -- TRIGGER 9: Lô Hàng
--- [FIX-4] Trigger này set SOLUONGTON — SP không cần truyền SOLUONGTON nữa
 CREATE OR REPLACE TRIGGER TRG_LO_HANG
 FOR INSERT OR UPDATE ON LO_HANG
 COMPOUND TRIGGER
 
     BEFORE EACH ROW IS
     BEGIN
+        -- Tự set SOLUONGTON = SOLUONGNHAP khi nhập mới (SP không cần truyền)
         IF INSERTING THEN
-            :NEW.SOLUONGTON := :NEW.SOLUONGNHAP;  -- [FIX-4] trigger tự set
+            :NEW.SOLUONGTON := :NEW.SOLUONGNHAP;
         END IF;
 
         IF :NEW.NGAYHETHAN <= SYSDATE THEN
-            RAISE_APPLICATION_ERROR(-20029,
-                'LH: Không được nhập lô hàng đã hết hạn!');
+            RAISE_APPLICATION_ERROR(-20029, 'LH: Không được nhập lô hàng đã hết hạn!');
         END IF;
     END BEFORE EACH ROW;
 
     AFTER EACH ROW IS
     BEGIN
-        -- [FIX-2] Chỉ trigger cộng TONGTIEN — SP không làm nữa để tránh cộng đôi
+        -- Chỉ trigger cộng TONGTIEN, SP không làm nữa (tránh cộng đôi)
         IF INSERTING THEN
             UPDATE PHIEU_NHAP
             SET    TONGTIEN = NVL(TONGTIEN, 0) + (:NEW.SOLUONGNHAP * :NEW.GIANHAP)
@@ -594,41 +687,43 @@ BEGIN
     WHERE  ns.MANS = :NEW.MANS;
 
     IF v_tencv != N'Bác sĩ' THEN
-        RAISE_APPLICATION_ERROR(-20025,
-            'LỖI: Chỉ nhân sự có chức vụ "Bác sĩ" mới được quyền Kê Đơn Thuốc!');
+        RAISE_APPLICATION_ERROR(-20025, 'LỖI: Chỉ Bác sĩ mới được quyền Kê Đơn Thuốc!');
     END IF;
 END;
 /
 
 
 -- ============================================================
--- PHẦN III: STORED PROCEDURES
+-- PHẦN V: STORED PROCEDURES
 -- ============================================================
 
 -- SP 1: Lưu Hồ Sơ Khám Bệnh
--- [FIX-6] Thêm p_docong_trai / p_docong_phai (DEFAULT NULL cho bệnh nhân thường)
+-- Spring Boot truyền p_mahoso = NULL → TRG_GEN_MAHOSO tự sinh mã
+-- p_madon_out trả về mã phiếu kê đơn vừa tạo
 CREATE OR REPLACE PROCEDURE SP_LUU_HOSO_KHAM_BENH (
-    p_mahoso       IN  VARCHAR2,
-    p_makh         IN  VARCHAR2,
-    p_mans         IN  VARCHAR2,
-    p_ketluan      IN  NVARCHAR2,
-    p_mat_trai_sph IN  NUMBER,
-    p_mat_trai_cyl IN  NUMBER,
-    p_mat_trai_ax  IN  NUMBER,
-    p_docong_trai  IN  NUMBER DEFAULT NULL,   -- [FIX-6] độ cộng mắt Trái (lão thị)
-    p_mat_phai_sph IN  NUMBER,
-    p_mat_phai_cyl IN  NUMBER,
-    p_mat_phai_ax  IN  NUMBER,
-    p_docong_phai  IN  NUMBER DEFAULT NULL,   -- [FIX-6] độ cộng mắt Phải (lão thị)
-    p_pd           IN  NUMBER,
-    p_madon_out    OUT VARCHAR2
+    p_mahoso       IN OUT VARCHAR2,          -- IN OUT: nhận NULL vào, trả mã đã sinh ra
+    p_makh         IN     VARCHAR2,
+    p_mans         IN     VARCHAR2,
+    p_ketluan      IN     NVARCHAR2,
+    p_mat_trai_sph IN     NUMBER,
+    p_mat_trai_cyl IN     NUMBER,
+    p_mat_trai_ax  IN     NUMBER,
+    p_docong_trai  IN     NUMBER DEFAULT NULL,
+    p_mat_phai_sph IN     NUMBER,
+    p_mat_phai_cyl IN     NUMBER,
+    p_mat_phai_ax  IN     NUMBER,
+    p_docong_phai  IN     NUMBER DEFAULT NULL,
+    p_pd           IN     NUMBER,
+    p_madon_out    OUT    VARCHAR2
 ) AS
     v_madon VARCHAR2(20);
 BEGIN
+    -- INSERT với MAHOSO = NULL → TRG_GEN_MAHOSO BEFORE INSERT tự sinh
+    -- Sau INSERT, p_mahoso vẫn là NULL ở phía PL/SQL → cần lấy lại
     INSERT INTO HO_SO_THI_LUC (MAHOSO, MAKH, MANS, NGAYKHAM, KETLUAN)
-    VALUES (p_mahoso, p_makh, p_mans, SYSTIMESTAMP, p_ketluan);
+    VALUES (p_mahoso, p_makh, p_mans, SYSTIMESTAMP, p_ketluan)
+    RETURNING MAHOSO INTO p_mahoso;           -- Lấy lại mã vừa trigger sinh ra
 
-    -- [FIX-6] Truyền DOCONG_ADD vào chi tiết từng mắt
     INSERT INTO CHI_TIET_THI_LUC
            (MAHOSO, MAT, DOCAU_SPH, DOTRU_CYL, TRUC_AX, KHOANGCACH_PD, DOCONG_ADD)
     VALUES (p_mahoso, 'T',
@@ -651,27 +746,31 @@ END SP_LUU_HOSO_KHAM_BENH;
 /
 
 -- SP 2: Chốt Thanh Toán & Xuất Kho
--- Đơn giản hóa: bỏ tham số p_mans_xuat — lấy MANS trực tiếp từ HOA_DON
+-- MAHD và MATT để NULL → trigger TRG_GEN_* tự sinh
 CREATE OR REPLACE PROCEDURE SP_CHOT_THANH_TOAN_HOA_DON (
     p_mahd       IN VARCHAR2,
-    p_matt       IN VARCHAR2,
-    p_phuongthuc IN NVARCHAR2
+    p_phuongthuc IN NVARCHAR2,
+    p_matt_out   OUT VARCHAR2               -- Trả mã thanh toán đã sinh về FE
 ) AS
     v_tongtien NUMBER;
     v_mans     VARCHAR2(10);
     v_mapx     VARCHAR2(20);
+    v_matt     VARCHAR2(10);
 BEGIN
     SELECT TONGTIEN, MANS INTO v_tongtien, v_mans
     FROM   HOA_DON WHERE MAHD = p_mahd;
 
-    -- INSERT THANH_TOAN → TRG_THANH_TOAN tự chốt HOA_DON + tích điểm
+    -- MATT = NULL → TRG_GEN_MATT tự sinh, dùng RETURNING để lấy lại
     INSERT INTO THANH_TOAN (MATT, MAHD, NGAYTHANHTOAN, SOTIEN, PHUONGTHUC, TRANGTHAI)
-    VALUES (p_matt, p_mahd, SYSTIMESTAMP, v_tongtien, p_phuongthuc, N'Thành công');
+    VALUES (NULL, p_mahd, SYSTIMESTAMP, v_tongtien, p_phuongthuc, N'Thành công')
+    RETURNING MATT INTO v_matt;
 
-    -- Tạo Phiếu Xuất (chỉ SP làm, trigger không làm nữa — [FIX-5])
-    v_mapx := 'PX_' || p_mahd;
+    p_matt_out := v_matt;
+
+    -- MAPX = NULL → TRG_GEN_MAPX tự sinh
     INSERT INTO PHIEU_XUAT (MAPX, MAHD, MANS, NGAYXUAT)
-    VALUES (v_mapx, p_mahd, v_mans, SYSTIMESTAMP);
+    VALUES (NULL, p_mahd, v_mans, SYSTIMESTAMP)
+    RETURNING MAPX INTO v_mapx;
 
     INSERT INTO CT_PHIEU_XUAT (MAPX, MALO, SOLUONGXUAT)
     SELECT v_mapx, MALO, SOLUONG FROM CT_HOA_DON WHERE MAHD = p_mahd;
@@ -683,32 +782,35 @@ END SP_CHOT_THANH_TOAN_HOA_DON;
 /
 
 -- SP 3: Nhập Kho Lô Hàng
--- [FIX-2] Xóa UPDATE PHIEU_NHAP.TONGTIEN thủ công (TRG_LO_HANG đã làm)
--- [FIX-3] Đổi tên p_ngayhethane → p_ngayhethan
--- [FIX-4] Xóa SOLUONGTON khỏi INSERT LO_HANG (TRG_LO_HANG BEFORE tự set)
+-- MAPN và MALO = NULL → trigger tự sinh
 CREATE OR REPLACE PROCEDURE SP_NHAP_KHO_LO_HANG (
-    p_mapn         IN  VARCHAR2,
-    p_mancc        IN  VARCHAR2,
-    p_mans         IN  VARCHAR2,
-    p_malo         IN  VARCHAR2,
-    p_masp         IN  VARCHAR2,
-    p_ngaysx       IN  DATE,
-    p_ngayhethan   IN  DATE,         -- [FIX-3] đổi từ p_ngayhethane
-    p_soluongnhap  IN  NUMBER,
-    p_gianhap      IN  NUMBER,
-    p_tongtien_out OUT NUMBER
+    p_mapn         IN OUT VARCHAR2,          -- IN OUT: có thể truyền NULL để tự sinh
+    p_mancc        IN     VARCHAR2,
+    p_mans         IN     VARCHAR2,
+    p_malo         IN OUT VARCHAR2,          -- IN OUT: tự sinh nếu NULL
+    p_masp         IN     VARCHAR2,
+    p_ngaysx       IN     DATE,
+    p_ngayhethan   IN     DATE,
+    p_soluongnhap  IN     NUMBER,
+    p_gianhap      IN     NUMBER,
+    p_tongtien_out OUT    NUMBER
 ) AS
     v_existing NUMBER;
     v_tongtien NUMBER;
 BEGIN
-    -- Tạo Phiếu Nhập nếu chưa có (idempotent)
-    SELECT COUNT(*) INTO v_existing FROM PHIEU_NHAP WHERE MAPN = p_mapn;
-    IF v_existing = 0 THEN
+    -- Tạo Phiếu Nhập nếu chưa có (MAPN = NULL → trigger sinh mới)
+    IF p_mapn IS NULL THEN
         INSERT INTO PHIEU_NHAP (MAPN, MANCC, MANS, NGAYNHAP, TONGTIEN)
-        VALUES (p_mapn, p_mancc, p_mans, SYSTIMESTAMP, 0);
+        VALUES (NULL, p_mancc, p_mans, SYSTIMESTAMP, 0)
+        RETURNING MAPN INTO p_mapn;
+    ELSE
+        SELECT COUNT(*) INTO v_existing FROM PHIEU_NHAP WHERE MAPN = p_mapn;
+        IF v_existing = 0 THEN
+            INSERT INTO PHIEU_NHAP (MAPN, MANCC, MANS, NGAYNHAP, TONGTIEN)
+            VALUES (p_mapn, p_mancc, p_mans, SYSTIMESTAMP, 0);
+        END IF;
     END IF;
 
-    -- Validate hạn sử dụng
     IF p_ngayhethan <= p_ngaysx THEN
         RAISE_APPLICATION_ERROR(-20020, 'LỖI: Ngày hết hạn phải sau ngày sản xuất!');
     END IF;
@@ -716,10 +818,11 @@ BEGIN
         RAISE_APPLICATION_ERROR(-20021, 'LỖI: Không thể nhập lô hàng đã hết hạn!');
     END IF;
 
-    -- [FIX-4] Không truyền SOLUONGTON — TRG_LO_HANG BEFORE EACH ROW tự set
-    -- [FIX-2] Không UPDATE PHIEU_NHAP — TRG_LO_HANG AFTER EACH ROW tự cộng
+    -- MALO = NULL → TRG_GEN_MALO tự sinh; SOLUONGTON do TRG_LO_HANG BEFORE set
     INSERT INTO LO_HANG (MALO, MASP, MAPN, NGAYSANXUAT, NGAYHETHAN, SOLUONGNHAP, GIANHAP)
-    VALUES (p_malo, p_masp, p_mapn, p_ngaysx, p_ngayhethan, p_soluongnhap, p_gianhap);
+    VALUES (p_malo, p_masp, p_mapn, p_ngaysx, p_ngayhethan, p_soluongnhap, p_gianhap)
+    RETURNING MALO INTO p_malo;
+    -- TRG_LO_HANG AFTER sẽ cộng TONGTIEN vào PHIEU_NHAP
 
     SELECT TONGTIEN INTO v_tongtien FROM PHIEU_NHAP WHERE MAPN = p_mapn;
     p_tongtien_out := v_tongtien;
@@ -737,11 +840,8 @@ CREATE OR REPLACE PROCEDURE SP_CANH_BAO_HANG_HET_HAN (
 ) AS
 BEGIN
     OPEN c_result FOR
-        SELECT l.MALO                                AS MA_LO,
-               s.MASP                                AS MA_SP,
-               s.TENSP                               AS TEN_SAN_PHAM,
-               s.DONVITINH                           AS DON_VI,
-               l.NGAYHETHAN                          AS NGAY_HET_HAN,
+        SELECT l.MALO, s.MASP, s.TENSP, s.DONVITINH,
+               l.NGAYHETHAN,
                ROUND(l.NGAYHETHAN - SYSDATE)         AS SO_NGAY_CON_LAI,
                l.SOLUONGTON                          AS TON_KHO,
                CASE
@@ -750,10 +850,10 @@ BEGIN
                    ELSE N'Chú ý'
                END                                   AS MUC_DO_CANH_BAO,
                ncc.TENNCC                            AS NHA_CUNG_CAP
-        FROM   LO_HANG       l
-        JOIN   SAN_PHAM      s   ON l.MASP  = s.MASP
-        JOIN   PHIEU_NHAP    pn  ON l.MAPN  = pn.MAPN
-        JOIN   NHA_CUNG_CAP  ncc ON pn.MANCC = ncc.MANCC
+        FROM   LO_HANG l
+        JOIN   SAN_PHAM     s   ON l.MASP  = s.MASP
+        JOIN   PHIEU_NHAP   pn  ON l.MAPN  = pn.MAPN
+        JOIN   NHA_CUNG_CAP ncc ON pn.MANCC = ncc.MANCC
         WHERE  l.SOLUONGTON > 0
           AND  l.NGAYHETHAN > SYSDATE
           AND  (l.NGAYHETHAN - SYSDATE) <= p_so_ngay
@@ -783,20 +883,7 @@ END SP_THONG_KE_DOANH_THU_THANG;
 
 
 -- ============================================================
--- PHẦN IV: SEQUENCES
--- ============================================================
-
-CREATE SEQUENCE SEQ_HOA_DON    START WITH 1 INCREMENT BY 1 NOCACHE NOCYCLE;
-CREATE SEQUENCE SEQ_LO_HANG    START WITH 1 INCREMENT BY 1 CACHE 20 NOCYCLE;
-CREATE SEQUENCE SEQ_PHIEU_NHAP START WITH 1 INCREMENT BY 1 CACHE 10 NOCYCLE;
-CREATE SEQUENCE SEQ_PHIEU_XUAT START WITH 1 INCREMENT BY 1 CACHE 10 NOCYCLE;
-CREATE SEQUENCE SEQ_THANH_TOAN START WITH 1 INCREMENT BY 1 NOCACHE NOCYCLE;
-CREATE SEQUENCE SEQ_LICH_HEN   START WITH 1 INCREMENT BY 1 CACHE 10 NOCYCLE;
-CREATE SEQUENCE SEQ_AUDIT      START WITH 1 INCREMENT BY 1 CACHE 50 NOCYCLE;
-
-
--- ============================================================
--- PHẦN V: INDEXES
+-- PHẦN VI: INDEXES
 -- ============================================================
 
 CREATE INDEX IDX_CTHD_MAHD  ON CT_HOA_DON (MAHD);
@@ -809,6 +896,10 @@ CREATE INDEX IDX_HD_MAKH    ON HOA_DON (MAKH);
 CREATE INDEX IDX_HD_MANS    ON HOA_DON (MANS);
 CREATE INDEX IDX_HD_TRANG   ON HOA_DON (TRANGTHAI);
 CREATE INDEX IDX_HD_NGAY    ON HOA_DON (NGAYLAP);
+-- [v3-2] Index trên IS_DELETED để Soft Delete query nhanh
+CREATE INDEX IDX_HD_DEL     ON HOA_DON (IS_DELETED);
+CREATE INDEX IDX_KH_DEL     ON KHACH_HANG (IS_DELETED);
+CREATE INDEX IDX_NS_DEL     ON NHAN_SU (IS_DELETED);
 CREATE INDEX IDX_TT_MAHD    ON THANH_TOAN (MAHD);
 CREATE INDEX IDX_TT_NGAY    ON THANH_TOAN (NGAYTHANHTOAN);
 CREATE INDEX IDX_TT_TRANG   ON THANH_TOAN (TRANGTHAI);
@@ -829,5 +920,29 @@ CREATE INDEX IDX_NS_MATK    ON NHAN_SU (MATK);
 
 
 -- ============================================================
--- END OF V1__Initial_Setup.sql
+-- GHI CHÚ CẤU HÌNH SPRING BOOT / FLYWAY                    --
+-- ============================================================
+-- 1. Flyway + Oracle PL/SQL — thêm vào application.properties:
+--      spring.flyway.oracle-sqlplus=true
+--    (Flyway Pro/Teams feature — nếu dùng Community thì:
+--      spring.flyway.mixed=true
+--      spring.flyway.sqlMigrationSuffixes=.sql
+--      Và tách file thành V1a__ddl.sql + V1b__plsql.sql)
+--
+-- 2. Entity Spring Boot với Sequence trigger:
+--    Vì trigger tự sinh ID, Entity không cần @GeneratedValue.
+--    Để lấy ID đã sinh sau INSERT, dùng:
+--      @PrePersist public void prePersist() { this.mahd = null; }
+--    Hoặc trong Repository dùng native query RETURNING INTO.
+--
+-- 3. Soft Delete — Spring Boot side:
+--    Thêm @Where(clause = "IS_DELETED = 0") vào Entity:
+--      @Entity @Where(clause = "IS_DELETED = 0")
+--      public class KhachHang { ... }
+--    Khi xóa, gọi service: khachHang.setIsDeleted(1); repository.save(khachHang);
+--    KHÔNG dùng repository.delete() vì trigger sẽ chặn.
+-- ============================================================
+
+-- ============================================================
+-- END OF V1__Initial_Setup.sql  (v3)
 -- ============================================================
