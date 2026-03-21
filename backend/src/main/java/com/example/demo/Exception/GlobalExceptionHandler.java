@@ -1,16 +1,20 @@
-package com.example.demo.Exception; // Đặt đúng thư mục Exception nhé
+package com.example.demo.Exception; 
 
-import lombok.extern.slf4j.Slf4j; // Thêm dòng này (nếu cài Lombok)
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+
 import java.util.HashMap;
 import java.util.Map;
 
-@Slf4j // Đánh dấu để dùng log
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    // Khai báo biến log thủ công ở đây
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleExceptions(Exception ex) {
@@ -23,8 +27,9 @@ public class GlobalExceptionHandler {
         String errorMessage = rootCause.getMessage();
         Map<String, String> response = new HashMap<>();
 
-        // 1. Xử lý lỗi từ Trigger Oracle
+        // 1. Kiểm tra xem có phải lỗi do Trigger Oracle ném ra
         if (errorMessage != null && errorMessage.contains("ORA-20")) {
+            
             String cleanMessage = errorMessage;
             
             int startIndex = cleanMessage.indexOf("ORA-20");
@@ -45,16 +50,15 @@ public class GlobalExceptionHandler {
             response.put("error", cleanMessage.trim());
             
             // Ghi log nhẹ nhàng ở mức WARN (Cảnh báo nghiệp vụ)
-            log.warn("Nghiệp vụ bị chặn: {}", cleanMessage.trim()); 
+            log.warn("Nghiệp vụ bị chặn từ DB: {}", cleanMessage.trim()); 
             
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
 
-        // 2. Lỗi hệ thống thực sự (NullPointer, đứt cáp mạng,...)
-        // Dùng log.error thay cho ex.printStackTrace()
+        // 2. Lỗi hệ thống thực sự (Ví dụ: NullPointerException)
         log.error("Lỗi hệ thống nghiêm trọng: ", ex); 
         
-        response.put("error", "Hệ thống đang bảo trì hoặc gặp sự cố. Vui lòng liên hệ Admin!");
+        response.put("error", "Lỗi máy chủ nội bộ. Vui lòng liên hệ Admin!");
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
 }
