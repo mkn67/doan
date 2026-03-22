@@ -1,4 +1,4 @@
-version: '3.8'
+name: da-project # Tên project cho xịn xò, quản lý container dễ hơn
 
 services:
   # 1. DATABASE
@@ -6,9 +6,10 @@ services:
     image: gvenzl/oracle-xe:21-slim
     container_name: oracle_db
     ports:
-      - "1521:1521"
+      - "1522:1521"
     environment:
       ORACLE_PASSWORD: oracle
+      TZ: Asia/Ho_Chi_Minh # Ép múi giờ VN để đọc log cho chuẩn
     volumes:
       - oracle-data:/opt/oracle/oradata
       - ./sql-init:/container-entrypoint-initdb.d # Nạp SQL tự động
@@ -30,9 +31,10 @@ services:
       SPRING_DATASOURCE_URL: jdbc:oracle:thin:@oracle-db:1521/XE
       SPRING_DATASOURCE_USERNAME: system
       SPRING_DATASOURCE_PASSWORD: oracle
+      TZ: Asia/Ho_Chi_Minh # Múi giờ VN cho Backend
     depends_on:
       oracle-db:
-        condition: service_healthy
+        condition: service_healthy # Chờ DB khỏe hẳn mới chạy Backend
     networks:
       - nhom15-network
 
