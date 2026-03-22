@@ -1,23 +1,28 @@
+version: '3.8'
+
 services:
-  # DATABASE - Dùng bản gvenzl/oracle-xe:21-slim cực nhẹ
+  # 1. DATABASE
   oracle-db:
     image: gvenzl/oracle-xe:21-slim
-    container_name: oracle_21c_slim
+    container_name: oracle_db
     ports:
       - "1521:1521"
     environment:
       ORACLE_PASSWORD: oracle
     volumes:
       - oracle-data:/opt/oracle/oradata
+      - ./sql-init:/container-entrypoint-initdb.d # Nạp SQL tự động
     networks:
       - nhom15-network
-    restart: always
+    healthcheck:
+      test: ["CMD", "healthcheck.sh"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
 
-  # BACKEND - Spring Boot
+  # 2. BACKEND
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    build: ./backend
     container_name: spring_backend
     ports:
       - "8080:8080"
@@ -25,18 +30,15 @@ services:
       SPRING_DATASOURCE_URL: jdbc:oracle:thin:@oracle-db:1521/XE
       SPRING_DATASOURCE_USERNAME: system
       SPRING_DATASOURCE_PASSWORD: oracle
-      SPRING_PROFILES_ACTIVE: docker
     depends_on:
-      - oracle-db
+      oracle-db:
+        condition: service_healthy
     networks:
       - nhom15-network
-    restart: always
 
-  # FRONTEND - React
+  # 3. FRONTEND
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
+    build: ./frontend
     container_name: react_frontend
     ports:
       - "3000:80"
@@ -44,7 +46,6 @@ services:
       - backend
     networks:
       - nhom15-network
-    restart: always
 
 networks:
   nhom15-network:

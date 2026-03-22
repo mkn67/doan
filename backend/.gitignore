@@ -13,12 +13,11 @@ target/
 .springBeans
 .sts4-cache
 
-# IntelliJ IDEA
-.idea/
+### IntelliJ IDEA ###
+.idea
 *.iws
 *.iml
 *.ipr
-out/
 
 ### NetBeans ###
 /nbproject/private/
@@ -32,9 +31,3 @@ build/
 
 ### VS Code ###
 .vscode/
-
-# Node.js
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
