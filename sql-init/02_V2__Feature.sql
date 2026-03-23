@@ -438,3 +438,17 @@ CREATE INDEX IDX_KM_NGAY  ON KHUYEN_MAI (NGAY_BD, NGAY_KT);
 -- ============================================================
 -- END OF V2__Feature.sql
 -- ============================================================
+-- [G4] Cập nhật LICH_HEN dùng JSON cho Triệu chứng
+ALTER TABLE LICH_HEN MODIFY (
+    TRIEU_CHUNG JSON
+);
+
+-- [G2] Thêm Metadata cho DANH_GIA
+ALTER TABLE DANH_GIA ADD (
+    PHAN_HOI_CHI_TIET JSON
+);
+
+-- [G9] Cấu hình điều kiện KHUYEN_MAI
+ALTER TABLE KHUYEN_MAI ADD (
+    DIEU_KIEN_JSON JSON
+);
