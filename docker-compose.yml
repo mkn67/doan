@@ -1,4 +1,4 @@
-name: da-project # Tên project cho xịn xò, quản lý container dễ hơn
+name: da-project 
 
 services:
   # 1. DATABASE
@@ -9,10 +9,10 @@ services:
       - "1522:1521"
     environment:
       ORACLE_PASSWORD: oracle
-      TZ: Asia/Ho_Chi_Minh # Ép múi giờ VN để đọc log cho chuẩn
+      TZ: Asia/Ho_Chi_Minh 
     volumes:
       - oracle-data:/opt/oracle/oradata
-      - ./sql-init:/container-entrypoint-initdb.d # Nạp SQL tự động
+      - ./sql-init:/container-entrypoint-initdb.d 
     networks:
       - nhom15-network
     healthcheck:
@@ -20,7 +20,6 @@ services:
       interval: 15s
       timeout: 10s
       retries: 10
-
   # 2. BACKEND
   backend:
     build: ./backend
@@ -31,10 +30,10 @@ services:
       SPRING_DATASOURCE_URL: jdbc:oracle:thin:@oracle-db:1521/XE
       SPRING_DATASOURCE_USERNAME: system
       SPRING_DATASOURCE_PASSWORD: oracle
-      TZ: Asia/Ho_Chi_Minh # Múi giờ VN cho Backend
+      TZ: Asia/Ho_Chi_Minh 
     depends_on:
       oracle-db:
-        condition: service_healthy # Chờ DB khỏe hẳn mới chạy Backend
+        condition: service_healthy 
     networks:
       - nhom15-network
 
