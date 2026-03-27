@@ -7,7 +7,6 @@
 --   [+] CHI_TIET_KY_THUAT   — chuyên môn/chứng chỉ Bác sĩ & KTV
 --   [+] XU_LY_KINH          — luồng cắt kính theo đơn
 --   [+] DANH_GIA            — rating + feedback sau khám
---   [+] GIO_HANG / CT_GIO_HANG — e-commerce
 --   [+] GOI_KHAM            — gói dịch vụ booking
 --   [+] KHUYEN_MAI / KH_KHUYEN_MAI — loyalty & voucher
 --   [+] GIAO_DICH_NCC       — giao dịch nhà cung cấp
