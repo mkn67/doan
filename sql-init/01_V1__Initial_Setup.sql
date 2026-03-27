@@ -502,25 +502,50 @@ END;
 
 -- 3. Lịch Hẹn — kiểm tra bác sĩ có lịch làm việc + không trùng slot
 CREATE OR REPLACE TRIGGER TRG_VALIDATE_LICH_HEN
-BEFORE INSERT OR UPDATE ON LICH_HEN
-FOR EACH ROW
-DECLARE
-    v_ca_lam NUMBER;
-    v_ton_kh NUMBER;
-    v_ton_ns NUMBER;
-BEGIN
-    SELECT COUNT(*) INTO v_ton_kh FROM KHACH_HANG WHERE MAKH = :NEW.MAKH AND IS_DELETED = 0;
-    IF v_ton_kh = 0 THEN RAISE_APPLICATION_ERROR(-20032, 'LỖI: Khách hàng không tồn tại!'); END IF;
+FOR INSERT OR UPDATE ON LICH_HEN
+COMPOUND TRIGGER
+    TYPE t_mahd_list IS TABLE OF VARCHAR2(10);
+    v_mahd_arr t_mahd_list := t_mahd_list();
 
-    SELECT COUNT(*) INTO v_ton_ns FROM NHAN_SU WHERE MANS = :NEW.MANS AND IS_DELETED = 0;
-    IF v_ton_ns = 0 THEN RAISE_APPLICATION_ERROR(-20033, 'LỖI: Bác sĩ không tồn tại hoặc đã nghỉ!'); END IF;
+    BEFORE EACH ROW IS
+        v_ca_lam NUMBER;
+        v_ton_kh NUMBER;
+        v_ton_ns NUMBER;
+    BEGIN
+        SELECT COUNT(*) INTO v_ton_kh FROM KHACH_HANG WHERE MAKH = :NEW.MAKH AND IS_DELETED = 0;
+        IF v_ton_kh = 0 THEN RAISE_APPLICATION_ERROR(-20032, 'LỖI: Khách hàng không tồn tại!'); END IF;
 
-    SELECT COUNT(*) INTO v_ca_lam FROM LICH_LAM_VIEC
-    WHERE MANS = :NEW.MANS AND NGAY_LAM = TRUNC(:NEW.NGAYHEN) AND IS_NGHI = 0;
-    IF v_ca_lam = 0 THEN RAISE_APPLICATION_ERROR(-20030, 'LỖI: Bác sĩ không có lịch làm việc ngày này!'); END IF;
+        SELECT COUNT(*) INTO v_ton_ns FROM NHAN_SU WHERE MANS = :NEW.MANS AND IS_DELETED = 0;
+        IF v_ton_ns = 0 THEN RAISE_APPLICATION_ERROR(-20033, 'LỖI: Bác sĩ không tồn tại hoặc đã nghỉ!'); END IF;
 
-    -- Đoạn check trùng lịch (v_trung) đã được gỡ bỏ để tránh ORA-04091.
-END;
+        SELECT COUNT(*) INTO v_ca_lam FROM LICH_LAM_VIEC
+        WHERE MANS = :NEW.MANS AND NGAY_LAM = TRUNC(:NEW.NGAYHEN) AND IS_NGHI = 0;
+        IF v_ca_lam = 0 THEN RAISE_APPLICATION_ERROR(-20030, 'LỖI: Bác sĩ không có lịch làm việc ngày này!'); END IF;
+
+        IF :NEW.GIO_HEN IS NOT NULL THEN
+            -- Lưu mã lịch hẹn để sau kiểm tra trùng (xử lý sau)
+            v_mahd_arr.EXTEND;
+            v_mahd_arr(v_mahd_arr.LAST) := :NEW.MALH;
+        END IF;
+    END BEFORE EACH ROW;
+
+    AFTER STATEMENT IS
+        v_trung NUMBER;
+    BEGIN
+        FOR i IN 1 .. v_mahd_arr.COUNT LOOP
+            -- Kiểm tra trùng slot
+            SELECT COUNT(*) INTO v_trung
+            FROM LICH_HEN
+            WHERE MANS = (SELECT MANS FROM LICH_HEN WHERE MALH = v_mahd_arr(i))
+              AND GIO_HEN = (SELECT GIO_HEN FROM LICH_HEN WHERE MALH = v_mahd_arr(i))
+              AND TRANGTHAI != N'Đã hủy'
+              AND MALH != v_mahd_arr(i);
+            IF v_trung > 0 THEN
+                RAISE_APPLICATION_ERROR(-20031, 'LỖI: Bác sĩ đã có lịch slot này!');
+            END IF;
+        END LOOP;
+    END AFTER STATEMENT;
+END TRG_VALIDATE_LICH_HEN;
 /
 -- 4. Hồ Sơ Thị Lực — chỉ Bác sĩ hoặc Kỹ thuật viên mắt kính
 CREATE OR REPLACE TRIGGER TRG_VALIDATE_HO_SO
@@ -653,24 +678,31 @@ COMPOUND TRIGGER
     END AFTER EACH ROW;
 
     AFTER STATEMENT IS
-        v_tong_hd NUMBER; 
-        v_da_tt NUMBER;
+        v_tong_hd NUMBER;
+        v_da_tt   NUMBER;
+        v_makh    VARCHAR2(10);
     BEGIN
         FOR i IN 1 .. v_mahd_arr.COUNT LOOP
-            SELECT NVL(SUM(SOTIEN),0) INTO v_da_tt 
+            SELECT NVL(SUM(SOTIEN),0) INTO v_da_tt
             FROM THANH_TOAN WHERE MAHD = v_mahd_arr(i) AND TRANGTHAI = N'Thành công';
-            
-            SELECT TONGTIEN INTO v_tong_hd 
+
+            SELECT TONGTIEN, MAKH INTO v_tong_hd, v_makh
             FROM HOA_DON WHERE MAHD = v_mahd_arr(i);
-            
+
             IF v_da_tt >= v_tong_hd THEN
                 UPDATE HOA_DON SET TRANGTHAI = N'Đã thanh toán' WHERE MAHD = v_mahd_arr(i);
+                -- Cộng điểm thưởng (1 điểm/100k)
+                UPDATE KHACH_HANG
+                SET DIEMTICHLUY = NVL(DIEMTICHLUY,0) + FLOOR(v_tong_hd / 100000)
+                WHERE MAKH = v_makh;
+                -- Ghi lịch sử điểm
+                INSERT INTO LICH_SU_DIEM(MALSD, MAKH, LOAI, SO_DIEM, LY_DO, MAHD)
+                VALUES (NULL, v_makh, N'Cong', FLOOR(v_tong_hd / 100000), N'Tích điểm từ hóa đơn', v_mahd_arr(i));
             END IF;
         END LOOP;
     END AFTER STATEMENT;
 END TRG_THANH_TOAN;
 /
-
 -- 10. Audit Hồ Sơ — ghi log mọi thay đổi kết luận
 CREATE OR REPLACE TRIGGER TRG_AUDIT_HO_SO
 AFTER UPDATE OF KETLUAN ON HO_SO_THI_LUC
@@ -753,6 +785,14 @@ COMPOUND TRIGGER
 END TRG_GEN_MAHC;
 /
 
+CREATE OR REPLACE TRIGGER TRG_AUTO_GD_NCC
+AFTER INSERT ON PHIEU_NHAP
+FOR EACH ROW
+BEGIN
+    INSERT INTO GIAO_DICH_NCC(MAGD, MANCC, LOAI, SO_TIEN, MAPN, GHI_CHU)
+    VALUES (NULL, :NEW.MANCC, N'Nhập hàng', :NEW.TONGTIEN, :NEW.MAPN, N'Nhập hàng từ phiếu ' || :NEW.MAPN);
+END;
+/
 
 -- ============================================================
 -- PHẦN V: STORED PROCEDURES
