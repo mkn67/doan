@@ -1,0 +1,4 @@
+MAXL,MADON,THONG_SO_KINH,TRANG_THAI,NGAY_BAT_DAU,NGAY_HOAN_THANH,MANS_KY_THUAT,GHI_CHU
+XL000001,KD_HS000002,{"mat_phai":{"sph":-2.50,"cyl":-0.25,"ax":90},"mat_trai":{"sph":-2.75,"cyl":-0.25,"ax":85},"pd":63.5},Hoan thanh,2026-03-25 14:00:00,2026-03-25 16:30:00,NS010,Kinh CR-39 phu trang tia UV
+XL000002,KD_HS000005,{"mat_phai":{"sph":-3.00,"cyl":-0.50,"ax":180},"mat_trai":{"sph":-3.25,"cyl":-0.50,"ax":175},"pd":61.0},Hoan thanh,2026-03-16 09:00:00,2026-03-16 11:00:00,NS011,Kinh chong anh sang xanh HMC
+XL000003,KD_HS000001,{"mat_phai":{"sph":-1.00},"mat_trai":{"sph":-1.25},"pd":62.0},Dang cat,2026-03-31 08:00:00,NULL,NS010,NULL

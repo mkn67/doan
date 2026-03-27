@@ -1,39 +1,23 @@
 package com.kada.da.Entity;
+
+import jakarta.persistence.*;
+import lombok.*;
 import java.time.LocalDate;
 
-import org.hibernate.annotations.SQLRestriction;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToOne;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 @Entity
-@Table(name="NHAN_SU")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-@SQLRestriction("IS_DELETED = 0")
-public class Nhansu {
+@Table(name = "NHANSU")
+@Data @NoArgsConstructor @AllArgsConstructor @Builder 
+public class NhanSu {
     @Id
     @Column(name = "MANS", length = 10)
     private String maNs;
 
     @OneToOne
-    @JoinColumn(name = "MATK", referencedColumnName = "MATK", unique = true)
+    @JoinColumn(name = "MATK", unique = true)
     private TaiKhoan taiKhoan;
 
     @ManyToOne
-    @JoinColumn(name = "MACV", referencedColumnName = "MACV")
+    @JoinColumn(name = "MACV")
     private ChucVu chucVu;
 
     @Column(name = "CCCD", length = 12)
@@ -59,14 +43,4 @@ public class Nhansu {
 
     @Column(name = "IS_DELETED")
     private Integer isDeleted;
-
-    @PrePersist
-    public void prePersist() {
-        if (this.maNs == null || this.maNs.isEmpty()) {
-            this.maNs = null;
-        }
-        if (this.isDeleted == null) {
-            this.isDeleted = 0;
-        }
-    }
 }
