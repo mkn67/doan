@@ -1,64 +1,12 @@
 -- ============================================================
--- FILE   : V2Feature.sql
+-- FILE   : V2_Feature.sql
 -- PROJECT: Hệ Thống Quản Lý Dịch Vụ Thị Lực & Thiết Bị Y Tế
--- VERSION: Bổ sung chức năng thiếu so với đặc tả
+-- VERSION: Bổ sung chức năng (đánh giá, hàng chờ, dịch vụ khám, tồn kho tối thiểu, điểm thưởng, khuyến mãi)
 -- ============================================================
--- Danh sách bổ sung:
---   [G1] GIO_HANG + CT_GIO_HANG          ← E-commerce giỏ hàng
---   [G2] DANH_GIA                         ← Rating & Feedback bác sĩ
---   [G3] GOI_KHAM + LICH_HEN.MAGOI        ← Gói dịch vụ khám
---   [G4] LICH_HEN.TRIEU_CHUNG             ← Triệu chứng tiền khám
---   [G5] LICH_LAM_VIEC                    ← Lịch trống bác sĩ
---   [G6] HANG_CHO                         ← Queue walk-in vs online
---   [G7] DICH_VU_KHAM + CT_HOA_DON_DV    ← Phí dịch vụ khám
---   [G8] SAN_PHAM.TON_KHO_TOI_THIEU      ← Cảnh báo tồn kho min
---   [G9] LICH_SU_DIEM + KHUYEN_MAI        ← Loyalty & khuyến mãi
--- ============================================================
-
-
--- ============================================================
--- [G1] GIỎ HÀNG — E-COMMERCE
--- ============================================================
-
-CREATE TABLE GIO_HANG (
-    MAGH      VARCHAR2(10)  PRIMARY KEY,
-    MAKH      VARCHAR2(10)  NOT NULL,
-    NGAYTAO   TIMESTAMP     DEFAULT SYSTIMESTAMP,
-    TRANG_THAI NVARCHAR2(20) DEFAULT N'Đang dùng',  -- Đang dùng | Đã đặt | Đã hủy
-    CONSTRAINT FK_GH_KH FOREIGN KEY (MAKH) REFERENCES KHACH_HANG(MAKH)
-);
-
-CREATE TABLE CT_GIO_HANG (
-    MAGH      VARCHAR2(10),
-    MASP      VARCHAR2(10),
-    SOLUONG   NUMBER        NOT NULL,
-    GIA_TAI_THOI_DIEM NUMBER(15,2),  -- Snapshot giá lúc thêm vào giỏ
-    NGAY_THEM TIMESTAMP     DEFAULT SYSTIMESTAMP,
-    CONSTRAINT PK_CTGH    PRIMARY KEY (MAGH, MASP),
-    CONSTRAINT FK_CTGH_GH FOREIGN KEY (MAGH) REFERENCES GIO_HANG(MAGH),
-    CONSTRAINT FK_CTGH_SP FOREIGN KEY (MASP) REFERENCES SAN_PHAM(MASP)
-);
-
-CREATE SEQUENCE SEQ_GIO_HANG START WITH 1 INCREMENT BY 1 CACHE 20 NOCYCLE;
-
-CREATE OR REPLACE TRIGGER TRG_GEN_MAGH
-BEFORE INSERT ON GIO_HANG
-FOR EACH ROW
-BEGIN
-    IF :NEW.MAGH IS NULL THEN
-        :NEW.MAGH := 'GH' || LPAD(SEQ_GIO_HANG.NEXTVAL, 6, '0');
-    END IF;
-END;
-/
-
-CREATE INDEX IDX_GH_MAKH  ON GIO_HANG (MAKH);
-CREATE INDEX IDX_GH_TRANG ON GIO_HANG (TRANG_THAI);
-
 
 -- ============================================================
 -- [G2] ĐÁNH GIÁ & RATING BÁC SĨ
 -- ============================================================
-
 CREATE TABLE DANH_GIA (
     MADG      VARCHAR2(10)  PRIMARY KEY,
     MAHOSO    VARCHAR2(10)  NOT NULL,
@@ -68,7 +16,7 @@ CREATE TABLE DANH_GIA (
     NOI_DUNG  NVARCHAR2(500),
     NGAY_DG   TIMESTAMP     DEFAULT SYSTIMESTAMP,
     IS_HIDDEN NUMBER(1)     DEFAULT 0,
-    PHAN_HOI_CHI_TIET JSON,                     -- [G2] Metadata JSON
+    PHAN_HOI_CHI_TIET JSON,
     CONSTRAINT PK_DG       PRIMARY KEY (MADG),
     CONSTRAINT FK_DG_HS    FOREIGN KEY (MAHOSO) REFERENCES HO_SO_THI_LUC(MAHOSO),
     CONSTRAINT FK_DG_KH    FOREIGN KEY (MAKH)   REFERENCES KHACH_HANG(MAKH),
@@ -104,137 +52,11 @@ GROUP BY ns.MANS, ns.HOTEN, ns.CHUYENKHOA;
 CREATE INDEX IDX_DG_MANS  ON DANH_GIA (MANS);
 CREATE INDEX IDX_DG_MAKH  ON DANH_GIA (MAKH);
 
-
 -- ============================================================
--- [G3] GÓI DỊCH VỤ KHÁM
+-- [G6] HÀNG CHỜ — QUEUE MANAGEMENT (đã tạo trong V1, nhưng cần thêm SEQUENCE và TRIGGER nếu chưa có)
 -- ============================================================
-
-CREATE TABLE GOI_KHAM (
-    MAGOI     VARCHAR2(10)  PRIMARY KEY,
-    TENGOI    NVARCHAR2(100) NOT NULL,
-    MOTA      NVARCHAR2(500),
-    GIA       NUMBER(15,2)  NOT NULL,
-    THOILUONG NUMBER        DEFAULT 30,
-    IS_ACTIVE NUMBER(1)     DEFAULT 1
-);
-
--- Bảng CT_GOI_KHAM (chi tiết gói – phải có DICH_VU_KHAM đã tồn tại)
--- Tạm thời chưa tạo vì DICH_VU_KHAM sẽ tạo sau [G7], nhưng để đảm bảo thứ tự,
--- nên tạo sau khi có DICH_VU_KHAM. Nếu cần, có thể tạo riêng sau.
--- Ở đây giữ nguyên nhưng sẽ comment lại để tránh lỗi.
-
--- CREATE TABLE CT_GOI_KHAM (
---     MAGOI   VARCHAR2(10),
---     MADV    VARCHAR2(10),
---     SOLUONG NUMBER DEFAULT 1,
---     CONSTRAINT PK_CT_GOI_KHAM PRIMARY KEY (MAGOI, MADV),
---     CONSTRAINT FK_CT_GOI_MAGOI FOREIGN KEY (MAGOI) REFERENCES GOI_KHAM(MAGOI),
---     CONSTRAINT FK_CT_GOI_MADV FOREIGN KEY (MADV) REFERENCES DICH_VU_KHAM(MADV)
--- );
-
--- Thêm cột vào LICH_HEN
-ALTER TABLE LICH_HEN ADD (
-    MAGOI       VARCHAR2(10)  NULL,
-    TRIEU_CHUNG NVARCHAR2(500) NULL,
-    LOAI_LICH   NVARCHAR2(20) DEFAULT N'Online',
-    GIO_HEN     TIMESTAMP     NULL
-);
-
-ALTER TABLE LICH_HEN ADD CONSTRAINT FK_LH_GOI
-    FOREIGN KEY (MAGOI) REFERENCES GOI_KHAM(MAGOI);
-
--- Seed dữ liệu gói khám mẫu
-INSERT INTO GOI_KHAM (MAGOI, TENGOI, MOTA, GIA, THOILUONG) VALUES
-('GOI01', N'Khám tổng quát mắt',   N'Kiểm tra thị lực tổng quát, áp nhãn cầu',        150000, 30);
-INSERT INTO GOI_KHAM (MAGOI, TENGOI, MOTA, GIA, THOILUONG) VALUES
-('GOI02', N'Đo khúc xạ cắt kính',  N'Đo độ cận/viễn/loạn, tư vấn thông số kính',      200000, 45);
-INSERT INTO GOI_KHAM (MAGOI, TENGOI, MOTA, GIA, THOILUONG) VALUES
-('GOI03', N'Khám chuyên sâu',      N'Soi đáy mắt, đo OCT, chẩn đoán bệnh lý võng mạc',450000, 60);
-INSERT INTO GOI_KHAM (MAGOI, TENGOI, MOTA, GIA, THOILUONG) VALUES
-('GOI04', N'Tư vấn kính áp tròng', N'Tư vấn và thử kính áp tròng phù hợp',             100000, 30);
-COMMIT;
-
-
--- ============================================================
--- [G5] LỊCH LÀM VIỆC BÁC SĨ
--- ============================================================
-
-CREATE TABLE LICH_LAM_VIEC (
-    MALLV        VARCHAR2(10)  PRIMARY KEY,
-    MANS         VARCHAR2(10)  NOT NULL,
-    NGAY_LAM     DATE          NOT NULL,
-    GIO_BAT_DAU  NUMBER(4,2)   NOT NULL,
-    GIO_KET_THUC NUMBER(4,2)   NOT NULL,
-    IS_NGHI      NUMBER(1)     DEFAULT 0,
-    CONSTRAINT FK_LLV_NS   FOREIGN KEY (MANS) REFERENCES NHAN_SU(MANS),
-    CONSTRAINT CK_LLV_GIO  CHECK (GIO_KET_THUC > GIO_BAT_DAU)
-);
-
-CREATE SEQUENCE SEQ_LICH_LAM_VIEC START WITH 1 INCREMENT BY 1 CACHE 10 NOCYCLE;
-
-CREATE OR REPLACE TRIGGER TRG_GEN_MALLV
-BEFORE INSERT ON LICH_LAM_VIEC
-FOR EACH ROW
-BEGIN
-    IF :NEW.MALLV IS NULL THEN
-        :NEW.MALLV := 'LV' || LPAD(SEQ_LICH_LAM_VIEC.NEXTVAL, 6, '0');
-    END IF;
-END;
-/
-
-CREATE OR REPLACE VIEW V_SLOT_TRONG AS
-SELECT
-    llv.MANS,
-    ns.HOTEN     AS TEN_BAC_SI,
-    llv.NGAY_LAM,
-    llv.GIO_BAT_DAU,
-    llv.GIO_KET_THUC,
-    goi.THOILUONG,
-    CASE
-        WHEN EXISTS (
-            SELECT 1 FROM LICH_HEN lh
-            WHERE lh.MANS     = llv.MANS
-              AND lh.GIO_HEN  IS NOT NULL
-              AND TRUNC(lh.GIO_HEN) = llv.NGAY_LAM
-              AND EXTRACT(HOUR FROM lh.GIO_HEN) + EXTRACT(MINUTE FROM lh.GIO_HEN)/60
-                  BETWEEN llv.GIO_BAT_DAU AND llv.GIO_KET_THUC - NVL(goi.THOILUONG,30)/60.0
-              AND lh.TRANGTHAI != N'Đã hủy'
-        ) THEN N'Đã đặt'
-        ELSE N'Còn trống'
-    END AS TRANG_THAI_SLOT
-FROM LICH_LAM_VIEC llv
-JOIN NHAN_SU ns ON llv.MANS = ns.MANS
-LEFT JOIN LICH_HEN lh2 ON llv.MANS = lh2.MANS
-LEFT JOIN GOI_KHAM goi ON lh2.MAGOI = goi.MAGOI
-WHERE llv.IS_NGHI = 0
-  AND llv.NGAY_LAM >= TRUNC(SYSDATE)
-  AND ns.IS_DELETED = 0;
-
-CREATE INDEX IDX_LLV_MANS ON LICH_LAM_VIEC (MANS);
-CREATE INDEX IDX_LLV_NGAY ON LICH_LAM_VIEC (NGAY_LAM);
-
-
--- ============================================================
--- [G6] HÀNG CHỜ — QUEUE MANAGEMENT
--- ============================================================
-
-CREATE TABLE HANG_CHO (
-    MAHC         VARCHAR2(10)  PRIMARY KEY,
-    MAKH         VARCHAR2(10),
-    TEN_KHACH    NVARCHAR2(100),
-    SO_THU_TU    NUMBER        NOT NULL,
-    LOAI_KHACH   NVARCHAR2(20) DEFAULT N'Walk-in',
-    MALH         VARCHAR2(10)  NULL,
-    MANS_PHAN_CONG VARCHAR2(10) NULL,
-    TRANG_THAI   NVARCHAR2(30) DEFAULT N'Đang chờ',
-    GIO_DANG_KY  TIMESTAMP     DEFAULT SYSTIMESTAMP,
-    GIO_VAO_KHAM TIMESTAMP     NULL,
-    GHI_CHU      NVARCHAR2(255),
-    CONSTRAINT FK_HC_KH FOREIGN KEY (MAKH) REFERENCES KHACH_HANG(MAKH),
-    CONSTRAINT FK_HC_LH FOREIGN KEY (MALH) REFERENCES LICH_HEN(MALH),
-    CONSTRAINT FK_HC_NS FOREIGN KEY (MANS_PHAN_CONG) REFERENCES NHAN_SU(MANS)
-);
-
+-- Lưu ý: Bảng HANG_CHO đã tạo trong V1, chỉ bổ sung Sequence và Trigger nếu chưa có.
+-- Nếu đã có trong V1 thì có thể comment lại các lệnh dưới đây.
 CREATE SEQUENCE SEQ_HANG_CHO START WITH 1 INCREMENT BY 1 NOCACHE NOCYCLE;
 
 CREATE OR REPLACE TRIGGER TRG_GEN_MAHC
@@ -252,102 +74,18 @@ BEGIN
 END;
 /
 
-CREATE OR REPLACE VIEW V_HANG_CHO_HOM_NAY AS
-SELECT
-    hc.MAHC,
-    hc.SO_THU_TU,
-    hc.LOAI_KHACH,
-    NVL(kh.HOTEN, hc.TEN_KHACH) AS TEN_KHACH,
-    kh.SDT,
-    hc.MANS_PHAN_CONG,
-    ns.HOTEN  AS TEN_BAC_SI,
-    goi.TENGOI AS GOI_KHAM,
-    hc.TRANG_THAI,
-    hc.GIO_DANG_KY,
-    hc.GIO_VAO_KHAM,
-    ROUND((SYSTIMESTAMP - hc.GIO_DANG_KY) * 24 * 60) AS PHUT_CHO
-FROM HANG_CHO hc
-LEFT JOIN KHACH_HANG kh ON hc.MAKH  = kh.MAKH
-LEFT JOIN NHAN_SU    ns ON hc.MANS_PHAN_CONG = ns.MANS
-LEFT JOIN LICH_HEN   lh ON hc.MALH  = lh.MALH
-LEFT JOIN GOI_KHAM   goi ON lh.MAGOI = goi.MAGOI
-WHERE TRUNC(hc.GIO_DANG_KY) = TRUNC(SYSDATE)
-  AND hc.TRANG_THAI NOT IN (N'Hoàn thành', N'Bỏ về')
-ORDER BY
-    CASE WHEN hc.LOAI_KHACH = N'Walk-in' THEN 0 ELSE 1 END,
-    hc.SO_THU_TU;
-
-CREATE INDEX IDX_HC_NGAY  ON HANG_CHO (GIO_DANG_KY);
-CREATE INDEX IDX_HC_TRANG ON HANG_CHO (TRANG_THAI);
-CREATE INDEX IDX_HC_LOAI  ON HANG_CHO (LOAI_KHACH);
-
-
-CREATE TABLE DICH_VU_KHAM (
-    MADV   VARCHAR2(10)  PRIMARY KEY,
-    TENDV  NVARCHAR2(100) NOT NULL,
-    GIA    NUMBER(15,2)  NOT NULL,
-    MOTA   NVARCHAR2(255),
-    IS_ACTIVE NUMBER(1)  DEFAULT 1
-);
-
-CREATE TABLE CT_HOA_DON_DV (
-    MAHD    VARCHAR2(10),
-    MADV    VARCHAR2(10),
-    SOLUONG NUMBER        DEFAULT 1,
-    DONGIA  NUMBER(15,2),
-    CONSTRAINT PK_CTHD_DV    PRIMARY KEY (MAHD, MADV),
-    CONSTRAINT FK_CTHD_DV_HD FOREIGN KEY (MAHD) REFERENCES HOA_DON(MAHD),
-    CONSTRAINT FK_CTHD_DV_DV FOREIGN KEY (MADV) REFERENCES DICH_VU_KHAM(MADV)
-);
-
-CREATE OR REPLACE TRIGGER TRG_CT_HOA_DON_DV
-FOR INSERT OR UPDATE OR DELETE ON CT_HOA_DON_DV
-COMPOUND TRIGGER
-    AFTER EACH ROW IS
-    BEGIN
-        IF INSERTING THEN
-            UPDATE HOA_DON
-            SET    TONGTIEN = NVL(TONGTIEN, 0) + (:NEW.SOLUONG * :NEW.DONGIA)
-            WHERE  MAHD = :NEW.MAHD;
-        ELSIF UPDATING THEN
-            UPDATE HOA_DON
-            SET    TONGTIEN = NVL(TONGTIEN, 0)
-                              - (:OLD.SOLUONG * :OLD.DONGIA)
-                              + (:NEW.SOLUONG * :NEW.DONGIA)
-            WHERE  MAHD = :NEW.MAHD;
-        ELSIF DELETING THEN
-            UPDATE HOA_DON
-            SET    TONGTIEN = NVL(TONGTIEN, 0) - (:OLD.SOLUONG * :OLD.DONGIA)
-            WHERE  MAHD = :OLD.MAHD;
-        END IF;
-    END AFTER EACH ROW;
-END TRG_CT_HOA_DON_DV;
-/
-
--- Seed dịch vụ mẫu
+-- ============================================================
+-- [G7] DỊCH VỤ KHÁM & PHÍ DỊCH VỤ (đã tạo trong V1, chỉ bổ sung seed dữ liệu)
+-- ============================================================
 INSERT INTO DICH_VU_KHAM VALUES ('DV01', N'Phí khám tổng quát',   150000, N'Phí khám cơ bản', 1);
 INSERT INTO DICH_VU_KHAM VALUES ('DV02', N'Phí đo khúc xạ',       200000, N'Đo và tư vấn kính',1);
 INSERT INTO DICH_VU_KHAM VALUES ('DV03', N'Phí soi đáy mắt',      250000, N'Chụp ảnh đáy mắt', 1);
 INSERT INTO DICH_VU_KHAM VALUES ('DV04', N'Phí tư vấn kính áp tròng',100000,N'Thử và tư vấn',  1);
 COMMIT;
 
--- Tạo CT_GOI_KHAM sau khi có DICH_VU_KHAM
-CREATE TABLE CT_GOI_KHAM (
-    MAGOI   VARCHAR2(10),
-    MADV    VARCHAR2(10),
-    SOLUONG NUMBER DEFAULT 1,
-    CONSTRAINT PK_CT_GOI_KHAM PRIMARY KEY (MAGOI, MADV),
-    CONSTRAINT FK_CT_GOI_MAGOI FOREIGN KEY (MAGOI) REFERENCES GOI_KHAM(MAGOI),
-    CONSTRAINT FK_CT_GOI_MADV FOREIGN KEY (MADV) REFERENCES DICH_VU_KHAM(MADV)
-);
-
-CREATE INDEX IDX_CTHD_DV_MAHD ON CT_HOA_DON_DV (MAHD);
-
-
 -- ============================================================
 -- [G8] TỒN KHO TỐI THIỂU — CẢNH BÁO THỦ KHO
 -- ============================================================
-
 ALTER TABLE SAN_PHAM ADD (
     TON_KHO_TOI_THIEU NUMBER DEFAULT 0,
     DON_VI_TINH_KHO   NVARCHAR2(20) NULL
@@ -375,11 +113,9 @@ HAVING NVL(SUM(lh.SOLUONGTON), 0) <= sp.TON_KHO_TOI_THIEU * 2
     OR NVL(SUM(lh.SOLUONGTON), 0) = 0
 ORDER BY MUC_DO, TONG_TON_HIEN_TAI;
 
-
 -- ============================================================
 -- [G9] ĐIỂM TÍCH LŨY — LỊCH SỬ & KHUYẾN MÃI
 -- ============================================================
-
 CREATE TABLE LICH_SU_DIEM (
     MALSD     VARCHAR2(10)  PRIMARY KEY,
     MAKH      VARCHAR2(10)  NOT NULL,
@@ -416,7 +152,7 @@ CREATE TABLE KHUYEN_MAI (
     SO_LUONG    NUMBER        NULL,
     DA_DUNG     NUMBER        DEFAULT 0,
     DIEU_KIEN   NUMBER(15,2)  DEFAULT 0,
-    DIEU_KIEN_JSON JSON,                   -- [G9] Điều kiện phức tạp dạng JSON
+    DIEU_KIEN_JSON JSON,
     IS_ACTIVE   NUMBER(1)     DEFAULT 1,
     CONSTRAINT CK_KM_NGAY CHECK (NGAY_KT >= NGAY_BD)
 );
@@ -438,5 +174,5 @@ CREATE INDEX IDX_KM_CODE  ON KHUYEN_MAI (MA_CODE);
 CREATE INDEX IDX_KM_NGAY  ON KHUYEN_MAI (NGAY_BD, NGAY_KT);
 
 -- ============================================================
--- END OF V2__Feature.sql
+-- END OF V2_Feature.sql
 -- ============================================================
