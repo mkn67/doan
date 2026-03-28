@@ -1,0 +1,12 @@
+STT,Tên Stored Procedure,Trạng thái,Nằm tại file Java,Ghi chú
+1,SP_THONG_KE_DOANH_THU_THANG,✅ Xong,ReportController.java,Dùng REF_CURSOR để lấy báo cáo.
+2,SP_LUU_HOSO_KHAM_BENH,✅ Xong,ExaminationController.java,SP phức tạp nhất (IN OUT/OUT).
+3,SP_CHOT_THANH_TOAN_HOA_DON,🟦 Chờ,,Thanh toán & tự sinh phiếu xuất.
+4,SP_TAO_HOA_DON,🟦 Chờ,,Khó: Cần xử lý CLOB JSON từ Java.
+5,SP_HUY_HOA_DON,🟦 Chờ,,
+6,SP_DAT_LICH_HEN,🟦 Chờ,,
+7,SP_HUY_LICH_HEN,🟦 Chờ,,
+8,SP_NHAP_KHO_LO_HANG,🟦 Chờ,,
+9,SP_CANH_BAO_HANG_HET_HAN,🟦 Chờ,,Dùng REF_CURSOR (Giống SP Doanh thu).
+10,SP_TAO_LICH_LAM_VIEC,🟦 Chờ,,
+11,SP_GIAO_XU_LY_KINH,🟦 Chờ,,

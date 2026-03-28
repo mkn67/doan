@@ -25,7 +25,7 @@ services:
     build: ./backend
     container_name: spring_backend
     ports:
-      - "8080:8080"
+      - "8081:8081"
     environment:
       SPRING_DATASOURCE_URL: jdbc:oracle:thin:@oracle-db:1521/XE
       SPRING_DATASOURCE_USERNAME: system

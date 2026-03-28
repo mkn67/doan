@@ -11,7 +11,6 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<?> handleDatabaseExceptions(DataIntegrityViolationException ex) {
         String errorMsg = "Lỗi Cơ sở dữ liệu: Dữ liệu đã tồn tại hoặc vi phạm ràng buộc!";
-        // Bạn có thể bóc tách ex.getMessage() để lấy mã lỗi ORA cụ thể nếu muốn
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorMsg);
     }
     @ExceptionHandler(RuntimeException.class)
