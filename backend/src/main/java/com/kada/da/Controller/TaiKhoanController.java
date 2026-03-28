@@ -12,8 +12,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.kada.da.Dto.TaiKhoanRequestDTO;
-import com.kada.da.Entity.Nhom;
 import com.kada.da.Entity.TaiKhoan;
+import com.kada.da.Mapper.TaiKhoanMapper;
 import com.kada.da.Service.TaiKhoanService;
 
 import lombok.RequiredArgsConstructor;
@@ -22,47 +22,33 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/api/auth") 
 @RequiredArgsConstructor
 public class TaiKhoanController {
-
     private final TaiKhoanService taiKhoanService;
-
-    // API Đăng ký tài khoản mới: POST http://localhost:8080/api/auth/register
+    /**
+     * API Đăng ký tài khoản mới
+     * URL: POST http://localhost:8080/api/auth/register
+     */
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody TaiKhoanRequestDTO request) {
-        try {
-            // Bước 1: Chuyển đổi DTO thành Entity để lưu xuống DB
-            TaiKhoan taiKhoan = new TaiKhoan();
-            taiKhoan.setMaTk(request.getMaTk());
-            taiKhoan.setUsername(request.getUsername());
-            taiKhoan.setPassword(request.getPassword()); // Tạm thời để plain text, sau này sẽ băm (hash) mật khẩu
-            
-            // Nếu có truyền mã nhóm, ta tạo một Nhom giả để gán vào (Hibernate sẽ tự map khóa ngoại)
-            if (request.getMaNhom() != null && !request.getMaNhom().isEmpty()) {
-                Nhom nhom = new Nhom();
-                nhom.setMaNhom(request.getMaNhom());
-                taiKhoan.setNhom(nhom);
-            }
-
-            // Bước 2: Gọi Service xử lý lưu
-            TaiKhoan newTaiKhoan = taiKhoanService.createTaiKhoan(taiKhoan);
-            
-            // Trả về mã 200 OK kèm thông tin tài khoản vừa tạo
-            return ResponseEntity.ok(newTaiKhoan);
-
-        } catch (RuntimeException e) {
-            // Nếu có lỗi (như trùng username), trả về mã 400 Bad Request kèm câu thông báo
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+        // Bước 1: Dùng Mapper chuyển DTO thành Entity
+        TaiKhoan taiKhoan = TaiKhoanMapper.toEntity(request);
+        // Bước 2: Gọi Service xử lý lưu
+        TaiKhoan newTaiKhoan = taiKhoanService.createTaiKhoan(taiKhoan);  
+        // Bước 3: Trả về mã 201 Created kèm thông tin tài khoản
+        return ResponseEntity.status(HttpStatus.CREATED).body(newTaiKhoan);
     }
-
-    // API Lấy thông tin tài khoản: GET http://localhost:8080/api/auth/{username}
+    /**
+     * API Lấy thông tin tài khoản theo Username
+     * URL: GET http://localhost:8080/api/auth/{username}
+     */
     @GetMapping("/{username}")
     public ResponseEntity<?> getUserByUsername(@PathVariable String username) {
         Optional<TaiKhoan> taiKhoan = taiKhoanService.findByUsername(username);
-        
+        // Dùng if-else để Java không bị nhầm lẫn kiểu dữ liệu (TaiKhoan vs String)
         if (taiKhoan.isPresent()) {
             return ResponseEntity.ok(taiKhoan.get());
         } else {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Không tìm thấy người dùng!");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                                 .body("Không tìm thấy người dùng: " + username);
         }
     }
 }

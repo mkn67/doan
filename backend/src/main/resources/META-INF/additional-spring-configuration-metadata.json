@@ -1,0 +1,14 @@
+{
+  "properties": [
+    {
+      "name": "app.jwt.secret",
+      "type": "java.lang.String",
+      "description": "Chuỗi bí mật để mã hóa JWT."
+    },
+    {
+      "name": "app.jwt.expiration",
+      "type": "java.lang.Long",
+      "description": "Thời gian hết hạn của Token (ms)."
+    }
+  ]
+}
