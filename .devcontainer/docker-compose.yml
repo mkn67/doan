@@ -20,12 +20,17 @@ services:
       interval: 15s
       timeout: 10s
       retries: 10
+
   # 2. BACKEND
   backend:
-    build: ./backend
+    build:
+      context: ../backend  # CHÚ Ý: Đã thụt lề vào trong chữ build, và để '..' để trỏ ra thư mục 'da'
+      dockerfile: ../.devcontainer/backend/Dockerfile
     container_name: spring_backend
     ports:
       - "8081:8081"
+    volumes:
+      - ..:/workspaces/da
     environment:
       SPRING_DATASOURCE_URL: jdbc:oracle:thin:@oracle-db:1521/XE
       SPRING_DATASOURCE_USERNAME: system
@@ -39,7 +44,9 @@ services:
 
   # 3. FRONTEND
   frontend:
-    build: ./frontend
+    build:
+      context: ../frontend  # CHÚ Ý: Đã thụt lề vào trong chữ build
+      dockerfile: ../.devcontainer/frontend/Dockerfile
     container_name: react_frontend
     ports:
       - "3000:80"
