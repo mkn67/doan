@@ -1,12 +1,9 @@
-FROM node:20-alpine as build
-WORKDIR /app
-COPY package*.json ./
-RUN npm install
-COPY . .
-RUN npm run build
+FROM node:20-alpine
 
-FROM nginx:stable-alpine
-# Vite mặc định xuất ra thư mục dist
-COPY --from=build /app/dist /usr/share/nginx/html
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+# Cài thêm bash và git cho frontend
+RUN apk update && apk add --no-cache bash git
+
+WORKDIR /workspaces
+
+# Tương tự backend, ngủ yên chờ ông giáo gõ lệnh npm start
+CMD ["sleep", "infinity"]

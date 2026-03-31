@@ -1,42 +1,23 @@
 {
-    "name": "IS210 Database Promax - MultiStack",
-    "dockerComposeFile": [
-        "docker-compose.yml"
-    ],
+    "name": "IS210-Promax-Workspace",
+    "dockerComposeFile": "docker-compose.yml",
     "service": "backend",
-    "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
-    "features": {
-        "ghcr.io/devcontainers/features/common-utils:2": {
-            "installZsh": true,
-            "configureZshAsDefaultShell": true,
-            "upgradePackages": true
-        },
-        "ghcr.io/devcontainers/features/git:1": {}
-    },
+    "workspaceFolder": "/workspaces/da",
     "forwardPorts": [8080, 3000, 1522],
-    "mounts": [
-        "source=${localEnv:HOME}${localEnv:USERPROFILE}/.gitconfig,target=/root/.gitconfig,type=bind,consistency=cached"
-    ],
     "customizations": {
         "vscode": {
             "settings": {
-                "terminal.integrated.defaultProfile.linux": "zsh",
-                "terminal.integrated.profiles.linux": {
-                    "zsh": {
-                        "path": "/bin/zsh"
-                    }
-                }
+                "java.jdt.ls.java.home": null,
+                "java.configuration.runtimes": [],
+                "terminal.integrated.defaultProfile.linux": "bash"
             },
             "extensions": [
                 "vscjava.vscode-java-pack",
                 "vscjava.vscode-spring-boot-dashboard",
-                "vscjava.vscode-spring-initializr",
-                "ms-azuretools.vscode-docker",
                 "dbaeumer.vscode-eslint",
-                "ms-vscode.vscode-typescript-next"       
+                "esbenp.prettier-vscode"
             ]
         }
     },
-    "remoteUser": "root",
-    "postCreateCommand": "java -version && cd backend && chmod +x mvnw && ./mvnw -version"
+    "postCreateCommand": "java -version && mvn -version"
 }

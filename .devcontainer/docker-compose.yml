@@ -1,64 +1,43 @@
-name: da-project 
+version: '3.8'
 
 services:
-  # 1. DATABASE
   oracle-db:
-    image: gvenzl/oracle-xe:21-slim
+    image: gvenzl/oracle-xe:21-slim-faststart
     container_name: oracle_db
+    environment:
+      - ORACLE_PASSWORD=oracle
+      - APP_USER= KMY
+      - APP_PASSWORD=oracle
     ports:
       - "1522:1521"
-    environment:
-      ORACLE_PASSWORD: oracle
-      TZ: Asia/Ho_Chi_Minh 
     volumes:
-      - oracle-data:/opt/oracle/oradata
-      - ./sql-init:/container-entrypoint-initdb.d 
-    networks:
-      - nhom15-network
-    healthcheck:
-      test: ["CMD", "healthcheck.sh"]
-      interval: 15s
-      timeout: 10s
-      retries: 10
+      - oracle_data:/opt/oracle/oradata
 
-  # 2. BACKEND
   backend:
     build:
-      context: ../backend  # CHÚ Ý: Đã thụt lề vào trong chữ build, và để '..' để trỏ ra thư mục 'da'
+      context: ../backend
       dockerfile: ../.devcontainer/backend/Dockerfile
     container_name: spring_backend
     command: sleep infinity
+    volumes:
+      - ..:/workspaces/da:cached
+      - maven_cache:/root/.m2  # Lưu cache Maven để build các lần sau cực nhanh
     ports:
       - "8080:8080"
-    volumes:
-      - ..:/workspaces/da
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:oracle:thin:@oracle-db:1521/XE
-      SPRING_DATASOURCE_USERNAME: system
-      SPRING_DATASOURCE_PASSWORD: oracle
-      TZ: Asia/Ho_Chi_Minh 
     depends_on:
-      oracle-db:
-        condition: service_healthy 
-    networks:
-      - nhom15-network
+      - oracle-db
 
-  # 3. FRONTEND
   frontend:
     build:
-      context: ../frontend  # CHÚ Ý: Đã thụt lề vào trong chữ build
+      context: ../frontend
       dockerfile: ../.devcontainer/frontend/Dockerfile
     container_name: react_frontend
+    command: sleep infinity
+    volumes:
+      - ..:/workspaces/da:cached
     ports:
-      - "3000:80"
-    depends_on:
-      - backend
-    networks:
-      - nhom15-network
-
-networks:
-  nhom15-network:
-    driver: bridge
+      - "3000:3000"
 
 volumes:
-  oracle-data:
+  oracle_data:
+  maven_cache:
