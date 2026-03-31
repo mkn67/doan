@@ -33,10 +33,10 @@
                 "vscjava.vscode-spring-initializr",
                 "ms-azuretools.vscode-docker",
                 "dbaeumer.vscode-eslint",
-                "ms-vscode.vscode-typescript-next",        
+                "ms-vscode.vscode-typescript-next"       
             ]
         }
     },
     "remoteUser": "root",
-    "postCreateCommand": "java -version && mvn -version"
+    "postCreateCommand": "java -version && cd backend && chmod +x mvnw && ./mvnw -version"
 }
