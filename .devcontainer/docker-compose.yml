@@ -2,16 +2,17 @@ version: '3.8'
 
 services:
   oracle-db:
-    image: gvenzl/oracle-xe:21-slim-faststart
+    image: gvenzl/oracle-xe:21-slim
     container_name: oracle_db
     environment:
       - ORACLE_PASSWORD=oracle
-      - APP_USER= KMY
+      - APP_USER=KMY
       - APP_PASSWORD=oracle
     ports:
       - "1522:1521"
     volumes:
       - oracle_data:/opt/oracle/oradata
+    restart: always
 
   backend:
     build:
@@ -21,12 +22,11 @@ services:
     command: sleep infinity
     volumes:
       - ..:/workspaces/da:cached
-      - maven_cache:/root/.m2  # Lưu cache Maven để build các lần sau cực nhanh
+      - maven_cache:/root/.m2
     ports:
       - "8080:8080"
     depends_on:
       - oracle-db
-
   frontend:
     build:
       context: ../frontend
