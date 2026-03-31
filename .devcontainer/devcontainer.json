@@ -13,17 +13,21 @@
         },
         "ghcr.io/devcontainers/features/git:1": {}
     },
-    "forwardPorts": [8081, 3000, 1522],
+    "forwardPorts": [8080, 3000, 1522],
+    "mounts": [
+        "source=${localEnv:HOME}${localEnv:USERPROFILE}/.gitconfig,target=/root/.gitconfig,type=bind,consistency=cached"
+    ],
     "customizations": {
         "vscode": {
             "settings": {
                 "java.configuration.runtimes": [
                     {
                         "name": "JavaSE-21",
-                        "path": "/usr/lib/jvm/java-21-openjdk",
+                        "path": "/opt/java/openjdk",
                         "default": true
                     }
                 ],
+                "java.jdt.ls.java.home": "/opt/java/openjdk",
                 "terminal.integrated.defaultProfile.linux": "zsh",
                 "terminal.integrated.profiles.linux": {
                     "zsh": {
@@ -38,7 +42,7 @@
                 "ms-azuretools.vscode-docker",
                 "dbaeumer.vscode-eslint",
                 "ms-vscode.vscode-typescript-next",
-                "oracle.oracle-java"
+                "oracle.oracle-java"           
             ]
         }
     },
