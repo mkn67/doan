@@ -1,0 +1,4 @@
+DTo là viết tắt cho data transfer object (Đối tượng chuyển đổi dữ liệu)
+Giả sử có entity
+(Thực thể): Là cái "bản gốc" dưới Database. Nó chứa tất cả mọi thứ: mật khẩu, ngày tạo, ngày sửa, người tạo, các mối quan hệ chằng chịt với bảng khác.
+(DTO): Là một cái "hộp" chỉ chứa đúng những thứ mà Frontend cần hoặc Backend muốn nhận.
