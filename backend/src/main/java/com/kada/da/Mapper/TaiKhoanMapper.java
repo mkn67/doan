@@ -3,17 +3,25 @@ package com.kada.da.Mapper;
 import com.kada.da.Dto.TaiKhoanRequestDTO;
 import com.kada.da.Entity.Nhom;
 import com.kada.da.Entity.TaiKhoan;
+import java.util.ArrayList;
+import java.util.List;
 
 public class TaiKhoanMapper {
     public static TaiKhoan toEntity(TaiKhoanRequestDTO dto) {
         TaiKhoan taiKhoan = new TaiKhoan();
         taiKhoan.setMaTk(dto.getMaTk());
-        taiKhoan.setUsername(dto.getUsername());
-        taiKhoan.setPassword(dto.getPassword());
+        taiKhoan.setTenDangNhap(dto.getUsername()); // Sửa tên
+        taiKhoan.setMatKhau(dto.getPassword()); // Sửa tên
+
+        // Chuyển 1 mã nhóm từ DTO thành một List<Nhom> cho Entity
         if (dto.getMaNhom() != null && !dto.getMaNhom().isEmpty()) {
             Nhom nhom = new Nhom();
             nhom.setMaNhom(dto.getMaNhom());
-            taiKhoan.setNhom(nhom);
+
+            List<Nhom> danhSachNhom = new ArrayList<>();
+            danhSachNhom.add(nhom);
+
+            taiKhoan.setDanhSachNhom(danhSachNhom);
         }
         return taiKhoan;
     }

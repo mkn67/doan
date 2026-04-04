@@ -15,7 +15,10 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "KHACH_HANG")
-@Data @NoArgsConstructor @AllArgsConstructor @Builder
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class KhachHang {
     @Id
     @Column(name = "MAKH", length = 10)

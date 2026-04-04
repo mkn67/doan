@@ -2,26 +2,33 @@ package com.kada.da.Entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import java.math.BigDecimal;
 
 @Entity
 @Table(name = "CHI_TIET_THI_LUC")
-@Data @NoArgsConstructor @AllArgsConstructor @Builder
+@IdClass(ChiTietThiLucId.class) // Khai báo class khóa chính kép ở đây
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class ChiTietThiLuc {
-    @EmbeddedId
-    private ChiTietThiLucId id;
+
+    @Id
     @ManyToOne
-    @MapsId("maHoSo") // Liên kết id.maHoSo với khóa ngoại MAHOSO
     @JoinColumn(name = "MAHOSO")
     private HoSoThiLuc hoSoThiLuc;
-    @Column(name = "DOCAU_SPH", precision = 4, scale = 2)
-    private BigDecimal doCauSph;
-    @Column(name = "DOTRU_CYL", precision = 4, scale = 2)
-    private BigDecimal doTruCyl;
-    @Column(name = "TRUC_AX")
-    private Integer trucAx;
-    @Column(name = "KHOANGCACH_PD", precision = 3, scale = 1)
-    private BigDecimal khoangCachPd;
-    @Column(name = "DOCONG_ADD", precision = 4, scale = 2)
-    private BigDecimal doCongAdd;
+    @Id
+    @Column(name = "MAT", length = 10)
+    private String mat;
+
+    @Column(name = "CAU")
+    private Double cau;
+
+    @Column(name = "TRU")
+    private Double tru;
+
+    @Column(name = "TRUC")
+    private Integer truc;
+
+    @Column(name = "THILUC", length = 20)
+    private String thiLuc;
 }

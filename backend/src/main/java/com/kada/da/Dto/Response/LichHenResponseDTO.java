@@ -13,26 +13,34 @@ import java.time.LocalTime;
 @AllArgsConstructor
 public class LichHenResponseDTO {
 
-    private String maLichHen;
+    private String maLh;
     private String tenKhachHang;
     private String sdtKhachHang;
     private String tenBacSi;
     private LocalDate ngayHen;
     private LocalTime gioHen;
+    private String loaiLich;
     private String trangThai;
     private String trieuChung;
-    private String ghiChu;
 
     public LichHenResponseDTO(LichHen lichHen) {
-        this.maLichHen = lichHen.getMaLichHen();
-        this.ngayHen = lichHen.getNgayHen();
-        this.gioHen = lichHen.getGioHen();
+        this.maLh = lichHen.getMaLh(); // Đã sửa thành maLh
+
+        // Cắt LocalDateTime của DB thành Date và Time cho Frontend dễ đọc
+        if (lichHen.getNgayHen() != null) {
+            this.ngayHen = lichHen.getNgayHen().toLocalDate();
+        }
+        if (lichHen.getGioHen() != null) {
+            this.gioHen = lichHen.getGioHen().toLocalTime();
+        }
+
+        this.loaiLich = lichHen.getLoaiLich();
         this.trangThai = lichHen.getTrangThai();
         this.trieuChung = lichHen.getTrieuChung();
-        this.ghiChu = lichHen.getGhiChu();
+
         if (lichHen.getKhachHang() != null) {
             this.tenKhachHang = lichHen.getKhachHang().getHoTen();
-            this.sdtKhachHang = lichHen.getKhachHang().getSoDienThoai();
+            this.sdtKhachHang = lichHen.getKhachHang().getSdt(); // Đã sửa thành getSdt()
         }
 
         if (lichHen.getNhanSu() != null) {

@@ -1,8 +1,6 @@
-MANHOM,TENNHOM
-NH01,Bác sĩ
-NH02,Thu ngân
-NH03,Thủ kho
-NH04,Quản lý
-NH05,Kỹ thuật viên mắt kính
-NH06,Lễ tân
-NH07,Khách hàng
+﻿"MANHOM","TENNHOM"
+"NH001","Bác sĩ"
+"NH002","Thu ngân"
+"NH003","Thủ kho"
+"NH004","Quản lý"
+"NH005","Khách hàng"

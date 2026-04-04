@@ -1,0 +1,65 @@
+=======================================================================================
+ GIẢI THÍCH KIẾN TRÚC CODE SPRING BOOT (MÔ HÌNH PHÒNG KHÁM)
+=======================================================================================
+
+Hãy tưởng tượng Back-end của chúng ta giống hệt một PHÒNG KHÁM. Mỗi thư mục (folder) sẽ đóng một vai trò cụ thể trong quy trình tiếp đón và xử lý dữ liệu cho khách hàng (Front-end).
+
+---
+1. /Controller - "Quầy Lễ Tân"
+* Vai trò: Đây là nơi đầu tiên tiếp nhận yêu cầu (HTTP Request) từ Front-end gửi tới.
+* Công việc: Lễ tân chỉ nhận thông tin, hỏi khách muốn làm gì (Khám bệnh? Thanh toán? Đặt lịch?), sau đó chuyển giấy tờ vào trong cho Bác sĩ (Service). Lễ tân KHÔNG tự khám bệnh.
+* Ví dụ: Khi web gọi API "/api/login", Controller sẽ hứng yêu cầu này.
+
+2. /Dto (Data Transfer Object) - "Phiếu Điền Thông Tin"
+* Vai trò: Là các tờ giấy nháp/phiếu thông tin vận chuyển giữa Front-end và Back-end.
+* Phân loại:
+  - /Request: Phiếu khách hàng điền gửi vào (VD: LoginRequestDTO chỉ chứa username và password).
+  - /Response: Phiếu kết quả đưa lại cho khách (VD: LoginResponseDTO chứa Token để đăng nhập thành công).
+* Tại sao phải có DTO?: Để giấu sổ gốc. Chúng ta không bao giờ mang nguyên cuốn sổ bệnh án gốc (Entity) đưa cho khách xem để bảo mật dữ liệu.
+
+3. /Entity - "Sổ Gốc Lưu Trữ"
+* Vai trò: Mỗi class trong này là một cái "khuôn" đúc chính xác từ các bảng (Table) trong Database Oracle.
+* Đặc điểm: Nếu bảng HOA_DON trong Oracle có 10 cột, thì class HoaDon trong Entity sẽ có đúng 10 thuộc tính. Đây là dữ liệu nguyên thủy nhất.
+
+4. /Mapper - "Nhân Viên Photo/Chép Giấy Tờ"
+* Vai trò: Chuyên làm nhiệm vụ chuyển đổi dữ liệu qua lại giữa Sổ Gốc (Entity) và Phiếu Nháp (DTO).
+* Công việc: Khi Bác sĩ (Service) làm xong sổ gốc, nhân viên Mapper sẽ chép những thông tin cần thiết ra tờ DTO để Lễ tân (Controller) trả về cho Front-end.
+
+5. /Service - "Bác Sĩ / Người Xử Lý Nghiệp Vụ"
+* Vai trò: Đây là "Bộ Não" của hệ thống. Nơi chứa 100% logic tính toán.
+* Công việc: Tính tổng tiền, trừ tồn kho, kiểm tra xem khách này có đủ tuổi không, có bị trùng lịch hẹn không...
+* Cấu trúc: Tách làm 2 phần để dễ nâng cấp:
+  - Service gốc: Chỉ ghi tên các việc cần làm (Interface).
+  - /impl (Implementation): Nơi viết code chi tiết cách làm các việc đó (VD: HoaDonService.java).
+
+6. /Repository - "Thủ Kho / Người Giữ Chìa Khóa Database"
+* Vai trò: Người DUY NHẤT trong phòng khám được phép mở tủ hồ sơ (Oracle Database).
+* Công việc: Service muốn lấy dữ liệu hay lưu dữ liệu gì, bắt buộc phải nhờ Repository. Nó được Spring Boot hỗ trợ sẵn các lệnh thêm/sửa/xóa tìm kiếm mà không cần viết lệnh SQL dài dòng.
+
+7. /Security - "Bác Bảo Vệ"
+* Vai trò: Cầm dùi cui đứng ở cổng để kiểm tra thẻ ra vào.
+* Công việc: Phân quyền. Ai có thẻ Bác sĩ thì mới được gọi API kê đơn, ai có thẻ Lễ tân thì chỉ được tạo lịch hẹn. Giữ cửa không cho hacker gọi bậy bạ vào các đường dẫn nhạy cảm (VD: JwtAuthFilter.java).
+
+8. /Enum - "Bảng Nội Quy Cố Định"
+* Vai trò: Chứa các danh sách trạng thái cố định để cả phòng khám dùng chung, tránh gõ sai chính tả.
+* Ví dụ: Thay vì mỗi người gõ một kiểu "Đã xác nhận", "Da xac nhan", thì ta tạo 1 cái Enum TrangThaiLichHen.DA_XAC_NHAN để xài chung cho thống nhất.
+
+9. /Exception - "Đội Xử Lý Sự Cố"
+* Vai trò: Khi hệ thống có lỗi (VD: Khách truyền sai ID, hết hàng tồn kho), thay vì để hệ thống "chết đứng" báo lỗi đỏ loét, đội này sẽ nhảy ra chặn lại.
+* Công việc: Đóng gói cái lỗi đó thành 1 câu thông báo tiếng Việt gọn gàng (VD: "Mã hóa đơn không tồn tại") trả về cho Front-end (Thông qua GlobalExceptionHandler.java).
+
+10. /Config - "Bộ Phận Thiết Lập Hạ Tầng"
+* Vai trò: Cài đặt các thông số kỹ thuật cho hệ thống hoạt động trơn tru (Cấu hình phân quyền, cấu hình kết nối Web...).
+
+11. /Util - "Hộp Đồ Nghề Khẩn Cấp"
+* Vai trò: Chứa các công cụ dùng chung cho mọi nơi.
+* Ví dụ: Kéo ra cái kềm để mã hóa mật khẩu, hay công cụ để tạo ra cái vé thẻ từ (JwtTokenUtil.java).
+
+=======================================================================================
+ TÓM TẮT LUỒNG DỮ LIỆU ĐI CHUẨN (WORKFLOW)
+=======================================================================================
+(1) Front-end gửi thông tin lên (dưới dạng DTO).
+(2) Lễ tân (Controller) nhận DTO, gọi Bác sĩ (Service) ra xử lý.
+(3) Bác sĩ (Service) kiểm tra logic, thấy ok thì nhờ Thủ kho (Repository) lấy/lưu Sổ Gốc (Entity) vào Database.
+(4) Làm xong, Bác sĩ nhờ Nhân viên chép (Mapper) chuyển kết quả từ Entity thành DTO trả lại cho Lễ tân.
+(5) Lễ tân (Controller) cầm DTO đó đưa lại cho Front-end hiển thị lên màn hình.

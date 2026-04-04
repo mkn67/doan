@@ -1,8 +1,12 @@
-MAVAITRO,TENVAITRO
-VT_BACSI,Bác sĩ
-VT_THUNGAN,Thu ngân
-VT_THUKHO,Thủ kho
-VT_QUANLY,Quản lý
-VT_KTV,Kỹ thuật viên mắt kính
-VT_LETAN,Lễ tân
-VT_KH,Khách hàng
+﻿"MAVAITRO","TENVAITRO"
+"VT001","Xem hồ sơ khám"
+"VT002","Lập / sửa hồ sơ khám"
+"VT003","Kê đơn thuốc & thiết bị"
+"VT004","Lập hóa đơn bán hàng"
+"VT005","Xem tồn kho"
+"VT006","Nhập kho"
+"VT007","Xem báo cáo doanh thu"
+"VT008","Quản lý nhân sự"
+"VT009","Quản lý khách hàng"
+"VT010","Toàn quyền hệ thống"
+"VT011","Xem lịch sử mua hàng cá nhân"

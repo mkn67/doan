@@ -1,16 +1,8 @@
 package com.kada.da.Entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import jakarta.persistence.*;
+import lombok.*;
+import java.util.List;
 
 @Entity
 @Table(name = "TAI_KHOAN")
@@ -19,21 +11,23 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class TaiKhoan {
-
     @Id
     @Column(name = "MATK", length = 10)
     private String maTk;
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "MANHOM")
-    private Nhom nhom;
+    @Column(name = "TENDANGNHAP", length = 50, unique = true)
+    private String tenDangNhap;
 
-    @Column(name = "USERNAME", length = 50, unique = true)
-    private String username;
+    @Column(name = "MATKHAU", length = 255)
+    private String matKhau;
 
-    @Column(name = "PASSWORD", length = 255)
-    private String password;
+    // THÊM MỚI: Phân biệt "KHACH_HANG" hay "NHAN_SU"
+    @Column(name = "LOAI_TK", length = 20)
+    private String loaiTk;
 
     @Column(name = "TRANGTHAI")
-    private Integer trangThai; 
+    private Integer trangThai;
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(name = "TAIKHOAN_NHOM", joinColumns = @JoinColumn(name = "MATK"), inverseJoinColumns = @JoinColumn(name = "MANHOM"))
+    private List<Nhom> danhSachNhom;
 }
