@@ -1,2 +1,4 @@
 apk add --no-cache nodejs npm
 chạy cái này nhá 2 con vợ
+npm run dev
+để chạy front end
