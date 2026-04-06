@@ -1,5 +1,7 @@
 package com.kada.da.Enum;
 
+import com.fasterxml.jackson.annotation.JsonValue;
+
 import lombok.Getter;
 
 @Getter
@@ -9,6 +11,7 @@ public enum TrangThaiLichHen {
     DA_CHECK_IN("Đã check-in"),
     DA_HUY("Đã hủy");
 
+    @JsonValue
     private final String value;
 
     TrangThaiLichHen(String value) {

@@ -164,3 +164,27 @@ END SP_DOI_DIEM_LAY_VOUCHER;
 ALTER TABLE THANH_TOAN ADD CONSTRAINT CK_TT_TRANGTHAI CHECK (TRANGTHAI IN (N'Thành công', N'Thất bại'));
 CREATE INDEX IDX_LSD_MAKH ON LICH_SU_DIEM (MAKH);
 CREATE INDEX IDX_LSD_MAHD ON LICH_SU_DIEM (MAHD);
+
+
+
+-- bổ sung ALTER table
+-- 1. LICH_HEN
+ALTER TABLE LICH_HEN ADD CONSTRAINT chk_lich_hen_trangthai
+CHECK (TRANGTHAI IN ('Chờ xác nhận', 'Đã xác nhận', 'Đã check-in', 'Đã hủy'));
+
+-- 2. HOA_DON
+ALTER TABLE HOA_DON ADD CONSTRAINT chk_hoa_don_trangthai
+CHECK (TRANGTHAI IN ('Chưa thanh toán', 'Đã thanh toán', 'Đã hủy'));
+
+-- 3. HANG_CHO (cần tạo enum TrangThaiHangCho trước trong Java)
+ALTER TABLE HANG_CHO ADD CONSTRAINT chk_hang_cho_trang_thai
+CHECK (TRANG_THAI IN ('Đang chờ', 'Đang khám', 'Hoàn thành', 'Bỏ qua'));
+
+-- 4. TAI_KHOAN (nếu muốn)
+ALTER TABLE TAI_KHOAN ADD CONSTRAINT chk_tai_khoan_loai_tk
+CHECK (LOAI_TK IN ('INTERNAL', 'EXTERNAL'));
+
+-- 5. NHAN_SU (nếu muốn)
+ALTER TABLE NHAN_SU ADD CONSTRAINT chk_nhan_su_gioitinh
+CHECK (GIOITINH IN ('Nam', 'Nữ', 'Khác'));
+
