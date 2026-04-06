@@ -1,10 +1,10 @@
 package com.kada.da.Dto.Response;
 
 import com.kada.da.Entity.LichHen;
+import com.kada.da.Enum.TrangThaiLichHen; // IMPORT ENUM VÀO ĐÂY
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
 import java.time.LocalDate;
 import java.time.LocalTime;
 
@@ -20,13 +20,12 @@ public class LichHenResponseDTO {
     private LocalDate ngayHen;
     private LocalTime gioHen;
     private String loaiLich;
-    private String trangThai;
+    private TrangThaiLichHen trangThai;
     private String trieuChung;
 
     public LichHenResponseDTO(LichHen lichHen) {
-        this.maLh = lichHen.getMaLh(); // Đã sửa thành maLh
+        this.maLh = lichHen.getMaLh();
 
-        // Cắt LocalDateTime của DB thành Date và Time cho Frontend dễ đọc
         if (lichHen.getNgayHen() != null) {
             this.ngayHen = lichHen.getNgayHen().toLocalDate();
         }
@@ -35,12 +34,14 @@ public class LichHenResponseDTO {
         }
 
         this.loaiLich = lichHen.getLoaiLich();
+        // ĐÃ SỬA: Bây giờ gán trực tiếp Enum cho Enum, không còn lỗi nữa
         this.trangThai = lichHen.getTrangThai();
+
         this.trieuChung = lichHen.getTrieuChung();
 
         if (lichHen.getKhachHang() != null) {
             this.tenKhachHang = lichHen.getKhachHang().getHoTen();
-            this.sdtKhachHang = lichHen.getKhachHang().getSdt(); // Đã sửa thành getSdt()
+            this.sdtKhachHang = lichHen.getKhachHang().getSdt();
         }
 
         if (lichHen.getNhanSu() != null) {
