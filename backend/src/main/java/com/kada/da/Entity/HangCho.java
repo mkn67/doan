@@ -4,9 +4,14 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @Entity
 @Table(name = "HANG_CHO")
-@Data @NoArgsConstructor @AllArgsConstructor @Builder
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class HangCho {
     @Id
     @Column(name = "MAHC", length = 10)
@@ -23,13 +28,16 @@ public class HangCho {
 
     @ManyToOne
     @JoinColumn(name = "MAKH")
+    @JsonIgnore
     private KhachHang khachHang;
 
     @ManyToOne
     @JoinColumn(name = "MALH")
+    @JsonIgnore
     private LichHen lichHen;
 
     @ManyToOne
     @JoinColumn(name = "MANS_PHAN_CONG")
+    @JsonIgnore
     private NhanSu nhanSuPhanCong;
 }

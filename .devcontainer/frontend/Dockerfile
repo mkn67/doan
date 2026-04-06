@@ -1,9 +1,10 @@
 FROM node:20-alpine
 
-# Cài thêm bash và git cho frontend
-RUN apk update && apk add --no-cache bash git
+# Cài thêm bash, git và các thư viện cần thiết để build node-sass hoặc các lib nặng
+RUN apk update && apk add --no-cache bash git curl python3 make g++
 
-WORKDIR /workspaces
+WORKDIR /workspaces/da/frontend
 
-# Tương tự backend, ngủ yên chờ ông giáo gõ lệnh npm start
-CMD ["sleep", "infinity"]
+# Tự động cài dependencies nếu có file package.json
+# CMD này giúp container không bị tắt, và ông có thể vào terminal gõ lệnh thoải mái
+CMD ["sh", "-c", "npm install && tail -f /dev/null"]

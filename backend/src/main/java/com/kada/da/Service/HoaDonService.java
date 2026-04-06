@@ -4,4 +4,6 @@ import com.kada.da.Entity.HoaDon;
 
 public interface HoaDonService {
     HoaDon thanhToanHoaDon(HoaDon hoaDon);
+
+    HoaDon findById(String maHd);
 }

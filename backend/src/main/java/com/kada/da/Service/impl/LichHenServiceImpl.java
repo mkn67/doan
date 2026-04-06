@@ -134,7 +134,8 @@ public class LichHenServiceImpl implements LichHenService {
         lichHenRepository.save(lichHen);
 
         // 4. Tạo số thứ tự hàng chờ
-        int maxStt = hangChoRepository.findMaxSoThuTuToday().orElse(0);
+        Integer maxSttToday = hangChoRepository.findMaxSoThuTuToday();
+        int maxStt = (maxSttToday != null) ? maxSttToday : 0;
         int soThuTu = maxStt + 1;
 
         // 5. Sinh mã Hàng Chờ ngẫu nhiên (vì maHc dài 10 ký tự)

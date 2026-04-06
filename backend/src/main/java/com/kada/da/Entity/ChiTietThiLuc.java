@@ -1,5 +1,7 @@
 package com.kada.da.Entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -15,6 +17,7 @@ public class ChiTietThiLuc {
     @Id
     @ManyToOne
     @JoinColumn(name = "MAHOSO")
+    @JsonIgnore
     private HoSoThiLuc hoSoThiLuc;
     @Id
     @Column(name = "MAT", length = 10)

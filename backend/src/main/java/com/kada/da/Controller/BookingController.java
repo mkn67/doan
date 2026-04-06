@@ -26,14 +26,14 @@ public class BookingController {
 
     // 2. Lễ tân xác nhận lịch hẹn (chuyển từ "Chờ xác nhận" -> "Đã xác nhận")
     @PutMapping("/{maLichHen}/confirm")
-    public ResponseEntity<LichHenResponseDTO> xacNhanLichHen(@PathVariable String maLichHen) {
+    public ResponseEntity<LichHenResponseDTO> xacNhanLichHen(@PathVariable("maLichHen") String maLichHen) {
         LichHenResponseDTO response = lichHenService.confirmLichHen(maLichHen);
         return ResponseEntity.ok(response);
     }
 
     // 3. Khách tới phòng khám -> Check-in -> Lấy số thứ tự
     @PostMapping("/{maLichHen}/check-in")
-    public ResponseEntity<HangCho> checkIn(@PathVariable String maLichHen) {
+    public ResponseEntity<HangCho> checkIn(@PathVariable("maLichHen") String maLichHen) {
         // Hàm checkIn này sẽ trả về Entity HangCho, trong đó có chứa soThuTu
         HangCho hangCho = lichHenService.checkIn(maLichHen);
         return ResponseEntity.ok(hangCho);
@@ -42,8 +42,8 @@ public class BookingController {
     // 4. Hủy lịch hẹn
     @PutMapping("/{maLichHen}/cancel")
     public ResponseEntity<String> huyLichHen(
-            @PathVariable String maLichHen,
-            @RequestParam(required = false, defaultValue = "Khách hàng bận việc đột xuất") String lyDo) {
+            @PathVariable("maLichHen") String maLichHen,
+            @RequestParam(value = "lyDo", required = false, defaultValue = "Khách hàng bận việc đột xuất") String lyDo) {
 
         lichHenService.cancelLichHen(maLichHen, lyDo);
         return ResponseEntity.ok("Đã hủy lịch hẹn " + maLichHen + " thành công!");

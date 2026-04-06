@@ -4,6 +4,7 @@ import com.kada.da.Entity.HoaDon;
 import com.kada.da.Entity.CtHoaDon;
 import com.kada.da.Entity.LoHang;
 import com.kada.da.Exception.BusinessRuleException;
+import com.kada.da.Exception.ResourceNotFoundException;
 import com.kada.da.Repository.HoaDonRepository;
 import com.kada.da.Repository.LoHangRepository;
 import com.kada.da.Service.HoaDonService;
@@ -62,5 +63,11 @@ public class HoaDonServiceImpl implements HoaDonService {
 
         // 3. Lưu hóa đơn (JPA sẽ tự lưu luôn danh sách CtHoaDon nhờ Cascade)
         return hoaDonRepository.save(hoaDon);
+    }
+
+    @Override
+    public HoaDon findById(String maHd) {
+        return hoaDonRepository.findById(maHd)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hóa đơn mã: " + maHd));
     }
 }

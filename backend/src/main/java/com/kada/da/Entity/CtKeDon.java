@@ -1,11 +1,16 @@
 package com.kada.da.Entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
 @Table(name = "CT_KE_DON")
-@Data @NoArgsConstructor @AllArgsConstructor @Builder
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class CtKeDon {
 
     @EmbeddedId
@@ -24,6 +29,7 @@ public class CtKeDon {
     @ManyToOne
     @MapsId("maDon") // Khớp với tên biến trong CtKeDonId
     @JoinColumn(name = "MADON")
+    @JsonIgnore
     private PhieuKeDon phieuKeDon;
 
     // Liên kết tới Sản phẩm (Thuốc hoặc Kính)
