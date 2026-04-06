@@ -167,7 +167,6 @@ CREATE INDEX IDX_LSD_MAHD ON LICH_SU_DIEM (MAHD);
 
 
 
--- bổ sung ALTER table
 -- 1. LICH_HEN
 ALTER TABLE LICH_HEN ADD CONSTRAINT chk_lich_hen_trangthai
 CHECK (TRANGTHAI IN ('Chờ xác nhận', 'Đã xác nhận', 'Đã check-in', 'Đã hủy'));
@@ -188,3 +187,5 @@ CHECK (LOAI_TK IN ('INTERNAL', 'EXTERNAL'));
 ALTER TABLE NHAN_SU ADD CONSTRAINT chk_nhan_su_gioitinh
 CHECK (GIOITINH IN ('Nam', 'Nữ', 'Khác'));
 
+SELECT *
+FROM DANH_GIA

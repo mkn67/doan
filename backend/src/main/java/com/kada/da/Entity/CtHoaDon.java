@@ -1,7 +1,5 @@
 package com.kada.da.Entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -12,23 +10,24 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class CtHoaDon {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "MACTHD")
-    private Integer maCtHd;
 
-    @ManyToOne
-    @JoinColumn(name = "MAHD")
-    @JsonIgnore
-    private HoaDon hoaDon;
-
-    @ManyToOne
-    @JoinColumn(name = "MALO")
-    private LoHang loHang;
+    @EmbeddedId
+    private CtHoaDonId id; // Đây chính là khóa chính tổng hợp của ông
 
     @Column(name = "SOLUONG")
     private Integer soLuong;
 
-    @Column(name = "DONGIA")
-    private Double donGia;
+    @Column(name = "DONGIA", precision = 15, scale = 2)
+    private java.math.BigDecimal donGia;
+
+    // Nếu ông muốn liên kết ngược lại Entity HoaDon để lấy thông tin
+    @ManyToOne
+    @MapsId("maHd") // Nó sẽ map cột maHd trong CtHoaDonId với bảng HOA_DON
+    @JoinColumn(name = "MAHD", insertable = false, updatable = false)
+    private HoaDon hoaDon;
+
+    @ManyToOne
+    @MapsId("maLo") // Nó sẽ map cột maLo trong CtHoaDonId với bảng LO_HANG
+    @JoinColumn(name = "MALO", insertable = false, updatable = false)
+    private LoHang loHang;
 }

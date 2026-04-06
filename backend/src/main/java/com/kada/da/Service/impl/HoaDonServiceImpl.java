@@ -3,6 +3,7 @@ package com.kada.da.Service.impl;
 import com.kada.da.Entity.HoaDon;
 import com.kada.da.Entity.CtHoaDon;
 import com.kada.da.Entity.LoHang;
+import com.kada.da.Enum.TrangThaiHoaDon; // 1. NHỚ IMPORT ENUM
 import com.kada.da.Exception.BusinessRuleException;
 import com.kada.da.Exception.ResourceNotFoundException;
 import com.kada.da.Repository.HoaDonRepository;
@@ -28,9 +29,10 @@ public class HoaDonServiceImpl implements HoaDonService {
         // 1. Khởi tạo thông tin hóa đơn
         hoaDon.setMaHd("HD" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
         hoaDon.setNgayLap(LocalDateTime.now());
-        hoaDon.setTrangThai("Đã thanh toán");
 
-        // 2. Duyệt qua từng dòng chi tiết để trừ kho
+        // 2. ĐÃ FIX: Dùng Enum thay cho String "Đã thanh toán"
+        hoaDon.setTrangThai(TrangThaiHoaDon.DA_THANH_TOAN);
+
         if (hoaDon.getCtHoaDons() == null || hoaDon.getCtHoaDons().isEmpty()) {
             throw new BusinessRuleException("Hóa đơn phải có ít nhất một sản phẩm!");
         }
@@ -38,30 +40,30 @@ public class HoaDonServiceImpl implements HoaDonService {
         BigDecimal tongTien = BigDecimal.ZERO;
 
         for (CtHoaDon ct : hoaDon.getCtHoaDons()) {
-            // Lấy thông tin lô hàng thực tế từ DB
             LoHang loHang = loHangRepository.findById(ct.getLoHang().getMaLo())
                     .orElseThrow(() -> new BusinessRuleException("Lô hàng không tồn tại!"));
 
-            // Kiểm tra tồn kho
             if (loHang.getSoLuongTon() < ct.getSoLuong()) {
                 throw new BusinessRuleException("Sản phẩm " + loHang.getSanPham().getTenSp() +
                         " trong lô " + loHang.getMaLo() + " không đủ số lượng tồn!");
             }
 
-            // LOGIC CỐT LÕI: Trừ tồn kho trực tiếp
+            // Trừ tồn kho
             loHang.setSoLuongTon(loHang.getSoLuongTon() - ct.getSoLuong());
             loHangRepository.save(loHang);
 
-            // Tính tiền từng dòng
             ct.setHoaDon(hoaDon);
-            BigDecimal lineTotal = BigDecimal.valueOf(ct.getDonGia())
-                    .multiply(BigDecimal.valueOf(ct.getSoLuong()));
+
+            // 3. ĐÃ FIX LỖI BigDecimal:
+            // Nếu ct.getDonGia() ĐÃ LÀ BigDecimal thì không dùng BigDecimal.valueOf() nữa.
+            // Ép kiểu ct.getSoLuong() (Integer) sang BigDecimal để nhân.
+            BigDecimal lineTotal = ct.getDonGia().multiply(BigDecimal.valueOf(ct.getSoLuong()));
+
             tongTien = tongTien.add(lineTotal);
         }
 
         hoaDon.setTongTien(tongTien);
 
-        // 3. Lưu hóa đơn (JPA sẽ tự lưu luôn danh sách CtHoaDon nhờ Cascade)
         return hoaDonRepository.save(hoaDon);
     }
 

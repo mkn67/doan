@@ -4,6 +4,8 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.kada.da.Enum.TrangThaiHoaDon;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -37,7 +39,7 @@ public class HoaDon {
     private BigDecimal tongTien;
     @Enumerated(EnumType.STRING)
     @Column(name = "TRANGTHAI", length = 50)
-    private String trangThai;
+    private TrangThaiHoaDon trangThai; // PHẢI LÀ TrangThaiHoaDon, KHÔNG ĐƯỢC LÀ String
 
     @Column(name = "IS_DELETED")
     private Integer isDeleted;
