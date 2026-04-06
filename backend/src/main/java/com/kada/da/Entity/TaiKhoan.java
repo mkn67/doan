@@ -3,6 +3,7 @@ package com.kada.da.Entity;
 import jakarta.persistence.*;
 import lombok.*;
 import java.util.List;
+import com.kada.da.Enum.LoaiTaiKhoan;
 
 @Entity
 @Table(name = "TAI_KHOAN")
@@ -21,12 +22,13 @@ public class TaiKhoan {
     @Column(name = "MATKHAU", length = 255)
     private String matKhau;
 
-    // THÊM MỚI: Phân biệt "KHACH_HANG" hay "NHAN_SU"
+    @Enumerated(EnumType.STRING)
     @Column(name = "LOAI_TK", length = 20)
-    private String loaiTk;
+    private LoaiTaiKhoan loaiTk; // Sử dụng đúng Enum LoaiTaiKhoan
 
     @Column(name = "TRANGTHAI")
     private Integer trangThai;
+
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "TAIKHOAN_NHOM", joinColumns = @JoinColumn(name = "MATK"), inverseJoinColumns = @JoinColumn(name = "MANHOM"))
     private List<Nhom> danhSachNhom;

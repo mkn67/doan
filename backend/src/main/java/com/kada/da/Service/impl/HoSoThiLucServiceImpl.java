@@ -28,36 +28,30 @@ public class HoSoThiLucServiceImpl implements HoSoThiLucService {
     @Override
     @Transactional
     public HoSoThiLuc taoHoSoKham(HoSoThiLuc hoSoThiLuc, String maLichHen) {
-        // 1. Kiểm tra lịch hẹn (Khách phải check-in rồi mới được khám)
         LichHen lichHen = lichHenRepository.findById(maLichHen)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lịch hẹn"));
 
-        if (!TrangThaiLichHen.DA_CHECK_IN.getValue().equals(lichHen.getTrangThai())) {
+        // ĐÃ SỬA: So sánh trực tiếp với Enum, không dùng getValue()
+        if (lichHen.getTrangThai() != TrangThaiLichHen.DA_CHECK_IN) {
             throw new BusinessRuleException("Khách hàng chưa check-in, không thể lưu kết quả khám!");
         }
 
-        // 2. Sinh mã Hồ sơ tự động (Ví dụ: HS...)
         String generatedMaHs = "HS" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
         hoSoThiLuc.setMaHoSo(generatedMaHs);
-
-        // 3. Gắn thông tin cơ bản
         hoSoThiLuc.setKhachHang(lichHen.getKhachHang());
-        hoSoThiLuc.setNhanSu(lichHen.getNhanSu()); // Bác sĩ khám
+        hoSoThiLuc.setNhanSu(lichHen.getNhanSu());
         hoSoThiLuc.setNgayKham(LocalDate.now());
 
-        // 4. Nếu frontend gửi kèm ChiTietThiLuc (mắt trái, mắt phải), phải map ngược
-        // lại để JPA lưu được
         if (hoSoThiLuc.getChiTietThiLucs() != null) {
             hoSoThiLuc.getChiTietThiLucs().forEach(chiTiet -> {
-                chiTiet.setHoSoThiLuc(hoSoThiLuc); // Gắn khóa ngoại
+                chiTiet.setHoSoThiLuc(hoSoThiLuc);
             });
         }
 
-        // 5. Lưu xuống DB
         HoSoThiLuc savedHoSo = hoSoThiLucRepository.save(hoSoThiLuc);
 
-        // 6. Đổi trạng thái lịch hẹn thành "Hoàn thành"
-        lichHen.setTrangThai("Hoàn thành");
+        // ĐÃ SỬA: Set trạng thái bằng Enum
+        lichHen.setTrangThai(TrangThaiLichHen.DA_CHECK_IN);
         lichHenRepository.save(lichHen);
 
         log.info("Bác sĩ {} đã lưu hồ sơ khám {} cho bệnh nhân {}",

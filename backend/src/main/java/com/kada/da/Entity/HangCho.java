@@ -5,6 +5,7 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.kada.da.Enum.TrangThaiHangCho; // Import Enum
 
 @Entity
 @Table(name = "HANG_CHO")
@@ -20,8 +21,9 @@ public class HangCho {
     @Column(name = "SO_THU_TU")
     private Integer soThuTu;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "TRANG_THAI", length = 30)
-    private String trangThai; // Đang chờ | Đang khám | Hoàn thành
+    private TrangThaiHangCho trangThai; // ĐÃ SỬA: Đổi String thành TrangThaiHangCho
 
     @Column(name = "GIO_DANG_KY")
     private LocalDateTime gioDangKy;
