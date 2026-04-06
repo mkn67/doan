@@ -1,0 +1,22 @@
+MA_TC,TEN_TC,MO_TA,IS_ACTIVE
+TC01,Nhìn mờ,Thị lực giảm không rõ nguyên nhân,1
+TC02,Nhìn đôi,Song thị một mắt hoặc cả hai mắt,1
+TC03,Đau mắt,Đau nhức trong hoặc quanh hốc mắt,1
+TC04,Cộm mắt,Cảm giác có dị vật trong mắt,1
+TC05,Chảy nước mắt,Chảy nước mắt bất thường không do cảm xúc,1
+TC06,Nhạy cảm ánh sáng,Chói mắt khó chịu khi gặp ánh sáng,1
+TC07,Thấy ruồi bay,Xuất hiện đốm đen hoặc sợi đen trôi trong tầm nhìn,1
+TC08,Nhìn thấy chớp sáng,Thấy tia sáng hoặc chớp sáng đột ngột,1
+TC09,Mắt khô,Rát cay khô mắt,1
+TC10,Sụp mí,Mí mắt trên sụp che khuất tầm nhìn,1
+TC11,Đỏ mắt,Đỏ kết mạc hoặc củng mạc,1
+TC12,Ngứa mắt,Ngứa kèm theo dụi mắt thường xuyên,1
+TC13,Chảy mủ,Có dịch mủ vàng hoặc xanh chảy ra từ mắt,1
+TC14,Quáng gà,Khó nhìn khi trời tối hoặc nơi thiếu sáng,1
+TC15,Hẹp thị trường,Mất một phần tầm nhìn như nhìn qua ống nhòm,1
+TC16,Đồng tử bất thường,Đồng tử giãn co bất thường hoặc không đều,1
+TC17,Lác mắt,Mắt không nhìn cùng một hướng,1
+TC18,Rung giật nhãn cầu,Mắt chuyển động rung bất thường,1
+TC19,Mất thị lực đột ngột,Mù hoặc mờ hoàn toàn xuất hiện nhanh,1
+TC20,Biến dạng hình ảnh,Đường thẳng nhìn bị cong hoặc gãy khúc,1
+TC21,Triệu chứng khác,Các triệu chứng không nằm trong danh mục chuẩn,1

@@ -136,7 +136,6 @@ CREATE TABLE LICH_HEN (
     NGAYHEN     TIMESTAMP,
     GIO_HEN     TIMESTAMP,
     LOAI_LICH   NVARCHAR2(20) DEFAULT N'Online',
-    TRIEU_CHUNG JSON,
     TRANGTHAI   NVARCHAR2(50),
     CONSTRAINT FK_LH_KH  FOREIGN KEY (MAKH)  REFERENCES KHACH_HANG(MAKH),
     CONSTRAINT FK_LH_NS  FOREIGN KEY (MANS)  REFERENCES NHAN_SU(MANS),
@@ -357,7 +356,31 @@ CREATE TABLE THANH_TOAN (
     TRANGTHAI     NVARCHAR2(50),
     CONSTRAINT FK_TT_HD FOREIGN KEY (MAHD) REFERENCES HOA_DON(MAHD)
 );
+-- Danh mục triệu chứng
+CREATE TABLE TRIEU_CHUNG (
+    MA_TC  VARCHAR2(10) PRIMARY KEY,
+    TEN_TC NVARCHAR2(200) NOT NULL,
+    MO_TA  NVARCHAR2(500),
+    IS_ACTIVE NUMBER(1) DEFAULT 1
+);
 
+-- Bảng liên kết lịch hẹn - triệu chứng
+CREATE TABLE LICH_HEN_TRIEU_CHUNG (
+    MALH     VARCHAR2(10),
+    MA_TC    VARCHAR2(10),
+    MO_TA_TU_DO NVARCHAR2(500), -- cho phép bệnh nhân mô tả thêm
+    CONSTRAINT PK_LH_TC PRIMARY KEY (MALH, MA_TC),
+    CONSTRAINT FK_LH_TC_LH FOREIGN KEY (MALH) REFERENCES LICH_HEN(MALH),
+    CONSTRAINT FK_LH_TC_TC FOREIGN KEY (MA_TC) REFERENCES TRIEU_CHUNG(MA_TC)
+);
+CREATE TABLE CT_GOI_KHAM (
+    MAGOI  VARCHAR2(10),
+    MADV   VARCHAR2(10),
+    SOLUONG NUMBER DEFAULT 1,
+    CONSTRAINT PK_CT_GOI PRIMARY KEY (MAGOI, MADV),
+    CONSTRAINT FK_CT_GOI_GOI FOREIGN KEY (MAGOI) REFERENCES GOI_KHAM(MAGOI),
+    CONSTRAINT FK_CT_GOI_DV  FOREIGN KEY (MADV)  REFERENCES DICH_VU_KHAM(MADV)
+);
 -- ============================================================
 -- PHẦN III: TRIGGERS AUTO-SINH MÃ
 -- ============================================================
@@ -401,7 +424,15 @@ CREATE OR REPLACE TRIGGER TRG_GEN_MAGD
 BEFORE INSERT ON GIAO_DICH_NCC FOR EACH ROW
 BEGIN IF :NEW.MAGD IS NULL THEN :NEW.MAGD := 'GD' || LPAD(SEQ_GIAO_DICH_NCC.NEXTVAL,6,'0'); END IF; END;
 /
-
+CREATE OR REPLACE TRIGGER TRG_AUDIT_HOSO_THILUC
+AFTER UPDATE OF KETLUAN ON HO_SO_THI_LUC
+FOR EACH ROW
+BEGIN
+    IF :OLD.KETLUAN != :NEW.KETLUAN THEN
+        INSERT INTO AUDIT_HOSO_THILUC (MAAUDIT, MAHOSO, OLD_KETLUAN, NEW_KETLUAN, NGUOI_THUC_HIEN)
+        VALUES ('AD' || SEQ_AUDIT.NEXTVAL, :NEW.MAHOSO, :OLD.KETLUAN, :NEW.KETLUAN, USER);
+    END IF;
+END;
 -- ============================================================
 -- PHẦN IV: TRIGGERS NGHIỆP VỤ
 -- ============================================================
@@ -1157,6 +1188,20 @@ LEFT JOIN LO_HANG lh ON sp.MASP = lh.MASP AND lh.NGAYHETHAN > SYSDATE AND lh.SOL
 GROUP BY sp.MASP, sp.TENSP, sp.DONVITINH, sp.TON_KHO_TOI_THIEU
 HAVING NVL(SUM(lh.SOLUONGTON),0) <= sp.TON_KHO_TOI_THIEU * 2 OR NVL(SUM(lh.SOLUONGTON),0) = 0;
 
+CREATE VIEW V_LICH_HEN_TRIEU_CHUNG AS
+SELECT 
+    lh.MALH,
+    lh.NGAYHEN,
+    lh.MAKH,
+    kh.HOTEN AS TEN_KHACH,
+    lh.TRANGTHAI,
+    tc.MA_TC,
+    tc.TEN_TC,
+    lhtc.MO_TA_TU_DO
+FROM LICH_HEN lh
+JOIN LICH_HEN_TRIEU_CHUNG lhtc ON lh.MALH = lhtc.MALH
+JOIN TRIEU_CHUNG tc ON lhtc.MA_TC = tc.MA_TC
+LEFT JOIN KHACH_HANG kh ON lh.MAKH = kh.MAKH;
 -- ============================================================
 -- PHẦN VII: INDEXES (Đã tinh gọn tối đa để chống "Cháy RAM")
 -- ============================================================
@@ -1185,7 +1230,23 @@ CREATE INDEX IDX_LH_MANS_NGAY ON LICH_HEN(MANS, NGAYHEN, TRANGTHAI);
 
 -- 4. Function-Based Index (Cực tốt cho Oracle)
 -- Hỗ trợ V_HANG_CHO_HOM_NAY (truy vấn dùng TRUNC(GIO_DANG_KY))
-CREATE INDEX IDX_HC_TRUNC_NGAY ON HANG_CHO(TRUNC(GIO_DANG_KY), TRANG_THAI);
+-- Index cho HANG_CHO (chạy được ngay, không lỗi)
+CREATE INDEX IDX_HC_GIO_DANG_KY_TT ON HANG_CHO(GIO_DANG_KY, TRANG_THAI);
+-- Bảng TRIEU_CHUNG: mặc định PK là MA_TC đã có index unique. Không cần thêm.
 
+-- Bảng LICH_HEN_TRIEU_CHUNG:
+-- PK (MALH, MA_TC) đã là composite index, đủ cho truy vấn theo MALH hoặc cả hai.
+-- Nếu bạn thường xuyên tìm kiếm "tất cả lịch hẹn có triệu chứng X" thì thêm index riêng trên MA_TC:
+CREATE INDEX IDX_LH_TC_MA_TC ON LICH_HEN_TRIEU_CHUNG(MA_TC);
+
+-- Nếu hay lọc theo thời gian (kết hợp với bảng LICH_HEN), có thể thêm index trên MALH và NGAYHEN của LICH_HEN (đã có ở bảng LICH_HEN).
 -- ============================================================
+-- Cho bảng LICH_HEN (thường xuyên query theo ngày, trạng thái)
+CREATE INDEX IDX_LH_NGAYHEN_TRANGTHAI ON LICH_HEN(NGAYHEN, TRANGTHAI);
+
+-- Cho bảng HOA_DON (tìm theo khách hàng, trạng thái)
+CREATE INDEX IDX_HD_MAKH_TRANGTHAI ON HOA_DON(MAKH, TRANGTHAI);
+
+-- Cho bảng HANG_CHO (lấy số thứ tự theo ngày)
+CREATE INDEX IDX_HC_GIO_DANG_KY ON HANG_CHO(GIO_DANG_KY);
 COMMIT;
