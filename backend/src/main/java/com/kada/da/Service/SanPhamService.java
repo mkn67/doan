@@ -1,12 +1,15 @@
 package com.kada.da.Service;
 
-import com.kada.da.Entity.SanPham;
-import java.util.List;
+import com.kada.da.Dto.SanPhamRequestDTO;
+import com.kada.da.Dto.Response.PageResponseDTO;
+import com.kada.da.Dto.Response.SanPhamResponseDTO;
 
 public interface SanPhamService {
-    List<SanPham> layTatCaSanPham();
+    SanPhamResponseDTO createSanPham(SanPhamRequestDTO request);
 
-    List<SanPham> timTheoLoai(String maLoai);
+    SanPhamResponseDTO updateSanPham(String maSp, SanPhamRequestDTO request);
 
-    SanPham capNhatGia(String maSp, Double giaMoi);
+    SanPhamResponseDTO getSanPhamById(String maSp);
+
+    PageResponseDTO<SanPhamResponseDTO> getAllSanPham(int page, int size, Boolean laThuoc, String keyword);
 }

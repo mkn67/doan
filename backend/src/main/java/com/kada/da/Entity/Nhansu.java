@@ -6,7 +6,10 @@ import java.time.LocalDate;
 
 @Entity
 @Table(name = "NHANSU")
-@Data @NoArgsConstructor @AllArgsConstructor @Builder 
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class NhanSu {
     @Id
     @Column(name = "MANS", length = 10)
@@ -43,4 +46,7 @@ public class NhanSu {
 
     @Column(name = "IS_DELETED")
     private Integer isDeleted;
+    @ManyToOne
+    @JoinColumn(name = "MA_NHOM") // Tên cột khóa ngoại trong DB của ông
+    private Nhom nhom; // <--- THÊM DÒNG NÀY VÀO NÈ!
 }

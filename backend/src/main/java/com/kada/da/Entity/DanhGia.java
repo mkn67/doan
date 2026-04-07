@@ -40,5 +40,8 @@ public class DanhGia {
     private LocalDateTime ngayDg;
 
     @Column(name = "IS_HIDDEN")
-    private Integer isHidden;
+    private boolean isHidden;
+    // Bổ sung 2 trường này nếu đang thiếu
+    @Column(name = "MA_HO_SO")
+    private String maHoSo;
 }

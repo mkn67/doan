@@ -3,6 +3,7 @@ package com.kada.da.Dto.Response;
 import com.kada.da.Entity.LichHen;
 import com.kada.da.Enum.TrangThaiLichHen; // IMPORT ENUM VÀO ĐÂY
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.time.LocalDate;
@@ -11,6 +12,7 @@ import java.time.LocalTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class LichHenResponseDTO {
 
     private String maLh;

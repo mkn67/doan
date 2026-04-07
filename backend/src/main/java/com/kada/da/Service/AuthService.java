@@ -1,7 +1,7 @@
 package com.kada.da.Service;
 
 import com.kada.da.Dto.LoginRequestDTO;
-import com.kada.da.Dto.LoginResponseDTO;
+import com.kada.da.Dto.Response.LoginResponseDTO;
 
 public interface AuthService {
     LoginResponseDTO login(LoginRequestDTO request);

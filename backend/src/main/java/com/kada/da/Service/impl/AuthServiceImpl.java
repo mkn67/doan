@@ -4,7 +4,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.kada.da.Dto.LoginRequestDTO;
-import com.kada.da.Dto.LoginResponseDTO;
+import com.kada.da.Dto.Response.LoginResponseDTO;
 import com.kada.da.Entity.TaiKhoan;
 import com.kada.da.Entity.Nhom;
 import com.kada.da.Repository.TaiKhoanRepository;

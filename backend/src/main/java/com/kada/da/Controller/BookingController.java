@@ -2,7 +2,7 @@ package com.kada.da.Controller;
 
 import com.kada.da.Dto.LichHenRequestDTO;
 import com.kada.da.Dto.Response.LichHenResponseDTO;
-import com.kada.da.Entity.HangCho;
+import com.kada.da.Dto.Response.HangChoResponseDTO;
 import com.kada.da.Service.LichHenService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -33,10 +33,10 @@ public class BookingController {
 
     // 3. Khách tới phòng khám -> Check-in -> Lấy số thứ tự
     @PostMapping("/{maLichHen}/check-in")
-    public ResponseEntity<HangCho> checkIn(@PathVariable("maLichHen") String maLichHen) {
-        // Hàm checkIn này sẽ trả về Entity HangCho, trong đó có chứa soThuTu
-        HangCho hangCho = lichHenService.checkIn(maLichHen);
-        return ResponseEntity.ok(hangCho);
+    public ResponseEntity<HangChoResponseDTO> checkIn(@PathVariable("maLichHen") String maLichHen) {
+        // Hàm checkIn này sẽ trả về DTO HangChoResponseDTO, trong đó có chứa soThuTu
+        HangChoResponseDTO response = lichHenService.checkIn(maLichHen);
+        return ResponseEntity.ok(response);
     }
 
     // 4. Hủy lịch hẹn

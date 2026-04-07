@@ -2,7 +2,7 @@ package com.kada.da.Entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import java.util.Set;
+import java.util.List;
 
 @Entity
 @Table(name = "NHOM")
@@ -10,22 +10,19 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Nhom {
-
     @Id
-    @EqualsAndHashCode.Include
-    @Column(name = "MANHOM", length = 10)
+    @Column(name = "MA_NHOM", length = 10)
     private String maNhom;
 
-    @Column(name = "TENNHOM", length = 100)
+    @Column(name = "TEN_NHOM", length = 100)
     private String tenNhom;
 
-    @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(
-        name = "NHOM_VAITRO", 
-        joinColumns = @JoinColumn(name = "MANHOM"),
-        inverseJoinColumns = @JoinColumn(name = "MAVAITRO")
-    )
-    private Set<VaiTro> vaiTros;
+    // THIẾU DÒNG NÀY NÈ ÔNG:
+    @Column(name = "MO_TA", length = 500)
+    private String moTa;
+
+    @ManyToMany
+    @JoinTable(name = "NHOM_VAI_TRO", joinColumns = @JoinColumn(name = "MA_NHOM"), inverseJoinColumns = @JoinColumn(name = "MA_VAI_TRO"))
+    private List<VaiTro> vaiTros;
 }

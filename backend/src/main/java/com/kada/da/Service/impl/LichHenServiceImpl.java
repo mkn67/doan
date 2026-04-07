@@ -2,11 +2,12 @@ package com.kada.da.Service.impl;
 
 import com.kada.da.Dto.LichHenRequestDTO;
 import com.kada.da.Dto.Response.LichHenResponseDTO;
+import com.kada.da.Dto.Response.HangChoResponseDTO; // Bổ sung Import DTO
 import com.kada.da.Entity.HangCho;
 import com.kada.da.Entity.LichHen;
 import com.kada.da.Entity.NhanSu;
 import com.kada.da.Entity.KhachHang;
-import com.kada.da.Enum.TrangThaiHangCho; // Import thêm cái này
+import com.kada.da.Enum.TrangThaiHangCho;
 import com.kada.da.Enum.TrangThaiLichHen;
 import com.kada.da.Exception.BusinessRuleException;
 import com.kada.da.Exception.ResourceNotFoundException;
@@ -42,11 +43,10 @@ public class LichHenServiceImpl implements LichHenService {
 
         KhachHang khachHang = khachHangRepository.findById(requestDTO.getMaKhachHang())
                 .orElseThrow(() -> new ResourceNotFoundException("Khách hàng không tồn tại"));
+
         NhanSu bacSi = nhanSuRepository.findById(requestDTO.getMaBacSi())
                 .orElseThrow(() -> new ResourceNotFoundException("Bác sĩ không tồn tại"));
 
-        // ĐÃ SỬA: Kiểm tra DB bằng Enum (Nếu trong Repository ông vẫn để tham số
-        // List<String> thì nhớ đổi thành List<TrangThaiLichHen>)
         boolean hasActiveBooking = lichHenRepository.existsByKhachHang_MaKhAndTrangThaiIn(
                 khachHang.getMaKh(),
                 List.of(TrangThaiLichHen.CHO_XAC_NHAN, TrangThaiLichHen.DA_XAC_NHAN));
@@ -63,7 +63,7 @@ public class LichHenServiceImpl implements LichHenService {
                 .nhanSu(bacSi)
                 .ngayHen(requestDTO.getNgayHen().atStartOfDay())
                 .gioHen(requestDTO.getNgayHen().atTime(requestDTO.getGioHen()))
-                .trangThai(TrangThaiLichHen.CHO_XAC_NHAN) // ĐÃ SỬA: Dùng Enum
+                .trangThai(TrangThaiLichHen.CHO_XAC_NHAN)
                 .trieuChung(requestDTO.getTrieuChung())
                 .loaiLich("Khám mới")
                 .build();
@@ -71,7 +71,8 @@ public class LichHenServiceImpl implements LichHenService {
         lichHen = lichHenRepository.save(lichHen);
         log.info("Đã tạo lịch hẹn thành công với mã: {}", lichHen.getMaLh());
 
-        return new LichHenResponseDTO(lichHen);
+        // ĐÃ SỬA: Dùng hàm map chuẩn
+        return convertToLichHenResponse(lichHen);
     }
 
     @Override
@@ -79,15 +80,16 @@ public class LichHenServiceImpl implements LichHenService {
     public LichHenResponseDTO confirmLichHen(String maLichHen) {
         LichHen lichHen = findLichHenById(maLichHen);
 
-        // ĐÃ SỬA: So sánh bằng toán tử != với Enum
         if (lichHen.getTrangThai() != TrangThaiLichHen.CHO_XAC_NHAN) {
             throw new BusinessRuleException("Chỉ có thể xác nhận lịch hẹn đang ở trạng thái 'Chờ xác nhận'");
         }
 
-        lichHen.setTrangThai(TrangThaiLichHen.DA_XAC_NHAN); // ĐÃ SỬA
+        lichHen.setTrangThai(TrangThaiLichHen.DA_XAC_NHAN);
         LichHen saved = lichHenRepository.save(lichHen);
         log.info("Đã xác nhận lịch hẹn: {}", maLichHen);
-        return new LichHenResponseDTO(saved);
+
+        // ĐÃ SỬA: Dùng hàm map chuẩn
+        return convertToLichHenResponse(saved);
     }
 
     @Override
@@ -95,7 +97,6 @@ public class LichHenServiceImpl implements LichHenService {
     public void cancelLichHen(String maLichHen, String lyDo) {
         LichHen lichHen = findLichHenById(maLichHen);
 
-        // ĐÃ SỬA: So sánh bằng Enum
         if (lichHen.getTrangThai() == TrangThaiLichHen.DA_CHECK_IN) {
             throw new BusinessRuleException("Không thể hủy lịch hẹn đã check-in");
         }
@@ -104,7 +105,7 @@ public class LichHenServiceImpl implements LichHenService {
             throw new BusinessRuleException("Lịch hẹn này đã bị hủy từ trước rồi");
         }
 
-        lichHen.setTrangThai(TrangThaiLichHen.DA_HUY); // ĐÃ SỬA
+        lichHen.setTrangThai(TrangThaiLichHen.DA_HUY);
 
         log.warn("Lịch hẹn {} bị hủy. Lý do: {}", maLichHen, lyDo);
 
@@ -114,10 +115,10 @@ public class LichHenServiceImpl implements LichHenService {
 
     @Override
     @Transactional
-    public HangCho checkIn(String maLichHen) {
+    // ĐÃ SỬA KIỂU TRẢ VỀ: Phải là HangChoResponseDTO
+    public HangChoResponseDTO checkIn(String maLichHen) {
         LichHen lichHen = findLichHenById(maLichHen);
 
-        // ĐÃ SỬA
         if (lichHen.getTrangThai() != TrangThaiLichHen.DA_XAC_NHAN) {
             throw new BusinessRuleException("Khách hàng chưa được xác nhận lịch hẹn, không thể check-in!");
         }
@@ -127,7 +128,7 @@ public class LichHenServiceImpl implements LichHenService {
             throw new BusinessRuleException("Lịch hẹn không phải hôm nay, không thể check-in");
         }
 
-        lichHen.setTrangThai(TrangThaiLichHen.DA_CHECK_IN); // ĐÃ SỬA
+        lichHen.setTrangThai(TrangThaiLichHen.DA_CHECK_IN);
         lichHenRepository.save(lichHen);
 
         Integer maxSttToday = hangChoRepository.findMaxSoThuTuToday();
@@ -139,19 +140,52 @@ public class LichHenServiceImpl implements LichHenService {
         HangCho hangCho = HangCho.builder()
                 .maHc(generatedMaHc)
                 .soThuTu(soThuTu)
-                .trangThai(TrangThaiHangCho.DANG_CHO) // ĐÃ SỬA: Dùng Enum TrangThaiHangCho
+                .trangThai(TrangThaiHangCho.DANG_CHO)
                 .gioDangKy(LocalDateTime.now())
                 .khachHang(lichHen.getKhachHang())
                 .lichHen(lichHen)
                 .nhanSuPhanCong(lichHen.getNhanSu())
                 .build();
 
+        HangCho savedHangCho = hangChoRepository.save(hangCho);
         log.info("Check-in thành công cho lịch hẹn {} - STT: {}", maLichHen, soThuTu);
-        return hangChoRepository.save(hangCho);
+
+        // ĐÃ SỬA: Map Entity ra DTO
+        return convertToHangChoResponse(savedHangCho);
     }
+
+    // ==================== PRIVATE MAPPER METHODS ====================
 
     private LichHen findLichHenById(String maLichHen) {
         return lichHenRepository.findById(maLichHen)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lịch hẹn mã: " + maLichHen));
+    }
+
+    private LichHenResponseDTO convertToLichHenResponse(LichHen entity) {
+        return LichHenResponseDTO.builder()
+                .maLh(entity.getMaLh())
+                .tenKhachHang(entity.getKhachHang().getHoTen())
+                .tenBacSi(entity.getNhanSu().getHoTen())
+                .ngayHen(entity.getNgayHen().toLocalDate()) // Chuyển LocalDateTime về LocalDate
+                .gioHen(entity.getGioHen().toLocalTime()) // Chuyển LocalDateTime về LocalTime
+                .trieuChung(entity.getTrieuChung())
+                .loaiLich(entity.getLoaiLich())
+                .trangThai(entity.getTrangThai()) // Chuyển Enum thành String
+                .build();
+    }
+
+    private HangChoResponseDTO convertToHangChoResponse(HangCho entity) {
+        return HangChoResponseDTO.builder()
+                .maHangCho(entity.getMaHc())
+                .soThuTu(entity.getSoThuTu())
+                .tenKhachHang(entity.getKhachHang().getHoTen())
+                .tenBacSi(entity.getNhanSuPhanCong().getHoTen())
+                // ĐÃ SỬA: Đổi từ gioDangKy thành thoiGianBatDauCho cho khớp với DTO
+                .thoiGianBatDauCho(entity.getGioDangKy())
+                // BỔ SUNG: Vừa mới check-in xong thì thời gian chờ đợi dĩ nhiên là 0 phút
+                .thoiGianChoDoiPhut(0L)
+
+                .trangThai(entity.getTrangThai().name())
+                .build();
     }
 }
