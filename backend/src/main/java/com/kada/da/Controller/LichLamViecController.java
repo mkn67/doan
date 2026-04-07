@@ -24,9 +24,6 @@ public class LichLamViecController {
 
     private final LichLamViecService lichLamViecService;
 
-    /**
-     * Tạo lịch làm việc mới
-     */
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'QUAN_LY')")
     public ResponseEntity<LichLamViecResponseDTO> createLichLamViec(
@@ -36,9 +33,6 @@ public class LichLamViecController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    /**
-     * Lấy lịch làm việc theo mã
-     */
     @GetMapping("/{maLlv}")
     public ResponseEntity<LichLamViecResponseDTO> getLichLamViecById(
             @PathVariable String maLlv) {
@@ -47,9 +41,6 @@ public class LichLamViecController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Lấy danh sách lịch làm việc (phân trang)
-     */
     @GetMapping
     public ResponseEntity<PageResponseDTO<LichLamViecResponseDTO>> getAllLichLamViec(
             @RequestParam(defaultValue = "0") int page,
@@ -59,9 +50,6 @@ public class LichLamViecController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Lấy lịch làm việc theo nhân sự
-     */
     @GetMapping("/nhan-su/{maNs}")
     public ResponseEntity<List<LichLamViecResponseDTO>> getLichLamViecByNhanSu(
             @PathVariable String maNs) {
@@ -70,9 +58,6 @@ public class LichLamViecController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Lấy lịch làm việc theo nhân sự và khoảng thời gian
-     */
     @GetMapping("/nhan-su/{maNs}/trong-khoang")
     public ResponseEntity<List<LichLamViecResponseDTO>> getLichLamViecByNhanSuAndDateRange(
             @PathVariable String maNs,
@@ -84,47 +69,43 @@ public class LichLamViecController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Lấy lịch làm việc theo ngày
-     */
     @GetMapping("/ngay")
     public ResponseEntity<List<LichLamViecResponseDTO>> getLichLamViecByNgay(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate ngayLam) {
-        log.info("API: Lấy lịch làm việc theo ngày: {}", ngayLam);
-        List<LichLamViecResponseDTO> response = lichLamViecService.getLichLamViecByNgay(ngayLam);
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate ngay) {
+        log.info("API: Lấy lịch làm việc theo ngày: {}", ngay);
+        List<LichLamViecResponseDTO> response = lichLamViecService.getLichLamViecByNgay(ngay);
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Kiểm tra nhân sự có rảnh trong khung giờ không
-     */
+    @GetMapping("/ca")
+    public ResponseEntity<List<LichLamViecResponseDTO>> getLichLamViecByCa(
+            @RequestParam String ca) {
+        log.info("API: Lấy lịch làm việc theo ca: {}", ca);
+        List<LichLamViecResponseDTO> response = lichLamViecService.getLichLamViecByCa(ca);
+        return ResponseEntity.ok(response);
+    }
+
+    // SỬA: Kiểm tra nhân sự rảnh theo ngày và ca
     @GetMapping("/check-ranh")
     public ResponseEntity<Boolean> checkNhanSuRanh(
             @RequestParam String maNs,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate ngayLam,
-            @RequestParam Double gioBatDau,
-            @RequestParam Double gioKetThuc) {
-        log.info("API: Kiểm tra nhân sự {} rảnh ngày {} từ {}h đến {}h", maNs, ngayLam, gioBatDau, gioKetThuc);
-        boolean isRanh = lichLamViecService.isNhanSuRanh(maNs, ngayLam, gioBatDau, gioKetThuc);
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate ngay,
+            @RequestParam String ca) {
+        log.info("API: Kiểm tra nhân sự {} rảnh ngày {} ca {}", maNs, ngay, ca);
+        boolean isRanh = lichLamViecService.isNhanSuRanh(maNs, ngay, ca);
         return ResponseEntity.ok(isRanh);
     }
 
-    /**
-     * Lấy danh sách nhân sự rảnh trong khung giờ
-     */
+    // SỬA: Lấy danh sách nhân sự rảnh theo ngày và ca
     @GetMapping("/nhan-su-ranh")
     public ResponseEntity<List<LichLamViecResponseDTO>> getNhanSuRanh(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate ngayLam,
-            @RequestParam Double gioBatDau,
-            @RequestParam Double gioKetThuc) {
-        log.info("API: Lấy danh sách nhân sự rảnh ngày {} từ {}h đến {}h", ngayLam, gioBatDau, gioKetThuc);
-        List<LichLamViecResponseDTO> response = lichLamViecService.getNhanSuRanh(ngayLam, gioBatDau, gioKetThuc);
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate ngay,
+            @RequestParam String ca) {
+        log.info("API: Lấy danh sách nhân sự rảnh ngày {} ca {}", ngay, ca);
+        List<LichLamViecResponseDTO> response = lichLamViecService.getNhanSuRanh(ngay, ca);
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Cập nhật lịch làm việc
-     */
     @PutMapping("/{maLlv}")
     @PreAuthorize("hasAnyRole('ADMIN', 'QUAN_LY')")
     public ResponseEntity<LichLamViecResponseDTO> updateLichLamViec(
@@ -135,9 +116,6 @@ public class LichLamViecController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Đánh dấu nghỉ / xóa lịch làm việc
-     */
     @DeleteMapping("/{maLlv}")
     @PreAuthorize("hasAnyRole('ADMIN', 'QUAN_LY')")
     public ResponseEntity<Void> deleteLichLamViec(@PathVariable String maLlv) {
@@ -146,9 +124,6 @@ public class LichLamViecController {
         return ResponseEntity.noContent().build();
     }
 
-    /**
-     * Tạo lịch làm việc hàng loạt cho một nhân sự trong khoảng thời gian
-     */
     @PostMapping("/batch")
     @PreAuthorize("hasAnyRole('ADMIN', 'QUAN_LY')")
     public ResponseEntity<List<LichLamViecResponseDTO>> createLichLamViecBatch(

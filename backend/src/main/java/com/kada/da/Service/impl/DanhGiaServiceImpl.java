@@ -122,7 +122,7 @@ public class DanhGiaServiceImpl implements DanhGiaService {
     @Override
     public List<DanhGiaResponseDTO> getDanhGiaGanDay(int days) {
         LocalDateTime dateThreshold = LocalDateTime.now().minusDays(days);
-        return danhGiaRepository.findByNgayTaoAfter(dateThreshold).stream()
+        return danhGiaRepository.findByNgayDgAfter(dateThreshold).stream()
                 .map(this::convertToResponse).collect(Collectors.toList());
     }
 

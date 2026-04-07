@@ -9,16 +9,8 @@ import java.util.List;
 
 public interface LichLamViecService {
 
-    // 1. Nhóm API Tạo mới / Cập nhật / Xóa
     LichLamViecResponseDTO createLichLamViec(LichLamViecRequestDTO request);
 
-    LichLamViecResponseDTO updateLichLamViec(String maLlv, LichLamViecRequestDTO request);
-
-    void deleteLichLamViec(String maLlv);
-
-    List<LichLamViecResponseDTO> createLichLamViecBatch(List<LichLamViecRequestDTO> requests);
-
-    // 2. Nhóm API Truy vấn / Lấy danh sách
     LichLamViecResponseDTO getLichLamViecById(String maLlv);
 
     PageResponseDTO<LichLamViecResponseDTO> getAllLichLamViec(int page, int size);
@@ -27,10 +19,18 @@ public interface LichLamViecService {
 
     List<LichLamViecResponseDTO> getLichLamViecByNhanSuAndDateRange(String maNs, LocalDate fromDate, LocalDate toDate);
 
-    List<LichLamViecResponseDTO> getLichLamViecByNgay(LocalDate ngayLam);
+    List<LichLamViecResponseDTO> getLichLamViecByNgay(LocalDate ngay);
 
-    // 3. Nhóm API Kiểm tra tính khả dụng (Booking / Đặt lịch)
-    boolean isNhanSuRanh(String maNs, LocalDate ngayLam, Double gioBatDau, Double gioKetThuc);
+    List<LichLamViecResponseDTO> getLichLamViecByCa(String ca);
 
-    List<LichLamViecResponseDTO> getNhanSuRanh(LocalDate ngayLam, Double gioBatDau, Double gioKetThuc);
+    boolean isNhanSuRanh(String maNs, LocalDate ngay, String ca);
+
+    // Thêm method này
+    List<LichLamViecResponseDTO> getNhanSuRanh(LocalDate ngay, String ca);
+
+    LichLamViecResponseDTO updateLichLamViec(String maLlv, LichLamViecRequestDTO request);
+
+    void deleteLichLamViec(String maLlv);
+
+    List<LichLamViecResponseDTO> createLichLamViecBatch(List<LichLamViecRequestDTO> requests);
 }

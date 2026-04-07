@@ -29,7 +29,7 @@ public interface DanhGiaRepository extends JpaRepository<DanhGia, String> {
     List<DanhGia> findByIsHiddenFalse();
 
     // 6. Tìm các đánh giá mới nhất từ một mốc thời gian (Ví dụ: 7 ngày qua)
-    List<DanhGia> findByNgayTaoAfter(LocalDateTime dateThreshold);
+    List<DanhGia> findByNgayDgAfter(LocalDateTime ngay);;
 
     // 7. Cực kỳ quan trọng: Tính điểm trung bình của một bác sĩ bằng SQL
     @Query("SELECT AVG(d.soSao) FROM DanhGia d WHERE d.nhanSu.maNs = :maNs")

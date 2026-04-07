@@ -12,4 +12,7 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, String> {
 
     // Tìm hóa đơn theo trạng thái (Chưa thanh toán, Đã thanh toán)
     List<HoaDon> findByTrangThai(String trangThai);
+
+    // Tìm hóa đơn theo mã đơn thuốc (PhieuKeDon)
+    List<HoaDon> findByPhieuKeDon_MaDon(String maDon);
 }
