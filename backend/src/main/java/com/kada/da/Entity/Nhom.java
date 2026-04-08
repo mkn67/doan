@@ -2,6 +2,7 @@ package com.kada.da.Entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.List;
 
 @Entity
@@ -12,17 +13,21 @@ import java.util.List;
 @Builder
 public class Nhom {
     @Id
-    @Column(name = "MA_NHOM", length = 10)
+    @Column(name = "MANHOM", length = 10)
     private String maNhom;
 
-    @Column(name = "TEN_NHOM", length = 100)
+    @Column(name = "TENNHOM", length = 100)
     private String tenNhom;
 
-    // THIẾU DÒNG NÀY NÈ ÔNG:
-    @Column(name = "MO_TA", length = 500)
+    @Column(name = "MOTA", length = 500)
     private String moTa;
 
     @ManyToMany
-    @JoinTable(name = "NHOM_VAI_TRO", joinColumns = @JoinColumn(name = "MA_NHOM"), inverseJoinColumns = @JoinColumn(name = "MA_VAI_TRO"))
+    @JoinTable(name = "NHOM_VAI_TRO", joinColumns = @JoinColumn(name = "MANHOM"), inverseJoinColumns = @JoinColumn(name = "MAVAITRO"))
     private List<VaiTro> vaiTros;
+
+    // Quan hệ ngược với TaiKhoan (để JPA quản lý 2 chiều)
+    @ManyToMany(mappedBy = "danhSachNhom")
+    @JsonIgnore
+    private List<TaiKhoan> danhSachTaiKhoan;
 }

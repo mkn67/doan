@@ -11,16 +11,29 @@ import lombok.*;
 @Builder
 public class ChiTietKyThuat {
     @Id
-    @Column(name = "MACTKT", length = 10)
-    private String maCtkt;
+    @Column(name = "MANS", length = 10)
+    private String maNs; // Khóa chính, đồng thời là khóa ngoại tới NHAN_SU
 
-    @Column(name = "TEN_THONG_SO", length = 100)
-    private String tenThongSo; // Ví dụ: Chiết suất (Index), Lớp phủ (Coating)
+    @Column(name = "CHUYEN_NGANH", length = 100)
+    private String chuyenNganh;
 
-    @Column(name = "GIA_TRI", length = 255)
-    private String giaTri; // Ví dụ: 1.67, Blue Control
+    @Column(name = "CHUNG_CHI_HANH_NGHE", length = 100)
+    private String chungChiHanhNghe;
 
-    @ManyToOne
-    @JoinColumn(name = "MAXLK")
-    private XuLyKinh xuLyKinh;
+    @Column(name = "NAM_CAP_CHUNG_CHI")
+    private Integer namCapChungChi;
+
+    @Column(name = "NOI_CAP", length = 200)
+    private String noiCap;
+
+    @Column(name = "KINH_NGHIEM_NAM")
+    private Integer kinhNghiemNam;
+
+    @Column(name = "GHI_CHU", length = 500)
+    private String ghiChu;
+
+    @OneToOne
+    @MapsId
+    @JoinColumn(name = "MANS")
+    private NhanSu nhanSu;
 }

@@ -28,12 +28,14 @@
 -- ── I.1 HỆ THỐNG, PHÂN QUYỀN & NHÂN SỰ ──────────────────────
 CREATE TABLE NHOM (
     MANHOM   VARCHAR2(10)  PRIMARY KEY,
-    TENNHOM  NVARCHAR2(100)
+    TENNHOM  NVARCHAR2(100),
+    MOTA NVARCHAR2(500)
 );
 
 CREATE TABLE VAITRO (
     MAVAITRO  VARCHAR2(10)  PRIMARY KEY,
-    TENVAITRO NVARCHAR2(100)
+    TENVAITRO NVARCHAR2(100),
+    MOTA NVARCHAR2(500),
 );
 
 CREATE TABLE NHOM_VAITRO (
@@ -347,16 +349,42 @@ CREATE TABLE CT_HOA_DON_DV (
     CONSTRAINT FK_CTHD_DV_DV FOREIGN KEY (MADV) REFERENCES DICH_VU_KHAM(MADV)
 );
 
+-- Xóa bảng cũ nếu đã tồn tại để tránh lỗi trùng tên
+-- DROP TABLE THANH_TOAN; 
+
+-- Xóa bảng cũ nếu đã tồn tại để tránh lỗi trùng tên
+-- DROP TABLE THANH_TOAN; 
+
+-- Xóa bảng cũ nếu đã tồn tại để tránh lỗi trùng tên
+-- DROP TABLE THANH_TOAN; 
+
 CREATE TABLE THANH_TOAN (
-    MATT          VARCHAR2(10)  PRIMARY KEY,
-    MAHD          VARCHAR2(10),
-    NGAYTHANHTOAN TIMESTAMP,
-    SOTIEN        NUMBER(15,2),
-    PHUONGTHUC    NVARCHAR2(50),
-    TRANGTHAI     NVARCHAR2(50),
-    CONSTRAINT FK_TT_HD FOREIGN KEY (MAHD) REFERENCES HOA_DON(MAHD)
+    MATT          VARCHAR2(10)  PRIMARY KEY, -- Mã thanh toán (TT001, TT002...)
+    MAHD          VARCHAR2(10)  NOT NULL,    -- Mã hóa đơn (Bắt buộc phải có)
+    MANS          VARCHAR2(10)  NOT NULL,    -- Mã nhân sự thu tiền (Lễ tân/Kế toán)
+    NGAYTHANHTOAN TIMESTAMP     DEFAULT CURRENT_TIMESTAMP, -- Tự động lấy giờ hiện tại
+    SOTIEN        NUMBER(15,2)  NOT NULL,    -- Số tiền thanh toán
+    PHUONGTHUC    NVARCHAR2(50),             -- Tiền mặt, Chuyển khoản, Thẻ...
+    TRANGTHAI     NVARCHAR2(50) DEFAULT 'Hoàn thành', -- Trạng thái giao dịch
+    GHICHU        NVARCHAR2(255),            -- Ghi chú thêm (nếu có)
+
+    -- Ràng buộc Khóa ngoại 1: Nối sang bảng Hóa đơn
+    CONSTRAINT FK_TT_HD FOREIGN KEY (MAHD) 
+        REFERENCES HOA_DON(MAHD),
+
+    -- Ràng buộc Khóa ngoại 2: Nối sang bảng Nhân sự (Người thu tiền)
+    CONSTRAINT FK_TT_NS FOREIGN KEY (MANS) 
+        REFERENCES NHAN_SU(MANS),
+        
+    -- Ràng buộc kiểm tra: Số tiền không được âm
+    CONSTRAINT CHK_SOTIEN_POSITIVE CHECK (SOTIEN >= 0)
 );
--- Danh mục triệu chứng
+
+-- Tạo Index để báo cáo doanh thu theo nhân viên/hóa đơn cho nhanh (Quan trọng cho đồ án IS)
+CREATE INDEX IDX_TT_MAHD ON THANH_TOAN(MAHD);
+CREATE INDEX IDX_TT_MANS ON THANH_TOAN(MANS);
+
+COMMIT;
 CREATE TABLE TRIEU_CHUNG (
     MA_TC  VARCHAR2(10) PRIMARY KEY,
     TEN_TC NVARCHAR2(200) NOT NULL,

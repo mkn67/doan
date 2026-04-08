@@ -1,20 +1,23 @@
 package com.kada.da.Dto;
 
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import java.time.LocalDate;
 
 @Data
 public class LichLamViecRequestDTO {
-    @NotBlank(message = "Mã nhân sự là bắt buộc")
+    @NotBlank(message = "Mã nhân sự không được để trống")
     private String maNs;
 
-    @NotNull(message = "Ngày làm việc không được để trống")
-    @FutureOrPresent(message = "Không thể lên lịch cho quá khứ")
-    private LocalDate ngay;
+    @NotNull(message = "Ngày làm không được để trống")
+    private LocalDate ngayLam;
 
-    @NotBlank(message = "Phải chọn ca làm việc")
-    private String ca; // Ví dụ: SANG, CHIEU, TOI
+    @NotNull(message = "Giờ bắt đầu không được để trống")
+    private Double gioBatDau;
 
-    private String ghiChu;
+    @NotNull(message = "Giờ kết thúc không được để trống")
+    private Double gioKetThuc;
+
+    private Integer isNghi;
 }

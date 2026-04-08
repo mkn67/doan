@@ -1,5 +1,6 @@
 package com.kada.da.Service.impl;
 
+import com.kada.da.Entity.TaiKhoan;
 import com.kada.da.Dto.NhomRequestDTO;
 import com.kada.da.Dto.Response.NhomResponseDTO;
 import com.kada.da.Dto.Response.PageResponseDTO;
@@ -12,6 +13,7 @@ import com.kada.da.Exception.ResourceNotFoundException;
 import com.kada.da.Repository.NhomRepository;
 import com.kada.da.Repository.VaiTroRepository;
 import com.kada.da.Repository.NhanSuRepository;
+import com.kada.da.Repository.TaiKhoanRepository;
 import com.kada.da.Service.NhomService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,8 +22,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.util.ArrayList;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -34,6 +36,7 @@ public class NhomServiceImpl implements NhomService {
     private final NhomRepository nhomRepository;
     private final VaiTroRepository vaiTroRepository;
     private final NhanSuRepository nhanSuRepository;
+    private final TaiKhoanRepository taiKhoanRepository;
 
     @Override
     @Transactional
@@ -126,21 +129,37 @@ public class NhomServiceImpl implements NhomService {
         }
     }
 
+    // ==================== PHÂN QUYỀN NHÂN SỰ - NHÓM ====================
+
     @Override
     @Transactional
     public void assignNhanSuToNhom(String maNhom, List<String> maNsList) {
         Nhom nhom = findById(maNhom);
-
-        List<NhanSu> nhanSuList = nhanSuRepository.findAllById(maNsList);
-        if (nhanSuList.size() != maNsList.size()) {
-            throw new ResourceNotFoundException("Một hoặc nhiều nhân sự không tồn tại");
+        for (String maNs : maNsList) {
+            NhanSu nhanSu = nhanSuRepository.findById(maNs)
+                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy nhân sự: " + maNs));
+            TaiKhoan taiKhoan = nhanSu.getTaiKhoan();
+            if (taiKhoan == null) {
+                throw new BusinessRuleException("Nhân sự " + maNs + " chưa có tài khoản hệ thống!");
+            }
+            // Chỉ thêm nếu chưa có nhóm này
+            if (!taiKhoan.getDanhSachNhom().contains(nhom)) {
+                taiKhoan.getDanhSachNhom().add(nhom);
+                taiKhoanRepository.save(taiKhoan);
+                log.info("Đã gán nhóm {} cho tài khoản của nhân sự {}", maNhom, maNs);
+            } else {
+                log.warn("Nhân sự {} đã có nhóm {} rồi, bỏ qua", maNs, maNhom);
+            }
         }
-
-        for (NhanSu ns : nhanSuList) {
-            ns.setNhom(nhom);
-        }
-        nhanSuRepository.saveAll(nhanSuList);
     }
+
+    @Override
+    @Transactional
+    public void addNhanSuToNhom(String maNs, String maNhom) {
+        assignNhanSuToNhom(maNhom, List.of(maNs));
+    }
+
+    // ==================== PRIVATE METHODS ====================
 
     private Nhom findById(String maNhom) {
         return nhomRepository.findById(maNhom)

@@ -6,5 +6,5 @@ import java.util.List;
 public interface PhieuKeDonService {
     PhieuKeDon taoDonThuoc(PhieuKeDon phieuKeDon);
 
-    List<PhieuKeDon> layDonThuocTheoKhachHang(String maKh);
+    List<PhieuKeDon> layDonThuocTheoHoSo(String maHoSo);
 }

@@ -1,18 +1,21 @@
 package com.kada.da.Dto.Response;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import java.time.LocalDate;
 
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class LichLamViecResponseDTO {
     private String maLlv;
     private String tenNhanSu;
     private String chucVu;
-    private LocalDate ngay;
-    private String ca;
-    private String trangThai; // Ví dụ: Đã xác nhận, Xin nghỉ, Thay đổi
-    private String ghiChu;
+    private LocalDate ngayLam;
+    private Double gioBatDau;
+    private Double gioKetThuc;
+    private Integer isNghi;
 }

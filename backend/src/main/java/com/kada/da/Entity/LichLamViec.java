@@ -15,13 +15,19 @@ public class LichLamViec {
     @Column(name = "MALLV", length = 10)
     private String maLlv;
 
-    @Column(name = "NGAY_LAM_VIEC")
-    private LocalDate ngayLamViec;
-
-    @Column(name = "CA", length = 20)
-    private String ca; // Sáng, Chiều, Tối
-
     @ManyToOne
-    @JoinColumn(name = "MANS")
+    @JoinColumn(name = "MANS", nullable = false)
     private NhanSu nhanSu;
+
+    @Column(name = "NGAY_LAM", nullable = false)
+    private LocalDate ngayLam;
+
+    @Column(name = "GIO_BAT_DAU", nullable = false)
+    private Double gioBatDau; // Số giờ (ví dụ 7.5 = 7:30)
+
+    @Column(name = "GIO_KET_THUC", nullable = false)
+    private Double gioKetThuc;
+
+    @Column(name = "IS_NGHI")
+    private Integer isNghi; // 0: làm, 1: nghỉ
 }

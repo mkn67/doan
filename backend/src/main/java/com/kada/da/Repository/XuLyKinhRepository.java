@@ -1,7 +1,5 @@
 package com.kada.da.Repository;
 
-import com.kada.da.Entity.HoaDon;
-import com.kada.da.Entity.NhanSu;
 import com.kada.da.Entity.XuLyKinh;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -12,14 +10,16 @@ import java.util.List;
 @Repository
 public interface XuLyKinhRepository extends JpaRepository<XuLyKinh, String> {
 
-    List<XuLyKinh> findByTinhTrang(String tinhTrang);
+    // Lấy mã lớn nhất để sinh XL001, XL002 tự động
+    @Query("SELECT MAX(x.maXl) FROM XuLyKinh x")
+    String findMaxMaXl();
 
-    List<XuLyKinh> findByTinhTrangIn(List<String> tinhTrangList);
+    // Tìm theo mã đơn thuốc
+    List<XuLyKinh> findByPhieuKeDon_MaDon(String maDon);
 
-    List<XuLyKinh> findByNhanSuKyThuatAndTinhTrang(NhanSu kyThuat, String tinhTrang);
+    // Tìm theo trạng thái (Ví dụ: "Chờ xử lý", "Hoàn thành")
+    List<XuLyKinh> findByTrangThai(String trangThai);
 
-    @Query("SELECT MAX(x.maXlk) FROM XuLyKinh x")
-    String findMaxMaXlk();
-
-    List<XuLyKinh> findByHoaDon(HoaDon hoaDon);
+    // Tìm các kính đang được xử lý bởi 1 kỹ thuật viên cụ thể
+    List<XuLyKinh> findByNhanSuKyThuat_MaNsAndTrangThai(String maKyThuat, String trangThai);
 }

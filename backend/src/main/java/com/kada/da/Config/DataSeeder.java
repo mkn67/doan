@@ -21,6 +21,7 @@ public class DataSeeder implements CommandLineRunner {
     public DataSeeder(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
+
     @Override
     public void run(String... args) throws Exception {
         System.out.println("[DATA SEEDER] Bắt đầu quét file CSV trong resources/data...");
@@ -31,29 +32,33 @@ public class DataSeeder implements CommandLineRunner {
         Arrays.sort(resources, Comparator.comparing(Resource::getFilename));
         for (Resource resource : resources) {
             String fileName = resource.getFilename();
-            if (fileName == null) continue;
+            if (fileName == null)
+                continue;
             // Lấy tên bảng từ tên file: 01_NHOM.csv -> NHOM
-            String tableName = fileName.substring(3, fileName.lastIndexOf("."));        
+            String tableName = fileName.substring(3, fileName.lastIndexOf("."));
             System.out.println("⏳ Đang nạp dữ liệu cho bảng: " + tableName);
             try (BufferedReader br = new BufferedReader(
-                    new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8))) {              
+                    new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8))) {
                 // Đọc dòng đầu tiên lấy tên các cột
                 String headerLine = br.readLine();
-                if (headerLine == null) continue;
+                if (headerLine == null)
+                    continue;
                 String[] columns = headerLine.split(",");
                 // Tạo câu lệnh SQL động: INSERT INTO TABLE (col1, col2) VALUES (?, ?)
                 String placeholders = String.join(",", Collections.nCopies(columns.length, "?"));
-                String sql = "INSERT INTO " + tableName + " (" + String.join(",", columns) + ") VALUES (" + placeholders + ")";
+                String sql = "INSERT INTO " + tableName + " (" + String.join(",", columns) + ") VALUES (" + placeholders
+                        + ")";
                 String line;
                 int count = 0;
                 while ((line = br.readLine()) != null) {
                     // Xử lý giá trị trống hoặc dấu phẩy trong nội dung nếu cần
-                    String[] values = line.split(",", -1);                    
+                    String[] values = line.split(",", -1);
                     // Chuyển "NULL" thành giá trị null thật sự
                     Object[] params = new Object[values.length];
                     for (int i = 0; i < values.length; i++) {
-                        params[i] = (values[i] == null || values[i].equalsIgnoreCase("NULL") || values[i].isEmpty()) 
-                                    ? null : values[i];
+                        params[i] = (values[i] == null || values[i].equalsIgnoreCase("NULL") || values[i].isEmpty())
+                                ? null
+                                : values[i];
                     }
                     jdbcTemplate.update(sql, params);
                     count++;

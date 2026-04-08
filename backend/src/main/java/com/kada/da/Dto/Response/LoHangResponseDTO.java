@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
+import com.kada.da.Enum.LoaiTaiKhoan;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -26,4 +28,5 @@ public class LoHangResponseDTO {
 
     // Controller/Service sẽ tính toán: "Còn hạn", "Sắp hết hạn", "Đã hết hạn"
     private String trangThaiHsd;
+    private LoaiTaiKhoan loaiTk;
 }

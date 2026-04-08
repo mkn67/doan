@@ -26,4 +26,6 @@ public interface NhomService {
     void removeVaiTroFromNhom(String maNhom, String maVaiTro);
 
     void assignNhanSuToNhom(String maNhom, List<String> maNsList);
+
+    void addNhanSuToNhom(String maNs, String maNhom); // thêm mới
 }

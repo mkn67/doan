@@ -16,21 +16,21 @@ public class DanhGia {
     private String maDg;
 
     @ManyToOne
-    @JoinColumn(name = "MAHOSO")
-    private HoSoThiLuc hoSoThiLuc; // Map với cột MAHOSO
+    @JoinColumn(name = "MAHOSO", nullable = false)
+    private HoSoThiLuc hoSoThiLuc;
 
     @ManyToOne
-    @JoinColumn(name = "MAKH")
-    private KhachHang khachHang; // Map với cột MAKH
+    @JoinColumn(name = "MAKH", nullable = false)
+    private KhachHang khachHang;
 
     @ManyToOne
-    @JoinColumn(name = "MANS")
-    private NhanSu nhanSu; // Map với cột MANS
+    @JoinColumn(name = "MANS", nullable = false)
+    private NhanSu nhanSu;
 
-    @Column(name = "SO_SAO")
+    @Column(name = "SO_SAO", nullable = false)
     private Integer soSao;
 
-    @Column(name = "NOI_DUNG", length = 1000)
+    @Column(name = "NOI_DUNG", length = 500)
     private String noiDung;
 
     @Column(name = "PHAN_HOI_CHI_TIET", columnDefinition = "JSON")
@@ -40,8 +40,5 @@ public class DanhGia {
     private LocalDateTime ngayDg;
 
     @Column(name = "IS_HIDDEN")
-    private boolean isHidden;
-    // Bổ sung 2 trường này nếu đang thiếu
-    @Column(name = "MA_HO_SO")
-    private String maHoSo;
+    private Integer isHidden;
 }

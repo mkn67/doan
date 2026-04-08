@@ -12,22 +12,18 @@ import java.util.List;
 @Repository
 public interface LichLamViecRepository extends JpaRepository<LichLamViec, String> {
 
-    // Lấy lịch theo nhân sự, sắp xếp theo ngày tăng dần
-    List<LichLamViec> findByNhanSuOrderByNgayLamViecAsc(NhanSu nhanSu);
-
-    // Lấy lịch theo nhân sự và khoảng ngày
-    List<LichLamViec> findByNhanSuAndNgayLamViecBetween(NhanSu nhanSu, LocalDate fromDate, LocalDate toDate);
-
-    // Lấy lịch theo ngày
-    List<LichLamViec> findByNgayLamViec(LocalDate ngay);
-
-    // Lấy lịch theo ca
-    List<LichLamViec> findByCa(String ca);
-
-    // Kiểm tra tồn tại lịch của nhân sự theo ngày và ca
-    boolean existsByNhanSuAndNgayLamViecAndCa(NhanSu nhanSu, LocalDate ngay, String ca);
-
-    // Lấy mã lớn nhất để sinh tự động
+    // Tìm kiếm max mã để tự tăng
     @Query("SELECT MAX(l.maLlv) FROM LichLamViec l")
     String findMaxMaLlv();
+
+    // Các hàm kiểm tra và lấy dữ liệu đã được đổi tên cho khớp với Entity mới
+    boolean existsByNhanSuAndNgayLamAndGioBatDau(NhanSu nhanSu, LocalDate ngayLam, Double gioBatDau);
+
+    List<LichLamViec> findByNhanSuOrderByNgayLamAsc(NhanSu nhanSu);
+
+    List<LichLamViec> findByNhanSuAndNgayLamBetween(NhanSu nhanSu, LocalDate fromDate, LocalDate toDate);
+
+    List<LichLamViec> findByNgayLam(LocalDate ngayLam);
+
+    List<LichLamViec> findByGioBatDauAndGioKetThuc(Double gioBatDau, Double gioKetThuc);
 }

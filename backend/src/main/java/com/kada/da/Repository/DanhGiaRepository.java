@@ -14,7 +14,7 @@ import java.util.Optional;
 public interface DanhGiaRepository extends JpaRepository<DanhGia, String> {
 
     // 1. Tìm đánh giá theo mã hồ sơ (Mỗi hồ sơ thường chỉ có 1 đánh giá)
-    Optional<DanhGia> findByMaHoSo(String maHoSo);
+    Optional<DanhGia> findByHoSoThiLuc_MaHoSo(String maHoSo);
 
     // 2. Tìm tất cả đánh giá do một khách hàng viết
     List<DanhGia> findByKhachHang_MaKh(String maKh);
@@ -26,10 +26,11 @@ public interface DanhGiaRepository extends JpaRepository<DanhGia, String> {
     List<DanhGia> findBySoSao(Integer soSao);
 
     // 5. Lấy các đánh giá được phép hiển thị (Không bị ẩn bởi Admin)
+    @Query("SELECT d FROM DanhGia d WHERE d.isHidden = 0")
     List<DanhGia> findByIsHiddenFalse();
 
     // 6. Tìm các đánh giá mới nhất từ một mốc thời gian (Ví dụ: 7 ngày qua)
-    List<DanhGia> findByNgayDgAfter(LocalDateTime ngay);;
+    List<DanhGia> findByNgayDgAfter(LocalDateTime ngay);
 
     // 7. Cực kỳ quan trọng: Tính điểm trung bình của một bác sĩ bằng SQL
     @Query("SELECT AVG(d.soSao) FROM DanhGia d WHERE d.nhanSu.maNs = :maNs")

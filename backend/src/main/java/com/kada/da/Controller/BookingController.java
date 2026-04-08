@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/bookings")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*") // Mở cửa cho Frontend gọi không bị lỗi CORS
+// 👉 ĐÃ TIÊU DIỆT DÒNG @CrossOrigin GÂY LỖI Ở ĐÂY
 public class BookingController {
 
     private final LichHenService lichHenService;

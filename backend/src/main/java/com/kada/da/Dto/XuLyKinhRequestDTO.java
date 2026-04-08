@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 public class XuLyKinhRequestDTO {
 
     @NotBlank(message = "Mã hóa đơn không được để trống")
-    private String maHd;
+    private String maDon;
 
     private String maHoso; // Hồ sơ thị lực (có thể null nếu không có)
 
@@ -20,4 +20,5 @@ public class XuLyKinhRequestDTO {
     private LocalDateTime ngayHenTra;
 
     private String ghiChu;
+    private Object thongSoKinh;
 }

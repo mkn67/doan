@@ -77,32 +77,34 @@ public class LichLamViecController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/ca")
-    public ResponseEntity<List<LichLamViecResponseDTO>> getLichLamViecByCa(
-            @RequestParam String ca) {
-        log.info("API: Lấy lịch làm việc theo ca: {}", ca);
-        List<LichLamViecResponseDTO> response = lichLamViecService.getLichLamViecByCa(ca);
+    // ĐÃ SỬA: Đổi từ /ca sang /khung-gio và xài Double
+    @GetMapping("/khung-gio")
+    public ResponseEntity<List<LichLamViecResponseDTO>> getLichLamViecByKhungGio(
+            @RequestParam Double gioBatDau,
+            @RequestParam Double gioKetThuc) {
+        log.info("API: Lấy lịch làm việc theo khung giờ: {} đến {}", gioBatDau, gioKetThuc);
+        List<LichLamViecResponseDTO> response = lichLamViecService.getLichLamViecByKhungGio(gioBatDau, gioKetThuc);
         return ResponseEntity.ok(response);
     }
 
-    // SỬA: Kiểm tra nhân sự rảnh theo ngày và ca
+    // ĐÃ SỬA: Kiểm tra nhân sự rảnh theo ngày và giờ bắt đầu
     @GetMapping("/check-ranh")
     public ResponseEntity<Boolean> checkNhanSuRanh(
             @RequestParam String maNs,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate ngay,
-            @RequestParam String ca) {
-        log.info("API: Kiểm tra nhân sự {} rảnh ngày {} ca {}", maNs, ngay, ca);
-        boolean isRanh = lichLamViecService.isNhanSuRanh(maNs, ngay, ca);
+            @RequestParam Double gioBatDau) {
+        log.info("API: Kiểm tra nhân sự {} rảnh ngày {} lúc {}h", maNs, ngay, gioBatDau);
+        boolean isRanh = lichLamViecService.isNhanSuRanh(maNs, ngay, gioBatDau);
         return ResponseEntity.ok(isRanh);
     }
 
-    // SỬA: Lấy danh sách nhân sự rảnh theo ngày và ca
+    // ĐÃ SỬA: Lấy danh sách nhân sự rảnh theo ngày và giờ bắt đầu
     @GetMapping("/nhan-su-ranh")
     public ResponseEntity<List<LichLamViecResponseDTO>> getNhanSuRanh(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate ngay,
-            @RequestParam String ca) {
-        log.info("API: Lấy danh sách nhân sự rảnh ngày {} ca {}", ngay, ca);
-        List<LichLamViecResponseDTO> response = lichLamViecService.getNhanSuRanh(ngay, ca);
+            @RequestParam Double gioBatDau) {
+        log.info("API: Lấy danh sách nhân sự rảnh ngày {} lúc {}h", ngay, gioBatDau);
+        List<LichLamViecResponseDTO> response = lichLamViecService.getNhanSuRanh(ngay, gioBatDau);
         return ResponseEntity.ok(response);
     }
 

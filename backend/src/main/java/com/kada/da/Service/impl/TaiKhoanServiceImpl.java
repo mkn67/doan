@@ -17,15 +17,13 @@ public class TaiKhoanServiceImpl implements TaiKhoanService {
 
     @Override
     public Optional<TaiKhoan> findByUsername(String username) {
-        // Đổi thành findByTenDangNhap
-        return taiKhoanRepository.findByTenDangNhap(username);
+        return taiKhoanRepository.findByUsername(username); // ĐÃ FIX
     }
 
     @Override
     @Transactional
     public TaiKhoan createTaiKhoan(TaiKhoan taiKhoan) {
-        // Kiểm tra xem tên đăng nhập đã tồn tại chưa
-        if (taiKhoanRepository.findByTenDangNhap(taiKhoan.getTenDangNhap()).isPresent()) {
+        if (taiKhoanRepository.findByUsername(taiKhoan.getUsername()).isPresent()) { // ĐÃ FIX
             throw new RuntimeException("Tên đăng nhập đã tồn tại trong hệ thống!");
         }
 

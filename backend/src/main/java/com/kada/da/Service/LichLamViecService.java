@@ -8,7 +8,6 @@ import java.time.LocalDate;
 import java.util.List;
 
 public interface LichLamViecService {
-
     LichLamViecResponseDTO createLichLamViec(LichLamViecRequestDTO request);
 
     LichLamViecResponseDTO getLichLamViecById(String maLlv);
@@ -21,12 +20,13 @@ public interface LichLamViecService {
 
     List<LichLamViecResponseDTO> getLichLamViecByNgay(LocalDate ngay);
 
-    List<LichLamViecResponseDTO> getLichLamViecByCa(String ca);
+    // Đã đổi String ca -> Double gioBatDau, Double gioKetThuc
+    List<LichLamViecResponseDTO> getLichLamViecByKhungGio(Double gioBatDau, Double gioKetThuc);
 
-    boolean isNhanSuRanh(String maNs, LocalDate ngay, String ca);
+    // Đã đổi String ca -> Double gioBatDau
+    boolean isNhanSuRanh(String maNs, LocalDate ngay, Double gioBatDau);
 
-    // Thêm method này
-    List<LichLamViecResponseDTO> getNhanSuRanh(LocalDate ngay, String ca);
+    List<LichLamViecResponseDTO> getNhanSuRanh(LocalDate ngay, Double gioBatDau);
 
     LichLamViecResponseDTO updateLichLamViec(String maLlv, LichLamViecRequestDTO request);
 

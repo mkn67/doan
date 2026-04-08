@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 @Builder
 public class XuLyKinhResponseDTO {
     private String maXl; // Mã xử lý kính (khớp với entity)
-    private String maHd; // Mã hóa đơn
+    private String maDon; // Mã hóa đơn
     private String maHoso; // Mã hồ sơ thị lực
     private String tenKhachHang; // Tên khách hàng (lấy từ hóa đơn)
     private String tenKyThuatVien; // Tên kỹ thuật viên phụ trách
@@ -21,4 +21,5 @@ public class XuLyKinhResponseDTO {
     private LocalDateTime ngayNhan; // Ngày nhận kính
     private LocalDateTime ngayHenTra; // Ngày hẹn trả
     private String ghiChu; // Ghi chú
+    private Object thongSoKinh;
 }

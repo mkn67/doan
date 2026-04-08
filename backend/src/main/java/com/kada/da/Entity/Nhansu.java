@@ -5,7 +5,7 @@ import lombok.*;
 import java.time.LocalDate;
 
 @Entity
-@Table(name = "NHANSU")
+@Table(name = "NHAN_SU")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -46,7 +46,4 @@ public class NhanSu {
 
     @Column(name = "IS_DELETED")
     private Integer isDeleted;
-    @ManyToOne
-    @JoinColumn(name = "MA_NHOM") // Tên cột khóa ngoại trong DB của ông
-    private Nhom nhom; // <--- THÊM DÒNG NÀY VÀO NÈ!
 }

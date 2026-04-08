@@ -11,35 +11,30 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 public class XuLyKinh {
-
     @Id
-    @Column(name = "MAXLK", length = 10)
-    private String maXlk;
+    @Column(name = "MAXL", length = 10)
+    private String maXl;
 
-    @Column(name = "NGAY_NHAN")
-    private LocalDateTime ngayNhan;
-
-    @Column(name = "NGAY_HEN_TRA")
-    private LocalDateTime ngayHenTra;
-
-    @Column(name = "TINH_TRANG", length = 50)
-    private String tinhTrang; // Ví dụ: Đang mài, Chờ lắp, Đã xong, Đã giao
-
-    @Column(name = "GHI_CHU", length = 500)
-    private String ghiChu;
-
-    // Liên kết với Hồ sơ thị lực (Để biết thông số độ mà mài kính)
     @ManyToOne
-    @JoinColumn(name = "MAHOSO")
-    private HoSoThiLuc hoSoThiLuc;
+    @JoinColumn(name = "MADON", nullable = false)
+    private PhieuKeDon phieuKeDon;
 
-    // Liên kết với Nhân sự (Người chịu trách nhiệm kỹ thuật/mài lắp)
+    @Column(name = "THONG_SO_KINH", columnDefinition = "JSON")
+    private String thongSoKinh;
+
+    @Column(name = "TRANG_THAI", length = 30)
+    private String trangThai;
+
+    @Column(name = "NGAY_BAT_DAU")
+    private LocalDateTime ngayBatDau;
+
+    @Column(name = "NGAY_HOAN_THANH")
+    private LocalDateTime ngayHoanThanh;
+
     @ManyToOne
     @JoinColumn(name = "MANS_KY_THUAT")
     private NhanSu nhanSuKyThuat;
 
-    // Liên kết với Hóa đơn (Để biết kính này thuộc đơn hàng nào)
-    @ManyToOne
-    @JoinColumn(name = "MAHD")
-    private HoaDon hoaDon;
+    @Column(name = "GHI_CHU", length = 255)
+    private String ghiChu;
 }

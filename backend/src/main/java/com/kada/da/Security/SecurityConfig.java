@@ -3,6 +3,7 @@ package com.kada.da.Security;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -36,10 +37,10 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
+                .cors(Customizer.withDefaults()) // 👉 THÊM DÒNG NÀY ĐỂ KÍCH HOẠT CORS CHO SECURITY
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
-                        // ĐÃ FIX: Thêm "/api-docs/**" vào đây vì ông đã đổi tên trong properties
                         .requestMatchers(
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",

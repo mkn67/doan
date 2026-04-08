@@ -1,44 +1,56 @@
 package com.kada.da.Controller;
 
-import com.kada.da.Dto.SanPhamRequestDTO;
-import com.kada.da.Dto.Response.SanPhamResponseDTO;
-import com.kada.da.Dto.Response.PageResponseDTO;
+import com.kada.da.Entity.SanPham;
 import com.kada.da.Service.SanPhamService;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
-@RequestMapping("/api/v1/san-pham")
+@RequestMapping("/api/san-pham")
 @RequiredArgsConstructor
 public class SanPhamController {
 
     private final SanPhamService sanPhamService;
 
-    @PostMapping
-    public ResponseEntity<SanPhamResponseDTO> createSanPham(@Valid @RequestBody SanPhamRequestDTO request) {
-        return new ResponseEntity<>(sanPhamService.createSanPham(request), HttpStatus.CREATED);
+    // 1. Lấy danh sách tất cả sản phẩm
+    @GetMapping
+    public ResponseEntity<List<SanPham>> getAllSanPham() {
+        return ResponseEntity.ok(sanPhamService.getAllSanPham());
     }
 
-    @PutMapping("/{maSp}")
-    public ResponseEntity<SanPhamResponseDTO> updateSanPham(@PathVariable String maSp,
-            @Valid @RequestBody SanPhamRequestDTO request) {
-        return ResponseEntity.ok(sanPhamService.updateSanPham(maSp, request));
+    // 2. Lấy danh sách CHỈ là thuốc (phục vụ cho việc Kê đơn)
+    @GetMapping("/thuoc")
+    public ResponseEntity<List<SanPham>> getDanhSachThuoc() {
+        return ResponseEntity.ok(sanPhamService.getDanhSachThuoc());
     }
 
+    // 3. Lấy 1 sản phẩm theo mã
     @GetMapping("/{maSp}")
-    public ResponseEntity<SanPhamResponseDTO> getSanPhamById(@PathVariable String maSp) {
+    public ResponseEntity<SanPham> getSanPhamById(@PathVariable String maSp) {
         return ResponseEntity.ok(sanPhamService.getSanPhamById(maSp));
     }
 
-    @GetMapping
-    public ResponseEntity<PageResponseDTO<SanPhamResponseDTO>> getAllSanPham(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "12") int size,
-            @RequestParam(required = false) Boolean laThuoc, // Lọc riêng thuốc hoặc kính
-            @RequestParam(required = false) String keyword) {
-        return ResponseEntity.ok(sanPhamService.getAllSanPham(page, size, laThuoc, keyword));
+    // 4. Tạo mới sản phẩm
+    @PostMapping
+    public ResponseEntity<SanPham> createSanPham(@RequestBody SanPham sanPham) {
+        SanPham response = sanPhamService.createSanPham(sanPham);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    // 5. Cập nhật sản phẩm
+    @PutMapping("/{maSp}")
+    public ResponseEntity<SanPham> updateSanPham(@PathVariable String maSp, @RequestBody SanPham sanPham) {
+        return ResponseEntity.ok(sanPhamService.updateSanPham(maSp, sanPham));
+    }
+
+    // 6. Xóa sản phẩm
+    @DeleteMapping("/{maSp}")
+    public ResponseEntity<Void> deleteSanPham(@PathVariable String maSp) {
+        sanPhamService.deleteSanPham(maSp);
+        return ResponseEntity.noContent().build();
     }
 }

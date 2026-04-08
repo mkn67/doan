@@ -2,6 +2,7 @@ package com.kada.da.Util;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.List;
 import java.util.function.Function;
 
 import javax.crypto.SecretKey;
@@ -29,10 +30,14 @@ public class JwtTokenUtil {
     }
 
     // Tạo token (Cú pháp mới dùng .claims() và .verifyWith())
-    public String generateToken(String username, String maNhom) {
+    public String generateToken(String username, List<String> roles) {
+        // Lấy role đầu tiên làm maNhom chính để tương thích với logic hiện tại
+        String primaryRole = (roles != null && !roles.isEmpty()) ? roles.get(0) : "USER";
+
         return Jwts.builder()
                 .subject(username)
-                .claim("maNhom", maNhom)
+                .claim("maNhom", primaryRole)
+                .claim("roles", roles)
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(getSigningKey())

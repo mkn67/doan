@@ -35,19 +35,20 @@ public class LichLamViecServiceImpl implements LichLamViecService {
     @Override
     @Transactional
     public LichLamViecResponseDTO createLichLamViec(LichLamViecRequestDTO request) {
-        log.info("Tạo lịch làm việc cho nhân sự: {}, ngày: {}, ca: {}",
-                request.getMaNs(), request.getNgay(), request.getCa());
+        log.info("Tạo lịch làm việc cho nhân sự: {}, ngày: {}, giờ bắt đầu: {}",
+                request.getMaNs(), request.getNgayLam(), request.getGioBatDau());
 
         // Kiểm tra nhân sự tồn tại
         NhanSu nhanSu = nhanSuRepository.findById(request.getMaNs())
                 .orElseThrow(() -> new ResourceNotFoundException("Nhân sự không tồn tại: " + request.getMaNs()));
 
-        // Kiểm tra trùng lịch (cùng ngày, cùng ca)
-        boolean isExist = lichLamViecRepository.existsByNhanSuAndNgayLamViecAndCa(nhanSu, request.getNgay(),
-                request.getCa());
+        // Kiểm tra trùng lịch (cùng ngày, cùng giờ bắt đầu)
+        boolean isExist = lichLamViecRepository.existsByNhanSuAndNgayLamAndGioBatDau(nhanSu, request.getNgayLam(),
+                request.getGioBatDau());
         if (isExist) {
             throw new BusinessRuleException(
-                    "Nhân sự đã có lịch làm việc vào ngày " + request.getNgay() + " ca " + request.getCa());
+                    "Nhân sự đã có lịch làm việc vào ngày " + request.getNgayLam() + " lúc " + request.getGioBatDau()
+                            + "h");
         }
 
         // Tạo mã tự động
@@ -56,8 +57,10 @@ public class LichLamViecServiceImpl implements LichLamViecService {
         LichLamViec lichLamViec = LichLamViec.builder()
                 .maLlv(maLlv)
                 .nhanSu(nhanSu)
-                .ngayLamViec(request.getNgay())
-                .ca(request.getCa())
+                .ngayLam(request.getNgayLam())
+                .gioBatDau(request.getGioBatDau())
+                .gioKetThuc(request.getGioKetThuc())
+                .isNghi(request.getIsNghi() != null ? request.getIsNghi() : 0) // Mặc định 0 là đi làm
                 .build();
 
         LichLamViec saved = lichLamViecRepository.save(lichLamViec);
@@ -102,7 +105,7 @@ public class LichLamViecServiceImpl implements LichLamViecService {
         NhanSu nhanSu = nhanSuRepository.findById(maNs)
                 .orElseThrow(() -> new ResourceNotFoundException("Nhân sự không tồn tại: " + maNs));
 
-        List<LichLamViec> list = lichLamViecRepository.findByNhanSuOrderByNgayLamViecAsc(nhanSu);
+        List<LichLamViec> list = lichLamViecRepository.findByNhanSuOrderByNgayLamAsc(nhanSu);
         return list.stream().map(this::convertToResponseDTO).collect(Collectors.toList());
     }
 
@@ -114,39 +117,45 @@ public class LichLamViecServiceImpl implements LichLamViecService {
         NhanSu nhanSu = nhanSuRepository.findById(maNs)
                 .orElseThrow(() -> new ResourceNotFoundException("Nhân sự không tồn tại: " + maNs));
 
-        List<LichLamViec> list = lichLamViecRepository.findByNhanSuAndNgayLamViecBetween(nhanSu, fromDate, toDate);
+        List<LichLamViec> list = lichLamViecRepository.findByNhanSuAndNgayLamBetween(nhanSu, fromDate, toDate);
         return list.stream().map(this::convertToResponseDTO).collect(Collectors.toList());
     }
 
     @Override
     public List<LichLamViecResponseDTO> getLichLamViecByNgay(LocalDate ngay) {
         log.info("Lấy lịch làm việc theo ngày: {}", ngay);
-        List<LichLamViec> list = lichLamViecRepository.findByNgayLamViec(ngay);
+        List<LichLamViec> list = lichLamViecRepository.findByNgayLam(ngay);
         return list.stream().map(this::convertToResponseDTO).collect(Collectors.toList());
     }
 
+    // Đã sửa tham số từ (String ca) sang (Double gioBatDau, Double gioKetThuc)
     @Override
-    public List<LichLamViecResponseDTO> getLichLamViecByCa(String ca) {
-        log.info("Lấy lịch làm việc theo ca: {}", ca);
-        List<LichLamViec> list = lichLamViecRepository.findByCa(ca);
+    public List<LichLamViecResponseDTO> getLichLamViecByKhungGio(Double gioBatDau, Double gioKetThuc) {
+        log.info("Lấy lịch làm việc theo khung giờ: {} - {}", gioBatDau, gioKetThuc);
+        List<LichLamViec> list = lichLamViecRepository.findByGioBatDauAndGioKetThuc(gioBatDau, gioKetThuc);
         return list.stream().map(this::convertToResponseDTO).collect(Collectors.toList());
     }
 
+    // Đã sửa để check rảnh theo Giờ thay vì Ca
     @Override
-    public boolean isNhanSuRanh(String maNs, LocalDate ngay, String ca) {
-        log.info("Kiểm tra nhân sự {} rảnh ngày {} ca {}", maNs, ngay, ca);
+    public boolean isNhanSuRanh(String maNs, LocalDate ngay, Double gioBatDau) {
+        log.info("Kiểm tra nhân sự {} rảnh ngày {} lúc {}", maNs, ngay, gioBatDau);
 
         NhanSu nhanSu = nhanSuRepository.findById(maNs)
                 .orElseThrow(() -> new ResourceNotFoundException("Nhân sự không tồn tại: " + maNs));
 
-        return !lichLamViecRepository.existsByNhanSuAndNgayLamViecAndCa(nhanSu, ngay, ca);
+        return !lichLamViecRepository.existsByNhanSuAndNgayLamAndGioBatDau(nhanSu, ngay, gioBatDau);
     }
 
+    // Đổi logic tìm nhân sự rảnh theo Giờ
     @Override
-    public List<LichLamViecResponseDTO> getNhanSuRanh(LocalDate ngay, String ca) {
-        log.info("Lấy danh sách nhân sự rảnh ngày {} ca {}", ngay, ca);
-        List<LichLamViec> list = lichLamViecRepository.findByNgayLamViec(ngay);
-        return list.stream().filter(l -> l.getCa().equals(ca)).map(this::convertToResponseDTO)
+    public List<LichLamViecResponseDTO> getNhanSuRanh(LocalDate ngay, Double gioBatDau) {
+        log.info("Lấy danh sách nhân sự rảnh ngày {} lúc {}", ngay, gioBatDau);
+        List<LichLamViec> list = lichLamViecRepository.findByNgayLam(ngay);
+        return list.stream()
+                .filter(l -> l.getGioBatDau().equals(gioBatDau) && l.getIsNghi() == 0) // Kiểm tra thêm điều kiện isNghi
+                                                                                       // = 0
+                .map(this::convertToResponseDTO)
                 .collect(Collectors.toList());
     }
 
@@ -158,18 +167,22 @@ public class LichLamViecServiceImpl implements LichLamViecService {
         LichLamViec entity = lichLamViecRepository.findById(maLlv)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lịch làm việc với mã: " + maLlv));
 
-        // Nếu thay đổi ngày hoặc ca, kiểm tra trùng
-        if (!entity.getNgayLamViec().equals(request.getNgay()) || !entity.getCa().equals(request.getCa())) {
-            boolean isExist = lichLamViecRepository.existsByNhanSuAndNgayLamViecAndCa(
-                    entity.getNhanSu(), request.getNgay(), request.getCa());
+        // Nếu thay đổi ngày hoặc giờ, kiểm tra trùng
+        if (!entity.getNgayLam().equals(request.getNgayLam())
+                || !entity.getGioBatDau().equals(request.getGioBatDau())) {
+            boolean isExist = lichLamViecRepository.existsByNhanSuAndNgayLamAndGioBatDau(
+                    entity.getNhanSu(), request.getNgayLam(), request.getGioBatDau());
             if (isExist) {
                 throw new BusinessRuleException(
-                        "Nhân sự đã có lịch làm việc vào ngày " + request.getNgay() + " ca " + request.getCa());
+                        "Nhân sự đã có lịch làm việc vào ngày " + request.getNgayLam() + " lúc "
+                                + request.getGioBatDau() + "h");
             }
         }
 
-        entity.setNgayLamViec(request.getNgay());
-        entity.setCa(request.getCa());
+        entity.setNgayLam(request.getNgayLam());
+        entity.setGioBatDau(request.getGioBatDau());
+        entity.setGioKetThuc(request.getGioKetThuc());
+        entity.setIsNghi(request.getIsNghi() != null ? request.getIsNghi() : entity.getIsNghi());
 
         LichLamViec updated = lichLamViecRepository.save(entity);
         log.info("Đã cập nhật lịch làm việc: {}", maLlv);
@@ -217,15 +230,12 @@ public class LichLamViecServiceImpl implements LichLamViecService {
     private LichLamViecResponseDTO convertToResponseDTO(LichLamViec entity) {
         return LichLamViecResponseDTO.builder()
                 .maLlv(entity.getMaLlv())
-                .tenNhanSu(entity.getNhanSu().getHoTen()) // Lấy tên nhân sự
-                .chucVu(entity.getNhanSu().getChucVu() != null ? entity.getNhanSu().getChucVu().getTenCv() : null) // Lấy
-                                                                                                                   // tên
-                                                                                                                   // chức
-                                                                                                                   // vụ
-                .ngay(entity.getNgayLamViec())
-                .ca(entity.getCa())
-                .trangThai(null) // Hoặc set nếu có field tương ứng trong entity
-                .ghiChu(null) // Hoặc set nếu có field tương ứng trong entity
+                .tenNhanSu(entity.getNhanSu().getHoTen())
+                .chucVu(entity.getNhanSu().getChucVu() != null ? entity.getNhanSu().getChucVu().getTenCv() : null)
+                .ngayLam(entity.getNgayLam()) // 👉 Đổi tên theo DTO mới
+                .gioBatDau(entity.getGioBatDau()) // 👉 Đổi tên theo DTO mới
+                .gioKetThuc(entity.getGioKetThuc()) // 👉 Đổi tên theo DTO mới
+                .isNghi(entity.getIsNghi()) // 👉 Đổi tên theo DTO mới
                 .build();
     }
 }

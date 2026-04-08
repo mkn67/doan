@@ -6,8 +6,8 @@ import com.kada.da.Service.PhieuKeDonService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.time.LocalDateTime;
-import java.util.UUID;
 import java.util.List;
 
 @Service
@@ -19,20 +19,37 @@ public class PhieuKeDonServiceImpl implements PhieuKeDonService {
     @Override
     @Transactional
     public PhieuKeDon taoDonThuoc(PhieuKeDon phieuKeDon) {
-        // Sinh mã đơn thuốc tự động
-        phieuKeDon.setMaDon("DT" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
-        phieuKeDon.setNgayKe(LocalDateTime.now());
+        // Sinh mã tự động chuẩn form hệ thống (VD: PK001) thay vì UUID loằng ngoằng
+        phieuKeDon.setMaDon(generateMaDon());
 
-        // Nếu có chi tiết đơn thuốc, nhớ set ngược lại khóa ngoại
-        if (phieuKeDon.getChiTietDonThuocs() != null) {
-            phieuKeDon.getChiTietDonThuocs().forEach(ct -> ct.setPhieuKeDon(phieuKeDon));
+        // 👉 ĐÃ SỬA: Dùng đúng tên biến ngayKeDon
+        phieuKeDon.setNgayKeDon(LocalDateTime.now());
+
+        // 👉 ĐÃ SỬA: Dùng đúng tên biến getChiTietKeDons
+        if (phieuKeDon.getChiTietKeDons() != null) {
+            phieuKeDon.getChiTietKeDons().forEach(ct -> ct.setPhieuKeDon(phieuKeDon));
         }
 
         return phieuKeDonRepository.save(phieuKeDon);
     }
 
     @Override
-    public List<PhieuKeDon> layDonThuocTheoKhachHang(String maKh) {
-        return phieuKeDonRepository.findByKhachHang_MaKhOrderByNgayKeDesc(maKh);
+    public List<PhieuKeDon> layDonThuocTheoHoSo(String maHoSo) {
+        // 👉 ĐÃ SỬA: Tìm theo Hồ Sơ Thị Lực vì Entity không nối trực tiếp Khách Hàng
+        return phieuKeDonRepository.findByHoSoThiLuc_MaHoSoOrderByNgayKeDonDesc(maHoSo);
+    }
+
+    // Hàm sinh mã tự động
+    private String generateMaDon() {
+        String maxCode = phieuKeDonRepository.findMaxMaDon();
+        if (maxCode == null || maxCode.length() < 3) {
+            return "PK001";
+        }
+        try {
+            int nextNumber = Integer.parseInt(maxCode.substring(2)) + 1;
+            return "PK" + String.format("%03d", nextNumber);
+        } catch (NumberFormatException e) {
+            return "PK001";
+        }
     }
 }

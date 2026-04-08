@@ -5,11 +5,13 @@ import com.kada.da.Dto.Response.DanhGiaResponseDTO;
 import com.kada.da.Dto.Response.PageResponseDTO;
 import com.kada.da.Entity.DanhGia;
 import com.kada.da.Entity.KhachHang;
+import com.kada.da.Entity.HoSoThiLuc;
 import com.kada.da.Entity.NhanSu;
 import com.kada.da.Exception.BusinessRuleException;
 import com.kada.da.Exception.ResourceNotFoundException;
 import com.kada.da.Repository.DanhGiaRepository;
 import com.kada.da.Repository.KhachHangRepository;
+import com.kada.da.Repository.HoSoThiLucRepository;
 import com.kada.da.Repository.NhanSuRepository;
 import com.kada.da.Service.DanhGiaService;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +37,7 @@ public class DanhGiaServiceImpl implements DanhGiaService {
     private final DanhGiaRepository danhGiaRepository;
     private final KhachHangRepository khachHangRepository;
     private final NhanSuRepository nhanSuRepository;
+    private final HoSoThiLucRepository hoSoThiLucRepository;
 
     @Override
     @Transactional
@@ -44,25 +47,26 @@ public class DanhGiaServiceImpl implements DanhGiaService {
         KhachHang khachHang = khachHangRepository.findById(request.getMaKh())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy khách hàng"));
 
-        NhanSu nhanSu = null;
-        if (request.getMaNs() != null && !request.getMaNs().isEmpty()) {
-            nhanSu = nhanSuRepository.findById(request.getMaNs())
-                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bác sĩ/nhân sự"));
-        }
+        NhanSu nhanSu = nhanSuRepository.findById(request.getMaNs())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bác sĩ/nhân sự"));
+
+        HoSoThiLuc hoSoThiLuc = hoSoThiLucRepository.findById(request.getMaHoSo())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hồ sơ thị lực"));
 
         if (request.getSoSao() < 1 || request.getSoSao() > 5) {
             throw new BusinessRuleException("Số sao đánh giá phải từ 1 đến 5");
         }
 
         DanhGia danhGia = DanhGia.builder()
-                .maDg("DG" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
+                .maDg("DG" + UUID.randomUUID().toString().substring(0, 7).toUpperCase())
                 .khachHang(khachHang)
                 .nhanSu(nhanSu)
-                .maHoSo(request.getMaHoSo())
+                .hoSoThiLuc(hoSoThiLuc)
                 .soSao(request.getSoSao())
                 .noiDung(request.getNoiDung())
+                .phanHoiChiTiet(request.getPhanHoiChiTiet())
                 .ngayDg(LocalDateTime.now())
-                .isHidden(false) // Mặc định hiển thị
+                .isHidden(0) // 0: hiển thị, 1: ẩn
                 .build();
 
         return convertToResponse(danhGiaRepository.save(danhGia));
@@ -90,7 +94,7 @@ public class DanhGiaServiceImpl implements DanhGiaService {
 
     @Override
     public DanhGiaResponseDTO getDanhGiaByMaHoso(String maHoso) {
-        DanhGia danhGia = danhGiaRepository.findByMaHoSo(maHoso)
+        DanhGia danhGia = danhGiaRepository.findByHoSoThiLuc_MaHoSo(maHoso)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đánh giá cho hồ sơ: " + maHoso));
         return convertToResponse(danhGia);
     }
@@ -139,7 +143,7 @@ public class DanhGiaServiceImpl implements DanhGiaService {
     @Transactional
     public DanhGiaResponseDTO toggleHidden(String maDg, boolean hidden) {
         DanhGia danhGia = findById(maDg);
-        danhGia.setHidden(hidden);
+        danhGia.setIsHidden(hidden ? 1 : 0);
         return convertToResponse(danhGiaRepository.save(danhGia));
     }
 
@@ -177,28 +181,16 @@ public class DanhGiaServiceImpl implements DanhGiaService {
     }
 
     private DanhGiaResponseDTO convertToResponse(DanhGia entity) {
-        // Đảm bảo ông đã import com.kada.da.Dto.Response.DanhGiaResponseDTO;
         return DanhGiaResponseDTO.builder()
                 .maDg(entity.getMaDg())
-
-                // 1. Map tên và SĐT khách hàng (Cái SĐT này ông thêm vào DTO xịn quá!)
                 .tenKhachHang(entity.getKhachHang() != null ? entity.getKhachHang().getHoTen() : "Khách ẩn danh")
                 .sdtKhachHang(entity.getKhachHang() != null ? entity.getKhachHang().getSdt() : "Không có SĐT")
-
-                // 2. Map tên bác sĩ/nhân viên
                 .tenBacSi(entity.getNhanSu() != null ? entity.getNhanSu().getHoTen() : "Chưa phân công")
-
-                // 3. Map các thông số đánh giá
                 .soSao(entity.getSoSao())
                 .noiDung(entity.getNoiDung())
-                .phanHoiChiTiet(entity.getPhanHoiChiTiet()) // Cái này để Frontend vẽ biểu đồ Radar nè
-
-                // 4. Map ngày đánh giá (Entity của ông là ngayDg)
+                .phanHoiChiTiet(entity.getPhanHoiChiTiet())
                 .ngayDg(entity.getNgayDg())
-
-                // 5. Trạng thái ẩn/hiện (Entity của ông là boolean isHidden)
-                .isHidden(entity.isHidden())
-
+                .isHidden(entity.getIsHidden() != null && entity.getIsHidden() == 1)
                 .build();
     }
 }

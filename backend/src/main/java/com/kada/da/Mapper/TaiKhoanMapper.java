@@ -10,8 +10,8 @@ public class TaiKhoanMapper {
     public static TaiKhoan toEntity(TaiKhoanRequestDTO dto) {
         TaiKhoan taiKhoan = new TaiKhoan();
         taiKhoan.setMaTk(dto.getMaTk());
-        taiKhoan.setTenDangNhap(dto.getUsername()); // Sửa tên
-        taiKhoan.setMatKhau(dto.getPassword()); // Sửa tên
+        taiKhoan.setUsername(dto.getUsername()); // Sửa tên
+        taiKhoan.setPassword(dto.getPassword()); // Sửa tên
 
         // Chuyển 1 mã nhóm từ DTO thành một List<Nhom> cho Entity
         if (dto.getMaNhom() != null && !dto.getMaNhom().isEmpty()) {

@@ -1,15 +1,18 @@
 package com.kada.da.Service;
 
-import com.kada.da.Dto.SanPhamRequestDTO;
-import com.kada.da.Dto.Response.PageResponseDTO;
-import com.kada.da.Dto.Response.SanPhamResponseDTO;
+import com.kada.da.Entity.SanPham;
+import java.util.List;
 
 public interface SanPhamService {
-    SanPhamResponseDTO createSanPham(SanPhamRequestDTO request);
+    SanPham createSanPham(SanPham sanPham);
 
-    SanPhamResponseDTO updateSanPham(String maSp, SanPhamRequestDTO request);
+    SanPham updateSanPham(String maSp, SanPham sanPham);
 
-    SanPhamResponseDTO getSanPhamById(String maSp);
+    void deleteSanPham(String maSp);
 
-    PageResponseDTO<SanPhamResponseDTO> getAllSanPham(int page, int size, Boolean laThuoc, String keyword);
+    SanPham getSanPhamById(String maSp);
+
+    List<SanPham> getAllSanPham();
+
+    List<SanPham> getDanhSachThuoc(); // Tiện ích lấy danh sách chỉ là thuốc
 }

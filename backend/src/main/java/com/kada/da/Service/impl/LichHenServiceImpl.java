@@ -2,11 +2,14 @@ package com.kada.da.Service.impl;
 
 import com.kada.da.Dto.LichHenRequestDTO;
 import com.kada.da.Dto.Response.LichHenResponseDTO;
-import com.kada.da.Dto.Response.HangChoResponseDTO; // Bổ sung Import DTO
+import com.kada.da.Dto.Response.HangChoResponseDTO;
 import com.kada.da.Entity.HangCho;
 import com.kada.da.Entity.LichHen;
 import com.kada.da.Entity.NhanSu;
 import com.kada.da.Entity.KhachHang;
+import com.kada.da.Entity.TrieuChung;
+import com.kada.da.Entity.LichHenTrieuChung; // Bổ sung import
+import com.kada.da.Entity.LichHenTrieuChungId; // Bổ sung import
 import com.kada.da.Enum.TrangThaiHangCho;
 import com.kada.da.Enum.TrangThaiLichHen;
 import com.kada.da.Exception.BusinessRuleException;
@@ -25,6 +28,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -64,14 +68,36 @@ public class LichHenServiceImpl implements LichHenService {
                 .ngayHen(requestDTO.getNgayHen().atStartOfDay())
                 .gioHen(requestDTO.getNgayHen().atTime(requestDTO.getGioHen()))
                 .trangThai(TrangThaiLichHen.CHO_XAC_NHAN)
-                .trieuChung(requestDTO.getTrieuChung())
                 .loaiLich("Khám mới")
                 .build();
+
+        // 👉 LOGIC MỚI: Xử lý theo chuẩn bảng trung gian có khóa kép
+        if (requestDTO.getTrieuChung() != null && !requestDTO.getTrieuChung().isEmpty()) {
+            List<LichHenTrieuChung> listTc = new java.util.ArrayList<>();
+            LichHenTrieuChung lhTc = new LichHenTrieuChung();
+
+            // Set khóa chính kép
+            LichHenTrieuChungId tcId = new LichHenTrieuChungId();
+            tcId.setMaLh(lichHen.getMaLh());
+            tcId.setMaTc("TC001"); // Mặc định gán vào mã TC001 (Nhớ chạy lệnh mồi trong Oracle nhé)
+            lhTc.setId(tcId);
+
+            lhTc.setLichHen(lichHen);
+
+            TrieuChung tc = new TrieuChung();
+            tc.setMaTc("TC001");
+            lhTc.setTrieuChung(tc);
+
+            // Nhét dòng "Nhìn mờ, nhức đầu" từ Postman vào cột mô tả tự do
+            lhTc.setMoTaTuDo(requestDTO.getTrieuChung());
+
+            listTc.add(lhTc);
+            lichHen.setDanhSachTrieuChung(listTc); // entity LichHen phải dùng List<LichHenTrieuChung> nhé
+        }
 
         lichHen = lichHenRepository.save(lichHen);
         log.info("Đã tạo lịch hẹn thành công với mã: {}", lichHen.getMaLh());
 
-        // ĐÃ SỬA: Dùng hàm map chuẩn
         return convertToLichHenResponse(lichHen);
     }
 
@@ -88,7 +114,6 @@ public class LichHenServiceImpl implements LichHenService {
         LichHen saved = lichHenRepository.save(lichHen);
         log.info("Đã xác nhận lịch hẹn: {}", maLichHen);
 
-        // ĐÃ SỬA: Dùng hàm map chuẩn
         return convertToLichHenResponse(saved);
     }
 
@@ -106,7 +131,6 @@ public class LichHenServiceImpl implements LichHenService {
         }
 
         lichHen.setTrangThai(TrangThaiLichHen.DA_HUY);
-
         log.warn("Lịch hẹn {} bị hủy. Lý do: {}", maLichHen, lyDo);
 
         lichHenRepository.save(lichHen);
@@ -115,7 +139,6 @@ public class LichHenServiceImpl implements LichHenService {
 
     @Override
     @Transactional
-    // ĐÃ SỬA KIỂU TRẢ VỀ: Phải là HangChoResponseDTO
     public HangChoResponseDTO checkIn(String maLichHen) {
         LichHen lichHen = findLichHenById(maLichHen);
 
@@ -150,7 +173,6 @@ public class LichHenServiceImpl implements LichHenService {
         HangCho savedHangCho = hangChoRepository.save(hangCho);
         log.info("Check-in thành công cho lịch hẹn {} - STT: {}", maLichHen, soThuTu);
 
-        // ĐÃ SỬA: Map Entity ra DTO
         return convertToHangChoResponse(savedHangCho);
     }
 
@@ -162,15 +184,24 @@ public class LichHenServiceImpl implements LichHenService {
     }
 
     private LichHenResponseDTO convertToLichHenResponse(LichHen entity) {
+        String trieuChungStr = "";
+        if (entity.getDanhSachTrieuChung() != null) {
+            // ĐÃ SỬA: Map qua LichHenTrieuChung để lấy cột MoTaTuDo
+            trieuChungStr = entity.getDanhSachTrieuChung().stream()
+                    .map(LichHenTrieuChung::getMoTaTuDo)
+                    .filter(moTa -> moTa != null && !moTa.isEmpty())
+                    .collect(Collectors.joining(", "));
+        }
+
         return LichHenResponseDTO.builder()
                 .maLh(entity.getMaLh())
                 .tenKhachHang(entity.getKhachHang().getHoTen())
                 .tenBacSi(entity.getNhanSu().getHoTen())
-                .ngayHen(entity.getNgayHen().toLocalDate()) // Chuyển LocalDateTime về LocalDate
-                .gioHen(entity.getGioHen().toLocalTime()) // Chuyển LocalDateTime về LocalTime
-                .trieuChung(entity.getTrieuChung())
+                .ngayHen(entity.getNgayHen().toLocalDate())
+                .gioHen(entity.getGioHen().toLocalTime())
+                .trieuChung(trieuChungStr)
                 .loaiLich(entity.getLoaiLich())
-                .trangThai(entity.getTrangThai()) // Chuyển Enum thành String
+                .trangThai(entity.getTrangThai())
                 .build();
     }
 
@@ -180,11 +211,8 @@ public class LichHenServiceImpl implements LichHenService {
                 .soThuTu(entity.getSoThuTu())
                 .tenKhachHang(entity.getKhachHang().getHoTen())
                 .tenBacSi(entity.getNhanSuPhanCong().getHoTen())
-                // ĐÃ SỬA: Đổi từ gioDangKy thành thoiGianBatDauCho cho khớp với DTO
                 .thoiGianBatDauCho(entity.getGioDangKy())
-                // BỔ SUNG: Vừa mới check-in xong thì thời gian chờ đợi dĩ nhiên là 0 phút
                 .thoiGianChoDoiPhut(0L)
-
                 .trangThai(entity.getTrangThai().name())
                 .build();
     }
