@@ -1,21 +1,27 @@
 {
-    "name": "IS210-Promax-Workspace",
+    "name": "VisionCare-Integrated-Workspace",
     "dockerComposeFile": "docker-compose.yml",
     "service": "backend",
     "workspaceFolder": "/workspaces/da",
-    "forwardPorts": [8080, 3000],
+    "forwardPorts": [8080, 3000, 3001],
     "customizations": {
         "vscode": {
             "settings": {
                 "java.jdt.ls.java.home": null,
                 "java.configuration.runtimes": [],
-                "terminal.integrated.defaultProfile.linux": "bash"
+                "terminal.integrated.defaultProfile.linux": "bash",
+                "editor.formatOnSave": true,
+                "dbaeumer.vscode-eslint": true
             },
             "extensions": [
                 "vscjava.vscode-java-pack",
                 "vscjava.vscode-spring-boot-dashboard",
+                "vscjava.vscode-spring-boot-tools",
                 "dbaeumer.vscode-eslint",
-                "esbenp.prettier-vscode"
+                "esbenp.prettier-vscode",
+                "dsznajder.es7-react-js-snippets",
+                "vscjava.vscode-lombok",
+                "jebbs.plantuml"
             ]
         }
     },
