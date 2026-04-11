@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Slf4j
@@ -69,5 +70,23 @@ public class HoSoThiLucServiceImpl implements HoSoThiLucService {
     public HoSoThiLuc xemChiTietHoSo(String maHoSo) {
         return hoSoThiLucRepository.findById(maHoSo)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hồ sơ thị lực: " + maHoSo));
+    }
+
+    // --- Method mới gọi SP (dùng chính repository đó) ---
+    @Override
+    public Map<String, String> taoHoSoKhamBangSP(
+            String maKhachHang, String maBacSi, String ketLuan,
+            Double matTraiSph, Double matTraiCyl, Integer matTraiAx, Double docongTrai,
+            Double matPhaiSph, Double matPhaiCyl, Integer matPhaiAx, Double docongPhai,
+            Double pd) {
+
+        log.info("Gọi SP_LUU_HOSO_KHAM_BENH cho bệnh nhân: {}", maKhachHang);
+        Map<String, String> result = hoSoThiLucRepository.luuHoSoKhamBenh(
+                maKhachHang, maBacSi, ketLuan,
+                matTraiSph, matTraiCyl, matTraiAx, docongTrai,
+                matPhaiSph, matPhaiCyl, matPhaiAx, docongPhai,
+                pd);
+        log.info("SP tạo thành công: maHoso={}, maDon={}", result.get("maHoso"), result.get("maDon"));
+        return result;
     }
 }

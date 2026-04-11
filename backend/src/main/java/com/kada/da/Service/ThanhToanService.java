@@ -13,4 +13,6 @@ public interface ThanhToanService {
     List<ThanhToan> getThanhToanByMaHd(String maHd);
 
     List<ThanhToan> getThanhToanByMaNs(String maNs);
+
+    String chotThanhToan(String maHd, String maNs, String phuongThuc);
 }

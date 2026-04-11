@@ -6,6 +6,8 @@ import java.util.Map;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -75,5 +77,34 @@ public class ExaminationController {
         response.put("maDonThuoc", maDonThuocMoi);
 
         return ResponseEntity.ok(response);
+    }
+
+    // =========================================================
+    // API LẤY LỊCH SỬ KHÁM BỆNH CỦA 1 KHÁCH HÀNG
+    // =========================================================
+    @GetMapping("/khach-hang/{maKh}")
+    public ResponseEntity<?> getLichSuKham(@PathVariable("maKh") String maKh) {
+        try {
+            // Dùng JPQL truy vấn thẳng vào Entity HoSoThiLuc
+            // Sắp xếp theo mã hồ sơ (hoặc ngày khám) giảm dần (mới nhất lên đầu)
+            String jpql = "SELECT h FROM HoSoThiLuc h WHERE h.khachHang.maKh = :maKh ORDER BY h.maHoSo DESC";
+
+            var lichSu = em.createQuery(jpql)
+                    .setParameter("maKh", maKh)
+                    .getResultList();
+
+            if (lichSu.isEmpty()) {
+                return ResponseEntity.ok(Map.of(
+                        "message", "Khách hàng này chưa có lịch sử khám.",
+                        "data", lichSu));
+            }
+
+            return ResponseEntity.ok(Map.of(
+                    "message", "Lấy lịch sử khám thành công!",
+                    "data", lichSu));
+
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Lỗi khi lấy lịch sử khám: " + e.getMessage());
+        }
     }
 }

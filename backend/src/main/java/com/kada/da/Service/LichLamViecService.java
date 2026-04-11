@@ -8,8 +8,19 @@ import java.time.LocalDate;
 import java.util.List;
 
 public interface LichLamViecService {
-    LichLamViecResponseDTO createLichLamViec(LichLamViecRequestDTO request);
 
+    // =========================================================
+    // 1. DÙNG STORED PROCEDURE (Tạo mới)
+    // =========================================================
+    // Đã đổi tên hàm và kiểu trả về thành void cho khớp với Impl
+    void taoLichLamViec(LichLamViecRequestDTO request);
+
+    // Đã đổi kiểu trả về thành void cho khớp với Impl
+    void createLichLamViecBatch(List<LichLamViecRequestDTO> requests);
+
+    // =========================================================
+    // 2. DÙNG JPA BÌNH THƯỜNG (Tra cứu, Cập nhật, Xóa)
+    // =========================================================
     LichLamViecResponseDTO getLichLamViecById(String maLlv);
 
     PageResponseDTO<LichLamViecResponseDTO> getAllLichLamViec(int page, int size);
@@ -20,10 +31,8 @@ public interface LichLamViecService {
 
     List<LichLamViecResponseDTO> getLichLamViecByNgay(LocalDate ngay);
 
-    // Đã đổi String ca -> Double gioBatDau, Double gioKetThuc
     List<LichLamViecResponseDTO> getLichLamViecByKhungGio(Double gioBatDau, Double gioKetThuc);
 
-    // Đã đổi String ca -> Double gioBatDau
     boolean isNhanSuRanh(String maNs, LocalDate ngay, Double gioBatDau);
 
     List<LichLamViecResponseDTO> getNhanSuRanh(LocalDate ngay, Double gioBatDau);
@@ -31,6 +40,4 @@ public interface LichLamViecService {
     LichLamViecResponseDTO updateLichLamViec(String maLlv, LichLamViecRequestDTO request);
 
     void deleteLichLamViec(String maLlv);
-
-    List<LichLamViecResponseDTO> createLichLamViecBatch(List<LichLamViecRequestDTO> requests);
 }

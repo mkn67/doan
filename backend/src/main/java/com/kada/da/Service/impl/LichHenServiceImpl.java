@@ -1,23 +1,17 @@
 package com.kada.da.Service.impl;
 
-import com.kada.da.Dto.LichHenRequestDTO;
+import com.kada.da.Dto.Response.DatLichResponseDTO;
 import com.kada.da.Dto.Response.LichHenResponseDTO;
 import com.kada.da.Dto.Response.HangChoResponseDTO;
 import com.kada.da.Entity.HangCho;
 import com.kada.da.Entity.LichHen;
-import com.kada.da.Entity.NhanSu;
-import com.kada.da.Entity.KhachHang;
-import com.kada.da.Entity.TrieuChung;
-import com.kada.da.Entity.LichHenTrieuChung; // Bổ sung import
-import com.kada.da.Entity.LichHenTrieuChungId; // Bổ sung import
+import com.kada.da.Entity.LichHenTrieuChung;
 import com.kada.da.Enum.TrangThaiHangCho;
 import com.kada.da.Enum.TrangThaiLichHen;
 import com.kada.da.Exception.BusinessRuleException;
 import com.kada.da.Exception.ResourceNotFoundException;
 import com.kada.da.Repository.HangChoRepository;
 import com.kada.da.Repository.LichHenRepository;
-import com.kada.da.Repository.KhachHangRepository;
-import com.kada.da.Repository.NhanSuRepository;
 import com.kada.da.Service.LichHenService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,8 +20,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -37,104 +29,50 @@ public class LichHenServiceImpl implements LichHenService {
 
     private final LichHenRepository lichHenRepository;
     private final HangChoRepository hangChoRepository;
-    private final KhachHangRepository khachHangRepository;
-    private final NhanSuRepository nhanSuRepository;
+
+    // ==================== CÁC HÀM DÙNG STORED PROCEDURE ====================
 
     @Override
     @Transactional
-    public LichHenResponseDTO createLichHen(LichHenRequestDTO requestDTO) {
-        log.info("Tạo lịch hẹn mới cho khách hàng: {}", requestDTO.getMaKhachHang());
+    public DatLichResponseDTO datLichHen(String maKh, String maNs, String maGoi, LocalDate ngayHen,
+            LocalDateTime gioHen) {
+        log.info("Gọi SP_DAT_LICH_HEN: khách={}, bác sĩ={}, ngày={}, giờ={}", maKh, maNs, ngayHen, gioHen);
 
-        KhachHang khachHang = khachHangRepository.findById(requestDTO.getMaKhachHang())
-                .orElseThrow(() -> new ResourceNotFoundException("Khách hàng không tồn tại"));
+        String maLh = lichHenRepository.datLichHen(maKh, maNs, maGoi, ngayHen, gioHen);
 
-        NhanSu bacSi = nhanSuRepository.findById(requestDTO.getMaBacSi())
-                .orElseThrow(() -> new ResourceNotFoundException("Bác sĩ không tồn tại"));
+        LichHen lichHen = findLichHenById(maLh);
 
-        boolean hasActiveBooking = lichHenRepository.existsByKhachHang_MaKhAndTrangThaiIn(
-                khachHang.getMaKh(),
-                List.of(TrangThaiLichHen.CHO_XAC_NHAN, TrangThaiLichHen.DA_XAC_NHAN));
-
-        if (hasActiveBooking) {
-            throw new BusinessRuleException("Khách hàng đã có một lịch hẹn đang chờ xử lý.");
-        }
-
-        String generatedMaLh = "LH" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-
-        LichHen lichHen = LichHen.builder()
-                .maLh(generatedMaLh)
-                .khachHang(khachHang)
-                .nhanSu(bacSi)
-                .ngayHen(requestDTO.getNgayHen().atStartOfDay())
-                .gioHen(requestDTO.getNgayHen().atTime(requestDTO.getGioHen()))
-                .trangThai(TrangThaiLichHen.CHO_XAC_NHAN)
-                .loaiLich("Khám mới")
+        return DatLichResponseDTO.builder()
+                .maLh(maLh)
+                .maKhachHang(maKh)
+                .tenKhachHang(lichHen.getKhachHang() != null ? lichHen.getKhachHang().getHoTen() : "")
+                .maBacSi(maNs)
+                .tenBacSi(lichHen.getNhanSu() != null ? lichHen.getNhanSu().getHoTen() : "")
+                .ngayHen(ngayHen)
+                .gioHen(gioHen)
+                .trangThai(lichHen.getTrangThai() != null ? lichHen.getTrangThai().name() : "Mới")
+                .thongBao("Đặt lịch thành công")
                 .build();
-
-        // 👉 LOGIC MỚI: Xử lý theo chuẩn bảng trung gian có khóa kép
-        if (requestDTO.getTrieuChung() != null && !requestDTO.getTrieuChung().isEmpty()) {
-            List<LichHenTrieuChung> listTc = new java.util.ArrayList<>();
-            LichHenTrieuChung lhTc = new LichHenTrieuChung();
-
-            // Set khóa chính kép
-            LichHenTrieuChungId tcId = new LichHenTrieuChungId();
-            tcId.setMaLh(lichHen.getMaLh());
-            tcId.setMaTc("TC001"); // Mặc định gán vào mã TC001 (Nhớ chạy lệnh mồi trong Oracle nhé)
-            lhTc.setId(tcId);
-
-            lhTc.setLichHen(lichHen);
-
-            TrieuChung tc = new TrieuChung();
-            tc.setMaTc("TC001");
-            lhTc.setTrieuChung(tc);
-
-            // Nhét dòng "Nhìn mờ, nhức đầu" từ Postman vào cột mô tả tự do
-            lhTc.setMoTaTuDo(requestDTO.getTrieuChung());
-
-            listTc.add(lhTc);
-            lichHen.setDanhSachTrieuChung(listTc); // entity LichHen phải dùng List<LichHenTrieuChung> nhé
-        }
-
-        lichHen = lichHenRepository.save(lichHen);
-        log.info("Đã tạo lịch hẹn thành công với mã: {}", lichHen.getMaLh());
-
-        return convertToLichHenResponse(lichHen);
     }
+
+    @Override
+    @Transactional
+    public void huyLichHen(String maLh) {
+        log.info("Gọi SP_HUY_LICH_HEN: {}", maLh);
+        lichHenRepository.huyLichHen(maLh);
+    }
+
+    // ==================== CÁC HÀM DÙNG JPA BÌNH THƯỜNG ====================
 
     @Override
     @Transactional
     public LichHenResponseDTO confirmLichHen(String maLichHen) {
         LichHen lichHen = findLichHenById(maLichHen);
-
         if (lichHen.getTrangThai() != TrangThaiLichHen.CHO_XAC_NHAN) {
-            throw new BusinessRuleException("Chỉ có thể xác nhận lịch hẹn đang ở trạng thái 'Chờ xác nhận'");
+            throw new BusinessRuleException("Chỉ có thể xác nhận lịch hẹn 'Chờ xác nhận'");
         }
-
         lichHen.setTrangThai(TrangThaiLichHen.DA_XAC_NHAN);
-        LichHen saved = lichHenRepository.save(lichHen);
-        log.info("Đã xác nhận lịch hẹn: {}", maLichHen);
-
-        return convertToLichHenResponse(saved);
-    }
-
-    @Override
-    @Transactional
-    public void cancelLichHen(String maLichHen, String lyDo) {
-        LichHen lichHen = findLichHenById(maLichHen);
-
-        if (lichHen.getTrangThai() == TrangThaiLichHen.DA_CHECK_IN) {
-            throw new BusinessRuleException("Không thể hủy lịch hẹn đã check-in");
-        }
-
-        if (lichHen.getTrangThai() == TrangThaiLichHen.DA_HUY) {
-            throw new BusinessRuleException("Lịch hẹn này đã bị hủy từ trước rồi");
-        }
-
-        lichHen.setTrangThai(TrangThaiLichHen.DA_HUY);
-        log.warn("Lịch hẹn {} bị hủy. Lý do: {}", maLichHen, lyDo);
-
-        lichHenRepository.save(lichHen);
-        log.info("Đã hủy lịch hẹn: {}", maLichHen);
+        return convertToLichHenResponse(lichHenRepository.save(lichHen));
     }
 
     @Override
@@ -151,18 +89,12 @@ public class LichHenServiceImpl implements LichHenService {
             throw new BusinessRuleException("Lịch hẹn không phải hôm nay, không thể check-in");
         }
 
+        // Cập nhật trạng thái lịch hẹn
         lichHen.setTrangThai(TrangThaiLichHen.DA_CHECK_IN);
         lichHenRepository.save(lichHen);
 
-        Integer maxSttToday = hangChoRepository.findMaxSoThuTuToday();
-        int maxStt = (maxSttToday != null) ? maxSttToday : 0;
-        int soThuTu = maxStt + 1;
-
-        String generatedMaHc = "HC" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-
+        // Tạo Hàng Chờ mới (KHÔNG set MAHC và SO_THU_TU, để Trigger Oracle tự lo)
         HangCho hangCho = HangCho.builder()
-                .maHc(generatedMaHc)
-                .soThuTu(soThuTu)
                 .trangThai(TrangThaiHangCho.DANG_CHO)
                 .gioDangKy(LocalDateTime.now())
                 .khachHang(lichHen.getKhachHang())
@@ -170,8 +102,8 @@ public class LichHenServiceImpl implements LichHenService {
                 .nhanSuPhanCong(lichHen.getNhanSu())
                 .build();
 
+        // Lưu vào DB -> Trigger TRG_GEN_MAHC sẽ chạy và tự đắp dữ liệu vào
         HangCho savedHangCho = hangChoRepository.save(hangCho);
-        log.info("Check-in thành công cho lịch hẹn {} - STT: {}", maLichHen, soThuTu);
 
         return convertToHangChoResponse(savedHangCho);
     }
@@ -184,24 +116,20 @@ public class LichHenServiceImpl implements LichHenService {
     }
 
     private LichHenResponseDTO convertToLichHenResponse(LichHen entity) {
-        String trieuChungStr = "";
-        if (entity.getDanhSachTrieuChung() != null) {
-            // ĐÃ SỬA: Map qua LichHenTrieuChung để lấy cột MoTaTuDo
-            trieuChungStr = entity.getDanhSachTrieuChung().stream()
-                    .map(LichHenTrieuChung::getMoTaTuDo)
-                    .filter(moTa -> moTa != null && !moTa.isEmpty())
-                    .collect(Collectors.joining(", "));
-        }
+        String trieuChungStr = entity.getDanhSachTrieuChung() != null ? entity.getDanhSachTrieuChung().stream()
+                .map(LichHenTrieuChung::getMoTaTuDo)
+                .filter(m -> m != null && !m.isEmpty())
+                .collect(Collectors.joining(", ")) : "";
 
         return LichHenResponseDTO.builder()
                 .maLh(entity.getMaLh())
-                .tenKhachHang(entity.getKhachHang().getHoTen())
-                .tenBacSi(entity.getNhanSu().getHoTen())
-                .ngayHen(entity.getNgayHen().toLocalDate())
-                .gioHen(entity.getGioHen().toLocalTime())
+                .tenKhachHang(entity.getKhachHang() != null ? entity.getKhachHang().getHoTen() : null)
+                .tenBacSi(entity.getNhanSu() != null ? entity.getNhanSu().getHoTen() : null)
+                .ngayHen(entity.getNgayHen() != null ? entity.getNgayHen().toLocalDate() : null)
+                .gioHen(entity.getGioHen() != null ? entity.getGioHen().toLocalTime() : null)
                 .trieuChung(trieuChungStr)
                 .loaiLich(entity.getLoaiLich())
-                .trangThai(entity.getTrangThai())
+                .trangThai(entity.getTrangThai() != null ? entity.getTrangThai().name() : null)
                 .build();
     }
 
@@ -209,11 +137,11 @@ public class LichHenServiceImpl implements LichHenService {
         return HangChoResponseDTO.builder()
                 .maHangCho(entity.getMaHc())
                 .soThuTu(entity.getSoThuTu())
-                .tenKhachHang(entity.getKhachHang().getHoTen())
-                .tenBacSi(entity.getNhanSuPhanCong().getHoTen())
+                .tenKhachHang(entity.getKhachHang() != null ? entity.getKhachHang().getHoTen() : null)
+                .tenBacSi(entity.getNhanSuPhanCong() != null ? entity.getNhanSuPhanCong().getHoTen() : null)
                 .thoiGianBatDauCho(entity.getGioDangKy())
                 .thoiGianChoDoiPhut(0L)
-                .trangThai(entity.getTrangThai().name())
+                .trangThai(entity.getTrangThai() != null ? entity.getTrangThai().name() : null)
                 .build();
     }
 }

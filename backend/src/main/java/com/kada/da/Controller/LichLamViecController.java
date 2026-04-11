@@ -24,13 +24,28 @@ public class LichLamViecController {
 
     private final LichLamViecService lichLamViecService;
 
+    // ĐÃ SỬA: Đổi kiểu trả về thành String, gọi hàm taoLichLamViec (void)
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'QUAN_LY')")
-    public ResponseEntity<LichLamViecResponseDTO> createLichLamViec(
+    public ResponseEntity<String> createLichLamViec(
             @Valid @RequestBody LichLamViecRequestDTO request) {
         log.info("API: Tạo lịch làm việc cho nhân sự: {}", request.getMaNs());
-        LichLamViecResponseDTO response = lichLamViecService.createLichLamViec(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+
+        lichLamViecService.taoLichLamViec(request); // Gọi SP
+
+        return ResponseEntity.status(HttpStatus.CREATED).body("Tạo lịch làm việc thành công!");
+    }
+
+    // ĐÃ SỬA: Đổi kiểu trả về thành String, gọi hàm batch (void)
+    @PostMapping("/batch")
+    @PreAuthorize("hasAnyRole('ADMIN', 'QUAN_LY')")
+    public ResponseEntity<String> createLichLamViecBatch(
+            @Valid @RequestBody List<LichLamViecRequestDTO> requests) {
+        log.info("API: Tạo lịch làm việc hàng loạt - số lượng: {}", requests.size());
+
+        lichLamViecService.createLichLamViecBatch(requests); // Gọi SP hàng loạt
+
+        return ResponseEntity.status(HttpStatus.CREATED).body("Tạo " + requests.size() + " lịch làm việc thành công!");
     }
 
     @GetMapping("/{maLlv}")
@@ -77,7 +92,6 @@ public class LichLamViecController {
         return ResponseEntity.ok(response);
     }
 
-    // ĐÃ SỬA: Đổi từ /ca sang /khung-gio và xài Double
     @GetMapping("/khung-gio")
     public ResponseEntity<List<LichLamViecResponseDTO>> getLichLamViecByKhungGio(
             @RequestParam Double gioBatDau,
@@ -87,7 +101,6 @@ public class LichLamViecController {
         return ResponseEntity.ok(response);
     }
 
-    // ĐÃ SỬA: Kiểm tra nhân sự rảnh theo ngày và giờ bắt đầu
     @GetMapping("/check-ranh")
     public ResponseEntity<Boolean> checkNhanSuRanh(
             @RequestParam String maNs,
@@ -98,7 +111,6 @@ public class LichLamViecController {
         return ResponseEntity.ok(isRanh);
     }
 
-    // ĐÃ SỬA: Lấy danh sách nhân sự rảnh theo ngày và giờ bắt đầu
     @GetMapping("/nhan-su-ranh")
     public ResponseEntity<List<LichLamViecResponseDTO>> getNhanSuRanh(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate ngay,
@@ -124,14 +136,5 @@ public class LichLamViecController {
         log.info("API: Xóa lịch làm việc: {}", maLlv);
         lichLamViecService.deleteLichLamViec(maLlv);
         return ResponseEntity.noContent().build();
-    }
-
-    @PostMapping("/batch")
-    @PreAuthorize("hasAnyRole('ADMIN', 'QUAN_LY')")
-    public ResponseEntity<List<LichLamViecResponseDTO>> createLichLamViecBatch(
-            @Valid @RequestBody List<LichLamViecRequestDTO> requests) {
-        log.info("API: Tạo lịch làm việc hàng loạt - số lượng: {}", requests.size());
-        List<LichLamViecResponseDTO> responses = lichLamViecService.createLichLamViecBatch(requests);
-        return ResponseEntity.status(HttpStatus.CREATED).body(responses);
     }
 }

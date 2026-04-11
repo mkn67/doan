@@ -1,6 +1,7 @@
 package com.kada.da.Repository;
 
 import com.kada.da.Entity.XuLyKinh;
+import com.kada.da.Repository.custom.XuLyKinhRepositoryCustom;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -8,7 +9,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface XuLyKinhRepository extends JpaRepository<XuLyKinh, String> {
+public interface XuLyKinhRepository extends JpaRepository<XuLyKinh, String>, XuLyKinhRepositoryCustom {
 
     // Lấy mã lớn nhất để sinh XL001, XL002 tự động
     @Query("SELECT MAX(x.maXl) FROM XuLyKinh x")

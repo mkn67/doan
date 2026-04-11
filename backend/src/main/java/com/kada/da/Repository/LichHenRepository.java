@@ -1,7 +1,8 @@
 package com.kada.da.Repository;
 
 import com.kada.da.Entity.LichHen;
-import com.kada.da.Enum.TrangThaiLichHen; // QUAN TRỌNG: Phải import cái này vào
+import com.kada.da.Enum.TrangThaiLichHen;
+import com.kada.da.Repository.custom.LichHenRepositoryCustom;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -9,7 +10,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Repository
-public interface LichHenRepository extends JpaRepository<LichHen, String> {
+public interface LichHenRepository extends JpaRepository<LichHen, String>, LichHenRepositoryCustom {
 
     List<LichHen> findByNhanSu_MaNsAndNgayHenOrderByGioHenAsc(String maBacSi, LocalDate ngayHen);
 

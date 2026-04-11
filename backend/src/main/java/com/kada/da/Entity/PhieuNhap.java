@@ -4,10 +4,14 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "PHIEU_NHAP")
-@Data @NoArgsConstructor @AllArgsConstructor @Builder
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class PhieuNhap {
     @Id
     @Column(name = "MAPN", length = 10)
@@ -28,4 +32,9 @@ public class PhieuNhap {
     @ManyToOne
     @JoinColumn(name = "MANS")
     private NhanSu nhanSu;
+    // 👇 THÊM CÁC DÒNG NÀY VÀO 👇
+    @OneToMany(mappedBy = "phieuNhap", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
+    private List<LoHang> danhSachLoHang;
 }

@@ -1,5 +1,6 @@
 package com.kada.da.Service.impl;
 
+import com.kada.da.Dto.ChangePasswordRequestDTO;
 import com.kada.da.Dto.LoginRequestDTO;
 import com.kada.da.Dto.TaiKhoanRequestDTO;
 import com.kada.da.Dto.Response.LoginResponseDTO;
@@ -8,6 +9,7 @@ import com.kada.da.Entity.KhachHang;
 import com.kada.da.Entity.TaiKhoan;
 import com.kada.da.Enum.LoaiTaiKhoan;
 import com.kada.da.Exception.BusinessRuleException;
+import com.kada.da.Exception.ResourceNotFoundException;
 import com.kada.da.Repository.KhachHangRepository;
 import com.kada.da.Repository.TaiKhoanRepository;
 import com.kada.da.Service.AuthService;
@@ -127,5 +129,33 @@ public class AuthServiceImpl implements AuthService {
             }
         }
         return "KH" + String.format("%03d", nextNumber);
+    }
+
+    @Override
+    @Transactional
+    public void changePassword(String username, ChangePasswordRequestDTO request) {
+        log.info("Bắt đầu đổi mật khẩu cho tài khoản: {}", username);
+
+        // 1. Kiểm tra mật khẩu mới và xác nhận có khớp không
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw new BusinessRuleException("Mật khẩu xác nhận không khớp với mật khẩu mới!");
+        }
+
+        // 2. Tìm tài khoản trong DB (Tùy Entity của ông tên là TaiKhoan hay User nhé)
+        TaiKhoan taiKhoan = taiKhoanRepository.findById(username) // hoặc findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tài khoản: " + username));
+
+        // 3. Kiểm tra mật khẩu cũ có đúng không
+        // LƯU Ý: Nếu ông dùng BCrypt thì dùng passwordEncoder.matches(), nếu ông lưu
+        // plain-text thì dùng .equals()
+        if (!passwordEncoder.matches(request.getOldPassword(), taiKhoan.getPassword())) {
+            throw new BusinessRuleException("Mật khẩu cũ không chính xác!");
+        }
+
+        // 4. Mã hóa mật khẩu mới và lưu lại
+        taiKhoan.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        taiKhoanRepository.save(taiKhoan);
+
+        log.info("Đổi mật khẩu thành công cho tài khoản: {}", username);
     }
 }

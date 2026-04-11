@@ -1,6 +1,7 @@
 package com.kada.da.Mapper;
 
 import com.kada.da.Dto.TaiKhoanRequestDTO;
+import com.kada.da.Dto.Response.TaiKhoanResponseDTO;
 import com.kada.da.Entity.Nhom;
 import com.kada.da.Entity.TaiKhoan;
 import java.util.ArrayList;
@@ -24,5 +25,16 @@ public class TaiKhoanMapper {
             taiKhoan.setDanhSachNhom(danhSachNhom);
         }
         return taiKhoan;
+    }
+
+    public static TaiKhoanResponseDTO toResponse(TaiKhoan taiKhoan) {
+        if (taiKhoan == null)
+            return null;
+        return TaiKhoanResponseDTO.builder()
+                .maTk(taiKhoan.getMaTk())
+                .username(taiKhoan.getUsername())
+                .loaiTk(taiKhoan.getLoaiTk())
+                .trangThai(taiKhoan.getTrangThai())
+                .build();
     }
 }

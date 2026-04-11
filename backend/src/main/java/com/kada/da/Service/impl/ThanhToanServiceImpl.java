@@ -4,12 +4,14 @@ import com.kada.da.Entity.ThanhToan;
 import com.kada.da.Repository.ThanhToanRepository;
 import com.kada.da.Service.ThanhToanService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ThanhToanServiceImpl implements ThanhToanService {
@@ -54,6 +56,15 @@ public class ThanhToanServiceImpl implements ThanhToanService {
     @Override
     public List<ThanhToan> getThanhToanByMaNs(String maNs) {
         return thanhToanRepository.findByNhanSu_MaNsOrderByNgayThanhToanDesc(maNs);
+    }
+
+    @Override
+    @Transactional
+    public String chotThanhToan(String maHd, String maNs, String phuongThuc) {
+        log.info("Gọi SP_CHOT_THANH_TOAN_HOA_DON cho hóa đơn: {}", maHd);
+        String maTt = thanhToanRepository.chotThanhToanHoaDon(maHd, maNs, phuongThuc);
+        log.info("Đã tạo thanh toán thành công, mã giao dịch: {}", maTt);
+        return maTt;
     }
 
     // Hàm tự sinh mã TT

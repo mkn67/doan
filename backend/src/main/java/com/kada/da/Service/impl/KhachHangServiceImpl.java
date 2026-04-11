@@ -5,6 +5,7 @@ import com.kada.da.Exception.ResourceNotFoundException;
 import com.kada.da.Repository.KhachHangRepository;
 import com.kada.da.Service.KhachHangService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,6 +13,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class KhachHangServiceImpl implements KhachHangService {
@@ -80,5 +82,17 @@ public class KhachHangServiceImpl implements KhachHangService {
         KhachHang khachHang = timKhachHangTheoId(maKh);
         khachHang.setIsDeleted(1); // 1 = Đã xóa
         khachHangRepository.save(khachHang);
+    }
+
+    @Override
+    @Transactional
+    public void congDiemThuCong(String maKh, Integer soDiem, String lyDo, String maHd) {
+        log.info("Gọi SP_CONG_DIEM: khách={}, điểm={}, lý do={}, mã HD={}",
+                maKh, soDiem, lyDo, maHd != null ? maHd : "Không có");
+
+        // Bóp cò gọi SP
+        khachHangRepository.congDiemThuCong(maKh, soDiem, lyDo, maHd);
+
+        log.info("Cộng điểm thủ công thành công cho khách hàng: {}", maKh);
     }
 }

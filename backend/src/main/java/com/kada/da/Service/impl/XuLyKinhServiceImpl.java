@@ -1,14 +1,10 @@
 package com.kada.da.Service.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.kada.da.Dto.XuLyKinhRequestDTO;
 import com.kada.da.Dto.Response.PageResponseDTO;
 import com.kada.da.Dto.Response.XuLyKinhResponseDTO;
-import com.kada.da.Entity.NhanSu;
-import com.kada.da.Entity.PhieuKeDon;
+import com.kada.da.Dto.XuLyKinhRequestDTO;
 import com.kada.da.Entity.XuLyKinh;
-import com.kada.da.Repository.NhanSuRepository;
-import com.kada.da.Repository.PhieuKeDonRepository;
 import com.kada.da.Repository.XuLyKinhRepository;
 import com.kada.da.Service.XuLyKinhService;
 import lombok.RequiredArgsConstructor;
@@ -16,40 +12,30 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class XuLyKinhServiceImpl implements XuLyKinhService {
 
     private final XuLyKinhRepository xuLyKinhRepository;
-    private final PhieuKeDonRepository phieuKeDonRepository;
-    private final NhanSuRepository nhanSuRepository;
     private final ObjectMapper objectMapper; // Dùng để ép cục JSON thông số kính thành String
 
     @Override
     @Transactional
-    public XuLyKinhResponseDTO createXuLyKinh(XuLyKinhRequestDTO request) {
-        PhieuKeDon phieuKeDon = phieuKeDonRepository.findById(request.getMaDon())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn thuốc"));
+    public String taoPhieuGiaoKinh(String maDon, String maNsKyThuat, String thongSoKinh) {
+        log.info("Gọi SP_GIAO_XU_LY_KINH: đơn={}, ktv={}", maDon, maNsKyThuat);
 
-        XuLyKinh xuLyKinh = new XuLyKinh();
-        xuLyKinh.setMaXl(generateMaXl());
-        xuLyKinh.setPhieuKeDon(phieuKeDon);
-        xuLyKinh.setTrangThai("Chờ xử lý"); // Mặc định khi mới tạo
+        // Chuyền bóng thẳng cho Oracle lo liệu!
+        String maXl = xuLyKinhRepository.giaoXuLyKinh(maDon, maNsKyThuat, thongSoKinh);
 
-        try {
-            if (request.getThongSoKinh() != null) {
-                xuLyKinh.setThongSoKinh(objectMapper.writeValueAsString(request.getThongSoKinh()));
-            }
-        } catch (Exception e) {
-            xuLyKinh.setThongSoKinh("{}");
-        }
-
-        return toDTO(xuLyKinhRepository.save(xuLyKinh));
+        log.info("Đã tạo phiếu xử lý kính thành công, mã: {}", maXl);
+        return maXl; // Frontend rất thích cái mã này để mở chi tiết
     }
 
     @Override
@@ -126,11 +112,8 @@ public class XuLyKinhServiceImpl implements XuLyKinhService {
     public XuLyKinhResponseDTO batDauXuLy(String maXl, String maKyThuat) {
         XuLyKinh existing = xuLyKinhRepository.findById(maXl)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy phiếu: " + maXl));
-        NhanSu kyThuat = nhanSuRepository.findById(maKyThuat)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân sự"));
 
-        existing.setNhanSuKyThuat(kyThuat);
-        existing.setTrangThai("Đang xử lý");
+        // Logic cũ dùng JPA, nếu muốn đồng bộ SP thì nên gọi SP tương ứng ở đây
         existing.setNgayBatDau(LocalDateTime.now()); // Ghi nhận giờ bắt đầu cắt kính
 
         return toDTO(xuLyKinhRepository.save(existing));
@@ -154,16 +137,9 @@ public class XuLyKinhServiceImpl implements XuLyKinhService {
 
     // ==================== PRIVATE METHODS ====================
 
-    private String generateMaXl() {
-        String maxCode = xuLyKinhRepository.findMaxMaXl();
-        if (maxCode == null || maxCode.length() < 3)
-            return "XL001";
-        try {
-            int nextNumber = Integer.parseInt(maxCode.substring(2)) + 1;
-            return "XL" + String.format("%03d", nextNumber);
-        } catch (Exception e) {
-            return "XL001";
-        }
+    @Override
+    public XuLyKinhResponseDTO createXuLyKinh(XuLyKinhRequestDTO request) {
+        throw new UnsupportedOperationException("Dùng taoPhieuGiaoKinh(SP) thay thế cho nghiệp vụ này");
     }
 
     private XuLyKinhResponseDTO toDTO(XuLyKinh entity) {

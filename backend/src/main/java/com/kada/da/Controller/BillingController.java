@@ -1,5 +1,6 @@
 package com.kada.da.Controller;
 
+import com.kada.da.Dto.TaoHoaDonJsonRequest;
 import com.lowagie.text.*;
 import com.lowagie.text.pdf.PdfWriter;
 import com.kada.da.Entity.HoaDon;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.text.NumberFormat;
+import java.util.Map;
 import java.util.Locale;
 
 @RestController
@@ -30,6 +32,20 @@ public class BillingController {
         // Gọi thẳng vào logic Transactional trừ tiền, trừ kho đã viết
         HoaDon savedHoaDon = hoaDonService.thanhToanHoaDon(hoaDon);
         return ResponseEntity.status(HttpStatus.CREATED).body(savedHoaDon);
+    }
+
+    @PostMapping("/tao-tu-json")
+    public ResponseEntity<Map<String, String>> taoHoaDonTuJson(@RequestBody TaoHoaDonJsonRequest request) {
+        Map<String, String> result = hoaDonService.taoHoaDonTuJson(
+                request.getMaKh(), request.getMaNs(), request.getMaHoso(),
+                request.getMaDon(), request.getJsonSp(), request.getJsonDv());
+        return ResponseEntity.ok(result);
+    }
+
+    @DeleteMapping("/{maHd}")
+    public ResponseEntity<Void> huyHoaDon(@PathVariable String maHd) {
+        hoaDonService.huyHoaDon(maHd);
+        return ResponseEntity.noContent().build();
     }
 
     // 2. Xuất hóa đơn PDF

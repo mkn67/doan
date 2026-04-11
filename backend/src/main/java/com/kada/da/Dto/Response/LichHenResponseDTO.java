@@ -1,11 +1,11 @@
 package com.kada.da.Dto.Response;
 
 import com.kada.da.Entity.LichHen;
-import com.kada.da.Enum.TrangThaiLichHen; // IMPORT ENUM VÀO ĐÂY
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
 import java.time.LocalDate;
 import java.time.LocalTime;
 
@@ -22,32 +22,38 @@ public class LichHenResponseDTO {
     private LocalDate ngayHen;
     private LocalTime gioHen;
     private String loaiLich;
-    private TrangThaiLichHen trangThai;
+    private String trangThai; // 👉 Đổi thành String để trả về cho Frontend dễ đọc
     private String trieuChung;
 
-    public LichHenResponseDTO(LichHen lichHen) {
-        this.maLh = lichHen.getMaLh();
+    // Static Factory Method để Map từ Entity sang DTO
+    public static LichHenResponseDTO fromEntity(LichHen lichHen) {
+        if (lichHen == null)
+            return null;
+
+        LichHenResponseDTOBuilder builder = LichHenResponseDTO.builder()
+                .maLh(lichHen.getMaLh())
+                .loaiLich(lichHen.getLoaiLich())
+                .trieuChung(lichHen.getTrieuChung())
+                // .name() để lấy chuỗi (VD: "CHO_XAC_NHAN") thay vì ném thẳng Enum
+                .trangThai(lichHen.getTrangThai() != null ? lichHen.getTrangThai().name() : null);
 
         if (lichHen.getNgayHen() != null) {
-            this.ngayHen = lichHen.getNgayHen().toLocalDate();
+            builder.ngayHen(lichHen.getNgayHen().toLocalDate());
         }
+
         if (lichHen.getGioHen() != null) {
-            this.gioHen = lichHen.getGioHen().toLocalTime();
+            builder.gioHen(lichHen.getGioHen().toLocalTime());
         }
-
-        this.loaiLich = lichHen.getLoaiLich();
-        // ĐÃ SỬA: Bây giờ gán trực tiếp Enum cho Enum, không còn lỗi nữa
-        this.trangThai = lichHen.getTrangThai();
-
-        this.trieuChung = lichHen.getTrieuChung();
 
         if (lichHen.getKhachHang() != null) {
-            this.tenKhachHang = lichHen.getKhachHang().getHoTen();
-            this.sdtKhachHang = lichHen.getKhachHang().getSdt();
+            builder.tenKhachHang(lichHen.getKhachHang().getHoTen());
+            builder.sdtKhachHang(lichHen.getKhachHang().getSdt());
         }
 
         if (lichHen.getNhanSu() != null) {
-            this.tenBacSi = lichHen.getNhanSu().getHoTen();
+            builder.tenBacSi(lichHen.getNhanSu().getHoTen());
         }
+
+        return builder.build();
     }
 }

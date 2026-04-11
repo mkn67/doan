@@ -58,4 +58,16 @@ public class CustomerController {
         khachHangService.xoaMemKhachHang(maKh);
         return ResponseEntity.ok("Đã xóa thành công khách hàng mã: " + maKh);
     }
+
+    // 7. Cộng điểm thủ công cho khách hàng
+    @PostMapping("/{maKh}/cong-diem")
+    public ResponseEntity<String> congDiemChoKhach(
+            @PathVariable String maKh,
+            @RequestParam Integer soDiem,
+            @RequestParam String lyDo,
+            @RequestParam(required = false) String maHd) { // required = false vì có thể cộng điểm không cần hóa đơn
+
+        khachHangService.congDiemThuCong(maKh, soDiem, lyDo, maHd);
+        return ResponseEntity.ok("Đã cộng " + soDiem + " điểm cho khách hàng " + maKh);
+    }
 }

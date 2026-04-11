@@ -15,4 +15,6 @@ public interface KhachHangService {
     KhachHang capNhatKhachHang(String maKh, KhachHang khachHang);
 
     void xoaMemKhachHang(String maKh);
+
+    void congDiemThuCong(String maKh, Integer soDiem, String lyDo, String maHd);
 }

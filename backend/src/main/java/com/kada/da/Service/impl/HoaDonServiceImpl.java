@@ -10,12 +10,15 @@ import com.kada.da.Repository.HoaDonRepository;
 import com.kada.da.Repository.LoHangRepository;
 import com.kada.da.Service.HoaDonService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class HoaDonServiceImpl implements HoaDonService {
@@ -71,5 +74,23 @@ public class HoaDonServiceImpl implements HoaDonService {
     public HoaDon findById(String maHd) {
         return hoaDonRepository.findById(maHd)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hóa đơn mã: " + maHd));
+    }
+
+    @Override
+    @Transactional
+    public Map<String, String> taoHoaDonTuJson(String maKh, String maNs, String maHoso, String maDon, String jsonSp,
+            String jsonDv) {
+        log.info("Gọi SP_TAO_HOA_DON: khách={}, nhân viên={}", maKh, maNs);
+        Map<String, String> result = hoaDonRepository.taoHoaDonTuJson(maKh, maNs, maHoso, maDon, jsonSp, jsonDv);
+        log.info("Tạo hóa đơn thành công, mã: {}", result.get("maHd"));
+        return result;
+    }
+
+    @Override
+    @Transactional
+    public void huyHoaDon(String maHd) {
+        log.info("Gọi SP_HUY_HOA_DON: {}", maHd);
+        hoaDonRepository.huyHoaDon(maHd);
+        log.info("Hủy hóa đơn thành công: {}", maHd);
     }
 }
