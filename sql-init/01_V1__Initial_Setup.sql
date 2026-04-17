@@ -1,4 +1,4 @@
--- ============================================================
+ -- ============================================================
 -- FILE   : V1_Initial_Setup_Fixed.sql
 -- PROJECT: Hệ Thống Quản Lý Dịch Vụ Thị Lực & Thiết Bị Y Tế
 -- STACK  : Oracle SQL 21c + Spring Boot + React.js
@@ -358,7 +358,8 @@ CREATE TABLE CT_HOA_DON (
     DONGIA  NUMBER(15,2),
     CONSTRAINT PK_CTHD    PRIMARY KEY (MAHD, MALO),
     CONSTRAINT FK_CTHD_HD FOREIGN KEY (MAHD) REFERENCES HOA_DON(MAHD),
-    CONSTRAINT FK_CTHD_LO FOREIGN KEY (MALO) REFERENCES LO_HANG(MALO)
+    CONSTRAINT FK_CTHD_LO FOREIGN KEY (MALO) REFERENCES LO_HANG(MALO),
+    CONSTRAINT FK_CTHD_SP FOREIGN KEY (MASP) REFERENCES SAN_PHAM(MASP)
 );
 
 CREATE TABLE CT_HOA_DON_DV (
@@ -1002,7 +1003,7 @@ EXCEPTION WHEN OTHERS THEN ROLLBACK; RAISE;
 END SP_CHOT_THANH_TOAN_HOA_DON;
 /
 
--- SP 3: Nhập kho lô hàng
+-- SP 3: Nhập kho lô hàng (Đã fix lỗi cập nhật Tổng Tiền)
 CREATE OR REPLACE PROCEDURE SP_NHAP_KHO_LO_HANG (
     p_mapn         IN OUT VARCHAR2,
     p_mancc        IN     VARCHAR2,
@@ -1018,6 +1019,7 @@ CREATE OR REPLACE PROCEDURE SP_NHAP_KHO_LO_HANG (
     v_existing NUMBER;
     v_tongtien NUMBER;
 BEGIN
+    -- 1. Xử lý Phiếu Nhập
     IF p_mapn IS NULL THEN
         INSERT INTO PHIEU_NHAP(MAPN, MANCC, MANS, NGAYNHAP, TONGTIEN)
         VALUES (NULL, p_mancc, p_mans, SYSTIMESTAMP, 0)
@@ -1029,15 +1031,30 @@ BEGIN
             VALUES (p_mapn, p_mancc, p_mans, SYSTIMESTAMP, 0);
         END IF;
     END IF;
-    IF p_ngayhethan <= p_ngaysx THEN RAISE_APPLICATION_ERROR(-20020, 'LỖI: HSD phải sau NSX!'); END IF;
-    IF p_ngayhethan <= SYSDATE  THEN RAISE_APPLICATION_ERROR(-20021, 'LỖI: Không nhập hàng hết hạn!'); END IF;
+    -- 2. Validate nghiệp vụ (HSD / NSX)
+    IF p_ngayhethan <= p_ngaysx THEN 
+        RAISE_APPLICATION_ERROR(-20020, 'LỖI: HSD phải sau NSX!'); 
+    END IF;
+    IF p_ngayhethan <= SYSDATE THEN 
+        RAISE_APPLICATION_ERROR(-20021, 'LỖI: Không nhập hàng hết hạn!'); 
+    END IF;
+    -- 3. Lưu chi tiết Lô hàng
     INSERT INTO LO_HANG(MALO, MASP, MAPN, NGAYSANXUAT, NGAYHETHAN, SOLUONGNHAP, GIANHAP)
     VALUES (p_malo, p_masp, p_mapn, p_ngaysx, p_ngayhethan, p_soluongnhap, p_gianhap)
     RETURNING MALO INTO p_malo;
-    SELECT TONGTIEN INTO v_tongtien FROM PHIEU_NHAP WHERE MAPN = p_mapn;
+    -- 4. Cập nhật lại Tổng tiền của Phiếu nhập
+    UPDATE PHIEU_NHAP
+    SET TONGTIEN = NVL(TONGTIEN, 0) + (p_soluongnhap * p_gianhap)
+    WHERE MAPN = p_mapn
+    RETURNING TONGTIEN INTO v_tongtien;
+    -- 5. Trả kết quả thật sự ra ngoài
     p_tongtien_out := v_tongtien;
+    
     COMMIT;
-EXCEPTION WHEN OTHERS THEN ROLLBACK; RAISE;
+EXCEPTION 
+    WHEN OTHERS THEN 
+        ROLLBACK; 
+        RAISE;
 END SP_NHAP_KHO_LO_HANG;
 /
 
@@ -1087,7 +1104,6 @@ END SP_THONG_KE_DOANH_THU_THANG;
 /
 
 -- SP 6: Đặt lịch hẹn
--- [FIX-4] Bỏ tham số TRIEU_CHUNG IN JSON — triệu chứng đã tách ra bảng LICH_HEN_TRIEU_CHUNG
 CREATE OR REPLACE PROCEDURE SP_DAT_LICH_HEN (
     p_makh      IN  VARCHAR2,
     p_mans      IN  VARCHAR2,
@@ -1171,27 +1187,73 @@ END SP_CAP_NHAT_HANG_CHO;
 
 -- SP 9: Giao xử lý kính
 CREATE OR REPLACE PROCEDURE SP_GIAO_XU_LY_KINH (
-    p_madon         IN  VARCHAR2,
-    p_mans_ky_thuat IN  VARCHAR2,
-    p_thong_so_kinh IN  CLOB,
-    p_maxl_out      OUT VARCHAR2
+   p_madon         IN  VARCHAR2,
+   p_mans_ky_thuat IN  VARCHAR2,
+   p_thong_so_kinh IN  CLOB,
+   p_maxl_out      OUT VARCHAR2
 ) AS
-    v_tencv  CHUC_VU.TENCV%TYPE;
-    v_exists NUMBER;
+   v_tencv  CHUC_VU.TENCV%TYPE;
 BEGIN
-    SELECT COUNT(*) INTO v_exists FROM PHIEU_KE_DON WHERE MADON = p_madon;
-    IF v_exists = 0 THEN RAISE_APPLICATION_ERROR(-20090, 'Phiếu kê đơn không tồn tại!'); END IF;
-    SELECT cv.TENCV INTO v_tencv
-    FROM NHAN_SU ns JOIN CHUC_VU cv ON ns.MACV = cv.MACV
-    WHERE ns.MANS = p_mans_ky_thuat AND ns.IS_DELETED = 0;
-    IF v_tencv != N'Kỹ thuật viên mắt kính' THEN
-        RAISE_APPLICATION_ERROR(-20091, 'Chỉ KTV mắt kính mới nhận việc cắt kính!');
-    END IF;
-    INSERT INTO XU_LY_KINH(MAXL, MADON, THONG_SO_KINH, TRANG_THAI, NGAY_BAT_DAU, MANS_KY_THUAT)
-    VALUES (NULL, p_madon, p_thong_so_kinh, N'Đang cắt', SYSTIMESTAMP, p_mans_ky_thuat)
-    RETURNING MAXL INTO p_maxl_out;
-    COMMIT;
-EXCEPTION WHEN OTHERS THEN ROLLBACK; RAISE;
+   ----------------------------------------------------------------
+   -- 1. Kiểm tra phiếu kê đơn tồn tại
+   ----------------------------------------------------------------
+   BEGIN
+      SELECT 1 INTO v_tencv
+      FROM PHIEU_KE_DON
+      WHERE MADON = p_madon;
+   EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+         RAISE_APPLICATION_ERROR(-20090, 'Phiếu kê đơn không tồn tại!');
+   END;
+
+   ----------------------------------------------------------------
+   -- 2. Kiểm tra nhân sự + chức vụ
+   ----------------------------------------------------------------
+   BEGIN
+      SELECT cv.TENCV INTO v_tencv
+      FROM NHAN_SU ns
+      JOIN CHUC_VU cv ON ns.MACV = cv.MACV
+      WHERE ns.MANS = p_mans_ky_thuat
+        AND ns.IS_DELETED = 0;
+   EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+         RAISE_APPLICATION_ERROR(-20091, 'Nhân sự không hợp lệ hoặc đã bị xóa!');
+   END;
+
+   IF TRIM(v_tencv) != N'Kỹ thuật viên mắt kính' THEN
+      RAISE_APPLICATION_ERROR(-20091, 'Chỉ KTV mắt kính mới nhận việc cắt kính!');
+   END IF;
+
+   ----------------------------------------------------------------
+   -- 3. Insert xử lý kính
+   ----------------------------------------------------------------
+   INSERT INTO XU_LY_KINH (
+      MAXL,
+      MADON,
+      THONG_SO_KINH,
+      TRANG_THAI,
+      NGAY_BAT_DAU,
+      MANS_KY_THUAT
+   )
+   VALUES (
+      NULL,
+      p_madon,
+      p_thong_so_kinh,
+      N'Đang cắt',
+      SYSTIMESTAMP,
+      p_mans_ky_thuat
+   )
+   RETURNING MAXL INTO p_maxl_out;
+
+   ----------------------------------------------------------------
+   -- 4. Commit
+   ----------------------------------------------------------------
+   COMMIT;
+
+EXCEPTION
+   WHEN OTHERS THEN
+      ROLLBACK;
+      RAISE;
 END SP_GIAO_XU_LY_KINH;
 /
 
@@ -1281,8 +1343,73 @@ BEGIN
 EXCEPTION WHEN OTHERS THEN ROLLBACK; RAISE;
 END SP_CONG_DIEM;
 /
+---------------
+-------------FUNCTION
+-- ============================================================
+-- FUNCTION 1: Lấy mã lô hàng tốt nhất theo nguyên tắc FEFO
+-- (First Expired First Out) cho một sản phẩm và số lượng cần
+-- ============================================================
+CREATE OR REPLACE FUNCTION FN_GET_MALO_FEFO (
+    p_masp        IN VARCHAR2,
+    p_soluong_can IN NUMBER
+) RETURN VARCHAR2
+IS
+    v_malo VARCHAR2(50);
+BEGIN
+    -- Chọn lô có hạn sử dụng sớm nhất, còn đủ hàng và chưa hết hạn
+    SELECT MALO
+    INTO v_malo
+    FROM (
+        SELECT MALO
+        FROM LO_HANG
+        WHERE MASP = p_masp
+          AND SOLUONGTON >= p_soluong_can
+          AND NGAYHETHAN >= TRUNC(SYSDATE)
+        ORDER BY NGAYHETHAN ASC,          -- hết hạn sớm nhất
+                 SOLUONGTON DESC          -- ưu tiên lô nhiều hàng hơn (có thể bỏ)
+    )
+    WHERE ROWNUM = 1;
 
+    RETURN v_malo;
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RETURN NULL;
+END FN_GET_MALO_FEFO;
+/
 
+-- ============================================================
+-- FUNCTION 2: Lấy thông tin lịch sử khám gần nhất của khách hàng
+-- Trả về chuỗi dạng: "Ngày khám: dd/mm/yyyy | KL: <kết luận>"
+-- ============================================================
+CREATE OR REPLACE FUNCTION FN_LAY_LICH_SU_KHAM_CUOI (
+    p_makh IN VARCHAR2
+) RETURN VARCHAR2
+IS
+    v_ketluan  VARCHAR2(1000);
+    v_ngaykham DATE;
+    v_result   VARCHAR2(2000);
+BEGIN
+    -- Lấy bản ghi hồ sơ thị lực mới nhất của khách hàng
+    SELECT KET_LUAN, TRUNC(NGAYKHAM)
+    INTO v_ketluan, v_ngaykham
+    FROM (
+        SELECT KET_LUAN, NGAYKHAM
+        FROM HO_SO_THI_LUC
+        WHERE MAKH = p_makh
+        ORDER BY NGAYKHAM DESC
+    )
+    WHERE ROWNUM = 1;
+
+    -- Tạo chuỗi kết quả
+    v_result := 'Ngày khám gần nhất: ' || TO_CHAR(v_ngaykham, 'DD/MM/YYYY') 
+                || ' | Kết luận: ' || v_ketluan;
+    RETURN v_result;
+
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RETURN 'Khách hàng chưa có lịch sử khám.';
+END FN_LAY_LICH_SU_KHAM_CUOI;
+/
 -- ============================================================
 -- PHẦN VI: VIEWS
 -- ============================================================
@@ -1426,6 +1553,3 @@ INSERT INTO DICH_VU_KHAM VALUES ('DV07', N'Phí chụp OCT',           350000, N
 INSERT INTO DICH_VU_KHAM VALUES ('DV08', N'Phí khám thủy tinh thể', 120000, N'Kiểm tra tình trạng thủy tinh thể, phát hiện đục sớm', 1);
 
 COMMIT;
--- ============================================================
--- END OF V1_Initial_Setup_Fixed.sql
--- ============================================================

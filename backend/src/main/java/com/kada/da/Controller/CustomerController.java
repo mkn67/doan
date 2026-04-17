@@ -70,4 +70,10 @@ public class CustomerController {
         khachHangService.congDiemThuCong(maKh, soDiem, lyDo, maHd);
         return ResponseEntity.ok("Đã cộng " + soDiem + " điểm cho khách hàng " + maKh);
     }
+
+    // 8. Lichsukhachhang
+    @GetMapping("/{maKh}/lich-su-cuoi")
+    public ResponseEntity<String> getLichSuCuoi(@PathVariable String maKh) {
+        return ResponseEntity.ok(khachHangService.layLichSuKhamMoiNhat(maKh));
+    }
 }

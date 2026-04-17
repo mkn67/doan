@@ -95,4 +95,12 @@ public class KhachHangServiceImpl implements KhachHangService {
 
         log.info("Cộng điểm thủ công thành công cho khách hàng: {}", maKh);
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public String layLichSuKhamMoiNhat(String maKh) {
+        log.info("Đang gọi Function Oracle lấy lịch sử cho khách hàng: {}", maKh);
+        String ketQua = khachHangRepository.getLichSuKhamCuoi(maKh);
+        return (ketQua != null) ? ketQua : "Không thể lấy thông tin lịch sử khám.";
+    }
 }

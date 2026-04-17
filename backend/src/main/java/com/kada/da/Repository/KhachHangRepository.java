@@ -13,14 +13,13 @@ public interface KhachHangRepository extends JpaRepository<KhachHang, String> {
     @Query("SELECT MAX(k.maKh) FROM KhachHang k")
     String findMaxMaKh();
 
-    // =========================================================
-    // GỌI SP 13: CỘNG ĐIỂM THỦ CÔNG
-    // =========================================================
     @Procedure(procedureName = "SP_CONG_DIEM")
     void congDiemThuCong(
             @Param("p_makh") String maKh,
             @Param("p_so_diem") Integer soDiem,
             @Param("p_ly_do") String lyDo,
-            @Param("p_mahd") String maHd // Có thể truyền null vì SP để DEFAULT NULL
-    );
+            @Param("p_mahd") String maHd);
+
+    @Query(value = "SELECT FN_LAY_LICH_SU_KHAM_CUOI(:p_makh) FROM DUAL", nativeQuery = true)
+    String getLichSuKhamCuoi(@Param("p_makh") String maKh);
 }
