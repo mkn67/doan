@@ -13,31 +13,5 @@ services:
     ports:
       - "8080:8080"
 
-  # Web cho Nhân sự (Staff/Admin)
-  frontend-staff:
-    build:
-      context: ../frontend-staff
-      # Trỏ đúng vào Dockerfile của staff
-      dockerfile: ../.devcontainer/frontend-staff/Dockerfile
-    container_name: react_staff
-    command: sleep infinity
-    volumes:
-      - ..:/workspaces/da:cached
-    ports:
-      - "3000:3000"
-
-  # Web cho Khách hàng (Customer Portal)
-  frontend-customer:
-    build:
-      context: ../frontend-customer
-      # Trỏ đúng vào Dockerfile của customer
-      dockerfile: ../.devcontainer/frontend-customer/Dockerfile
-    container_name: react_customer
-    command: sleep infinity
-    volumes:
-      - ..:/workspaces/da:cached
-    ports:
-      - "3001:3001" 
-
 volumes:
   maven_cache:

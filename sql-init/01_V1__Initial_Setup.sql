@@ -604,24 +604,23 @@ END;
 -- ============================================================
 -- PHẦN IV: TRIGGERS NGHIỆP VỤ
 -- ============================================================
-
 -- 1. Nhân Sự
 CREATE OR REPLACE TRIGGER TRG_VALIDATE_NHAN_SU
 BEFORE INSERT OR UPDATE ON NHAN_SU
 FOR EACH ROW
 DECLARE
     v_tuoi  NUMBER;
-    v_count NUMBER;
+    v_dummy NUMBER;
 BEGIN
     v_tuoi := FLOOR(MONTHS_BETWEEN(SYSDATE, :NEW.NGAYSINH) / 12);
     IF v_tuoi < 18 THEN
         RAISE_APPLICATION_ERROR(-20010, 'LỖI: Nhân viên [' || :NEW.HOTEN || '] chưa đủ 18 tuổi!');
     END IF;
     IF INSERTING AND :NEW.MATK IS NOT NULL THEN
-        SELECT COUNT(*) INTO v_count FROM NHAN_SU WHERE MATK = :NEW.MATK;
-        IF v_count > 0 THEN
+        BEGIN
+            SELECT 1 INTO v_dummy FROM NHAN_SU WHERE MATK = :NEW.MATK AND ROWNUM = 1;
             RAISE_APPLICATION_ERROR(-20009, 'LỖI: Tài khoản đã được gán cho nhân sự khác!');
-        END IF;
+        EXCEPTION WHEN NO_DATA_FOUND THEN NULL; END;
     END IF;
 END;
 /
@@ -631,7 +630,7 @@ CREATE OR REPLACE TRIGGER TRG_VALIDATE_KHACH_HANG
 BEFORE INSERT OR UPDATE OR DELETE ON KHACH_HANG
 FOR EACH ROW
 DECLARE
-    v_count NUMBER;
+    v_dummy NUMBER;
 BEGIN
     IF INSERTING OR UPDATING THEN
         IF NOT REGEXP_LIKE(:NEW.SDT, '^[0-9]{9,11}$') THEN
@@ -639,15 +638,16 @@ BEGIN
         END IF;
     END IF;
     IF DELETING THEN
-        SELECT COUNT(*) INTO v_count FROM LICH_HEN WHERE MAKH = :OLD.MAKH AND TRANGTHAI = N'Mới';
-        IF v_count > 0 THEN
+        BEGIN
+            SELECT 1 INTO v_dummy FROM LICH_HEN WHERE MAKH = :OLD.MAKH AND TRANGTHAI = N'Mới' AND ROWNUM = 1;
             RAISE_APPLICATION_ERROR(-20050, 'LỖI: KH đang có lịch hẹn chờ — dùng Soft Delete!');
-        END IF;
+        EXCEPTION WHEN NO_DATA_FOUND THEN NULL; END;
     END IF;
 END;
 /
 
--- 3. Lịch Hẹn
+-- 3. Lịch Hẹn (giữ nguyên logic, chỉ thay COUNT bằng EXISTS ở mức có thể)
+-- Compound trigger vẫn giữ, không thay đổi nhiều vì phức tạp
 CREATE OR REPLACE TRIGGER TRG_VALIDATE_LICH_HEN
 FOR INSERT OR UPDATE ON LICH_HEN
 COMPOUND TRIGGER
@@ -739,7 +739,7 @@ BEGIN
 END;
 /
 
--- 6. CT Hóa Đơn SP
+-- 6. CT Hóa Đơn SP (giữ nguyên compound, không cần sửa COUNT vì dùng INTO)
 CREATE OR REPLACE TRIGGER TRG_CT_HOA_DON_SP
 FOR INSERT OR UPDATE OR DELETE ON CT_HOA_DON
 COMPOUND TRIGGER
@@ -821,7 +821,7 @@ BEGIN
 END;
 /
 
--- 9. Thanh Toán
+-- 9. Thanh Toán (compound)
 CREATE OR REPLACE TRIGGER TRG_THANH_TOAN
 FOR INSERT OR UPDATE ON THANH_TOAN
 COMPOUND TRIGGER
@@ -867,7 +867,6 @@ END TRG_THANH_TOAN;
 /
 
 -- 10. Audit Kết Luận
--- [FIX-5] Thêm dấu / kết thúc block
 CREATE OR REPLACE TRIGGER TRG_AUDIT_HO_SO
 AFTER UPDATE OF KETLUAN ON HO_SO_THI_LUC
 FOR EACH ROW
@@ -940,9 +939,8 @@ BEGIN
 END;
 /
 
-
 -- ============================================================
--- PHẦN V: STORED PROCEDURES
+-- 2. STORED PROCEDURES (bỏ COMMIT, thêm NO_DATA_FOUND)
 -- ============================================================
 
 -- SP 1: Lưu hồ sơ khám bệnh
@@ -978,8 +976,9 @@ BEGIN
     VALUES (v_madon, p_mahoso, p_mans, SYSDATE);
 
     p_madon_out := v_madon;
-    COMMIT;
-EXCEPTION WHEN OTHERS THEN ROLLBACK; RAISE;
+EXCEPTION
+    WHEN OTHERS THEN
+        RAISE;
 END SP_LUU_HOSO_KHAM_BENH;
 /
 
@@ -993,17 +992,24 @@ CREATE OR REPLACE PROCEDURE SP_CHOT_THANH_TOAN_HOA_DON (
     v_tongtien NUMBER;
     v_matt     VARCHAR2(10);
 BEGIN
-    SELECT TONGTIEN INTO v_tongtien FROM HOA_DON WHERE MAHD = p_mahd;
+    BEGIN
+        SELECT TONGTIEN INTO v_tongtien FROM HOA_DON WHERE MAHD = p_mahd;
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            RAISE_APPLICATION_ERROR(-20002, 'Hóa đơn không tồn tại');
+    END;
+
     INSERT INTO THANH_TOAN(MATT, MAHD, MANS, NGAYTHANHTOAN, SOTIEN, PHUONGTHUC, TRANGTHAI)
     VALUES (NULL, p_mahd, p_mans, SYSTIMESTAMP, v_tongtien, p_phuongthuc, N'Thành công')
     RETURNING MATT INTO v_matt;
     p_matt_out := v_matt;
-    COMMIT;
-EXCEPTION WHEN OTHERS THEN ROLLBACK; RAISE;
+EXCEPTION
+    WHEN OTHERS THEN
+        RAISE;
 END SP_CHOT_THANH_TOAN_HOA_DON;
 /
 
--- SP 3: Nhập kho lô hàng (Đã fix lỗi cập nhật Tổng Tiền)
+-- SP 3: Nhập kho lô hàng
 CREATE OR REPLACE PROCEDURE SP_NHAP_KHO_LO_HANG (
     p_mapn         IN OUT VARCHAR2,
     p_mancc        IN     VARCHAR2,
@@ -1019,46 +1025,44 @@ CREATE OR REPLACE PROCEDURE SP_NHAP_KHO_LO_HANG (
     v_existing NUMBER;
     v_tongtien NUMBER;
 BEGIN
-    -- 1. Xử lý Phiếu Nhập
     IF p_mapn IS NULL THEN
         INSERT INTO PHIEU_NHAP(MAPN, MANCC, MANS, NGAYNHAP, TONGTIEN)
         VALUES (NULL, p_mancc, p_mans, SYSTIMESTAMP, 0)
         RETURNING MAPN INTO p_mapn;
     ELSE
-        SELECT COUNT(*) INTO v_existing FROM PHIEU_NHAP WHERE MAPN = p_mapn;
-        IF v_existing = 0 THEN
-            INSERT INTO PHIEU_NHAP(MAPN, MANCC, MANS, NGAYNHAP, TONGTIEN)
-            VALUES (p_mapn, p_mancc, p_mans, SYSTIMESTAMP, 0);
-        END IF;
+        BEGIN
+            SELECT 1 INTO v_existing FROM PHIEU_NHAP WHERE MAPN = p_mapn AND ROWNUM = 1;
+        EXCEPTION
+            WHEN NO_DATA_FOUND THEN
+                INSERT INTO PHIEU_NHAP(MAPN, MANCC, MANS, NGAYNHAP, TONGTIEN)
+                VALUES (p_mapn, p_mancc, p_mans, SYSTIMESTAMP, 0);
+        END;
     END IF;
-    -- 2. Validate nghiệp vụ (HSD / NSX)
-    IF p_ngayhethan <= p_ngaysx THEN 
-        RAISE_APPLICATION_ERROR(-20020, 'LỖI: HSD phải sau NSX!'); 
+
+    IF p_ngayhethan <= p_ngaysx THEN
+        RAISE_APPLICATION_ERROR(-20020, 'LỖI: HSD phải sau NSX!');
     END IF;
-    IF p_ngayhethan <= SYSDATE THEN 
-        RAISE_APPLICATION_ERROR(-20021, 'LỖI: Không nhập hàng hết hạn!'); 
+    IF p_ngayhethan <= SYSDATE THEN
+        RAISE_APPLICATION_ERROR(-20021, 'LỖI: Không nhập hàng hết hạn!');
     END IF;
-    -- 3. Lưu chi tiết Lô hàng
+
     INSERT INTO LO_HANG(MALO, MASP, MAPN, NGAYSANXUAT, NGAYHETHAN, SOLUONGNHAP, GIANHAP)
     VALUES (p_malo, p_masp, p_mapn, p_ngaysx, p_ngayhethan, p_soluongnhap, p_gianhap)
     RETURNING MALO INTO p_malo;
-    -- 4. Cập nhật lại Tổng tiền của Phiếu nhập
+
     UPDATE PHIEU_NHAP
     SET TONGTIEN = NVL(TONGTIEN, 0) + (p_soluongnhap * p_gianhap)
     WHERE MAPN = p_mapn
     RETURNING TONGTIEN INTO v_tongtien;
-    -- 5. Trả kết quả thật sự ra ngoài
+
     p_tongtien_out := v_tongtien;
-    
-    COMMIT;
-EXCEPTION 
-    WHEN OTHERS THEN 
-        ROLLBACK; 
+EXCEPTION
+    WHEN OTHERS THEN
         RAISE;
 END SP_NHAP_KHO_LO_HANG;
 /
 
--- SP 4: Cảnh báo hàng hết hạn
+-- SP 4: Cảnh báo hàng hết hạn (giữ nguyên, không cần sửa)
 CREATE OR REPLACE PROCEDURE SP_CANH_BAO_HANG_HET_HAN (
     p_so_ngay IN  NUMBER,
     c_result  OUT SYS_REFCURSOR
@@ -1083,7 +1087,7 @@ BEGIN
 END SP_CANH_BAO_HANG_HET_HAN;
 /
 
--- SP 5: Thống kê doanh thu tháng
+-- SP 5: Thống kê doanh thu tháng (giữ nguyên)
 CREATE OR REPLACE PROCEDURE SP_THONG_KE_DOANH_THU_THANG (
     p_thang IN  NUMBER,
     p_nam   IN  NUMBER,
@@ -1117,17 +1121,22 @@ CREATE OR REPLACE PROCEDURE SP_DAT_LICH_HEN (
 BEGIN
     SELECT COUNT(*) INTO v_ca_lam FROM LICH_LAM_VIEC
     WHERE MANS = p_mans AND NGAY_LAM = TRUNC(p_ngayhen) AND IS_NGHI = 0;
-    IF v_ca_lam = 0 THEN RAISE_APPLICATION_ERROR(-20035, 'Bác sĩ không làm việc ngày này!'); END IF;
+    IF v_ca_lam = 0 THEN
+        RAISE_APPLICATION_ERROR(-20035, 'Bác sĩ không làm việc ngày này!');
+    END IF;
 
     SELECT COUNT(*) INTO v_trung FROM LICH_HEN
     WHERE MANS = p_mans AND GIO_HEN = p_giohen AND TRANGTHAI != N'Đã hủy';
-    IF v_trung > 0 THEN RAISE_APPLICATION_ERROR(-20036, 'Slot đã được đặt!'); END IF;
+    IF v_trung > 0 THEN
+        RAISE_APPLICATION_ERROR(-20036, 'Slot đã được đặt!');
+    END IF;
 
     INSERT INTO LICH_HEN(MALH, MAKH, MANS, MAGOI, NGAYHEN, GIO_HEN, LOAI_LICH, TRANGTHAI)
     VALUES (NULL, p_makh, p_mans, p_magoi, p_ngayhen, p_giohen, N'Online', N'Mới')
     RETURNING MALH INTO p_malh_out;
-    COMMIT;
-EXCEPTION WHEN OTHERS THEN ROLLBACK; RAISE;
+EXCEPTION
+    WHEN OTHERS THEN
+        RAISE;
 END SP_DAT_LICH_HEN;
 /
 
@@ -1139,19 +1148,35 @@ CREATE OR REPLACE PROCEDURE SP_TAO_LICH_LAM_VIEC (
     p_gio_ket_thuc IN NUMBER,
     p_is_nghi      IN NUMBER DEFAULT 0
 ) AS
-    v_count NUMBER;
+    v_dummy NUMBER;
 BEGIN
-    SELECT COUNT(*) INTO v_count FROM NHAN_SU WHERE MANS = p_mans AND IS_DELETED = 0;
-    IF v_count = 0 THEN RAISE_APPLICATION_ERROR(-20080, 'Nhân sự không tồn tại hoặc đã nghỉ!'); END IF;
-    IF p_gio_bat_dau >= p_gio_ket_thuc THEN RAISE_APPLICATION_ERROR(-20081, 'Giờ kết thúc phải > giờ bắt đầu!'); END IF;
-    SELECT COUNT(*) INTO v_count FROM LICH_LAM_VIEC
-    WHERE MANS = p_mans AND NGAY_LAM = p_ngay_lam AND IS_NGHI = 0
-      AND (p_gio_bat_dau < GIO_KET_THUC AND p_gio_ket_thuc > GIO_BAT_DAU);
-    IF v_count > 0 THEN RAISE_APPLICATION_ERROR(-20083, 'Khung giờ bị trùng lịch!'); END IF;
+    BEGIN
+        SELECT 1 INTO v_dummy FROM NHAN_SU WHERE MANS = p_mans AND IS_DELETED = 0 AND ROWNUM = 1;
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            RAISE_APPLICATION_ERROR(-20080, 'Nhân sự không tồn tại hoặc đã nghỉ!');
+    END;
+
+    IF p_gio_bat_dau >= p_gio_ket_thuc THEN
+        RAISE_APPLICATION_ERROR(-20081, 'Giờ kết thúc phải > giờ bắt đầu!');
+    END IF;
+
+    BEGIN
+        SELECT 1 INTO v_dummy FROM LICH_LAM_VIEC
+        WHERE MANS = p_mans AND NGAY_LAM = p_ngay_lam AND IS_NGHI = 0
+          AND (p_gio_bat_dau < GIO_KET_THUC AND p_gio_ket_thuc > GIO_BAT_DAU)
+        AND ROWNUM = 1;
+        RAISE_APPLICATION_ERROR(-20083, 'Khung giờ bị trùng lịch!');
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            NULL;
+    END;
+
     INSERT INTO LICH_LAM_VIEC(MALLV, MANS, NGAY_LAM, GIO_BAT_DAU, GIO_KET_THUC, IS_NGHI)
     VALUES (NULL, p_mans, p_ngay_lam, p_gio_bat_dau, p_gio_ket_thuc, p_is_nghi);
-    COMMIT;
-EXCEPTION WHEN OTHERS THEN ROLLBACK; RAISE;
+EXCEPTION
+    WHEN OTHERS THEN
+        RAISE;
 END SP_TAO_LICH_LAM_VIEC;
 /
 
@@ -1162,26 +1187,36 @@ CREATE OR REPLACE PROCEDURE SP_CAP_NHAT_HANG_CHO (
     p_gio_vao_kham IN TIMESTAMP DEFAULT NULL
 ) AS
     v_current_state NVARCHAR2(30);
+    v_malh          VARCHAR2(10);
 BEGIN
-    SELECT TRANG_THAI INTO v_current_state FROM HANG_CHO WHERE MAHC = p_mahc;
+    BEGIN
+        SELECT TRANG_THAI, MALH INTO v_current_state, v_malh
+        FROM HANG_CHO WHERE MAHC = p_mahc;
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            RAISE_APPLICATION_ERROR(-20072, 'Mã hàng chờ không tồn tại');
+    END;
+
     IF p_trang_thai NOT IN (N'Đang khám', N'Hoàn thành', N'Bỏ về') THEN
-        RAISE_APPLICATION_ERROR(-20070, 'Trạng thái không hợp lệ!');
+        RAISE_APPLICATION_ERROR(-20070, 'Trạng thái không hợp lệ');
     END IF;
+
     IF v_current_state = N'Đang chờ' AND p_trang_thai = N'Đang khám' THEN
         UPDATE HANG_CHO SET TRANG_THAI = p_trang_thai,
             GIO_VAO_KHAM = NVL(p_gio_vao_kham, SYSTIMESTAMP)
         WHERE MAHC = p_mahc;
     ELSIF v_current_state = N'Đang khám' AND p_trang_thai IN (N'Hoàn thành', N'Bỏ về') THEN
         UPDATE HANG_CHO SET TRANG_THAI = p_trang_thai WHERE MAHC = p_mahc;
-        UPDATE LICH_HEN SET TRANGTHAI = N'Đã khám'
-        WHERE MALH = (SELECT MALH FROM HANG_CHO WHERE MAHC = p_mahc) AND TRANGTHAI = N'Mới';
+        IF v_malh IS NOT NULL THEN
+            UPDATE LICH_HEN SET TRANGTHAI = N'Đã khám'
+            WHERE MALH = v_malh AND TRANGTHAI = N'Mới';
+        END IF;
     ELSE
-        RAISE_APPLICATION_ERROR(-20071, 'Không thể chuyển từ [' || v_current_state || '] sang [' || p_trang_thai || ']!');
+        RAISE_APPLICATION_ERROR(-20071, 'Không thể chuyển từ ' || v_current_state || ' sang ' || p_trang_thai);
     END IF;
-    COMMIT;
 EXCEPTION
-    WHEN NO_DATA_FOUND THEN ROLLBACK; RAISE_APPLICATION_ERROR(-20072, 'Mã hàng chờ không tồn tại!');
-    WHEN OTHERS        THEN ROLLBACK; RAISE;
+    WHEN OTHERS THEN
+        RAISE;
 END SP_CAP_NHAT_HANG_CHO;
 /
 
@@ -1194,21 +1229,15 @@ CREATE OR REPLACE PROCEDURE SP_GIAO_XU_LY_KINH (
 ) AS
    v_tencv  CHUC_VU.TENCV%TYPE;
 BEGIN
-   ----------------------------------------------------------------
-   -- 1. Kiểm tra phiếu kê đơn tồn tại
-   ----------------------------------------------------------------
    BEGIN
       SELECT 1 INTO v_tencv
       FROM PHIEU_KE_DON
-      WHERE MADON = p_madon;
+      WHERE MADON = p_madon AND ROWNUM = 1;
    EXCEPTION
       WHEN NO_DATA_FOUND THEN
          RAISE_APPLICATION_ERROR(-20090, 'Phiếu kê đơn không tồn tại!');
    END;
 
-   ----------------------------------------------------------------
-   -- 2. Kiểm tra nhân sự + chức vụ
-   ----------------------------------------------------------------
    BEGIN
       SELECT cv.TENCV INTO v_tencv
       FROM NHAN_SU ns
@@ -1224,9 +1253,6 @@ BEGIN
       RAISE_APPLICATION_ERROR(-20091, 'Chỉ KTV mắt kính mới nhận việc cắt kính!');
    END IF;
 
-   ----------------------------------------------------------------
-   -- 3. Insert xử lý kính
-   ----------------------------------------------------------------
    INSERT INTO XU_LY_KINH (
       MAXL,
       MADON,
@@ -1244,15 +1270,8 @@ BEGIN
       p_mans_ky_thuat
    )
    RETURNING MAXL INTO p_maxl_out;
-
-   ----------------------------------------------------------------
-   -- 4. Commit
-   ----------------------------------------------------------------
-   COMMIT;
-
 EXCEPTION
    WHEN OTHERS THEN
-      ROLLBACK;
       RAISE;
 END SP_GIAO_XU_LY_KINH;
 /
@@ -1272,19 +1291,23 @@ BEGIN
     INSERT INTO HOA_DON(MAHD, MAKH, MANS, MAHOSO, MADON, NGAYLAP, TONGTIEN, TRANGTHAI, IS_DELETED)
     VALUES (NULL, p_makh, p_mans, p_mahoso, p_madon, SYSTIMESTAMP, 0, N'Chưa thanh toán', 0)
     RETURNING MAHD INTO v_mahd;
+
     IF p_json_sp IS NOT NULL THEN
         INSERT INTO CT_HOA_DON(MAHD, MALO, SOLUONG, DONGIA)
         SELECT v_mahd, j.malo, j.sl, j.gia
         FROM JSON_TABLE(p_json_sp, '$[*]' COLUMNS (malo VARCHAR2(20) PATH '$.malo', sl NUMBER PATH '$.sl', gia NUMBER PATH '$.gia')) j;
     END IF;
+
     IF p_json_dv IS NOT NULL THEN
         INSERT INTO CT_HOA_DON_DV(MAHD, MADV, SOLUONG, DONGIA)
         SELECT v_mahd, j.madv, j.sl, j.gia
         FROM JSON_TABLE(p_json_dv, '$[*]' COLUMNS (madv VARCHAR2(20) PATH '$.madv', sl NUMBER PATH '$.sl', gia NUMBER PATH '$.gia')) j;
     END IF;
+
     p_mahd_out := v_mahd;
-    COMMIT;
-EXCEPTION WHEN OTHERS THEN ROLLBACK; RAISE;
+EXCEPTION
+    WHEN OTHERS THEN
+        RAISE;
 END SP_TAO_HOA_DON;
 /
 
@@ -1294,17 +1317,23 @@ CREATE OR REPLACE PROCEDURE SP_HUY_HOA_DON (
 ) AS
     v_trang_thai NVARCHAR2(50);
 BEGIN
-    SELECT TRANGTHAI INTO v_trang_thai FROM HOA_DON WHERE MAHD = p_mahd;
+    BEGIN
+        SELECT TRANGTHAI INTO v_trang_thai FROM HOA_DON WHERE MAHD = p_mahd;
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            RAISE_APPLICATION_ERROR(-20094, 'Mã hóa đơn không tồn tại');
+    END;
+
     IF v_trang_thai = N'Đã thanh toán' THEN
-        RAISE_APPLICATION_ERROR(-20095, 'LỖI: Không thể hủy hóa đơn đã thanh toán!');
+        RAISE_APPLICATION_ERROR(-20095, 'Không thể hủy hóa đơn đã thanh toán');
     ELSIF v_trang_thai = N'Đã hủy' THEN
-        RAISE_APPLICATION_ERROR(-20096, 'LỖI: Hóa đơn này đã được hủy trước đó!');
+        RAISE_APPLICATION_ERROR(-20096, 'Hóa đơn này đã được hủy trước đó');
     END IF;
+
     UPDATE HOA_DON SET TRANGTHAI = N'Đã hủy' WHERE MAHD = p_mahd;
-    COMMIT;
 EXCEPTION
-    WHEN NO_DATA_FOUND THEN ROLLBACK; RAISE_APPLICATION_ERROR(-20094, 'LỖI: Mã hóa đơn không tồn tại!');
-    WHEN OTHERS        THEN ROLLBACK; RAISE;
+    WHEN OTHERS THEN
+        RAISE;
 END SP_HUY_HOA_DON;
 /
 
@@ -1314,17 +1343,23 @@ CREATE OR REPLACE PROCEDURE SP_HUY_LICH_HEN (
 ) AS
     v_trang_thai NVARCHAR2(50);
 BEGIN
-    SELECT TRANGTHAI INTO v_trang_thai FROM LICH_HEN WHERE MALH = p_malh;
+    BEGIN
+        SELECT TRANGTHAI INTO v_trang_thai FROM LICH_HEN WHERE MALH = p_malh;
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            RAISE_APPLICATION_ERROR(-20097, 'Mã lịch hẹn không tồn tại');
+    END;
+
     IF v_trang_thai IN (N'Đã khám', N'Đang khám') THEN
-        RAISE_APPLICATION_ERROR(-20098, 'LỖI: Lịch hẹn đang hoặc đã diễn ra, không thể hủy!');
+        RAISE_APPLICATION_ERROR(-20098, 'Lịch hẹn đang diễn ra hoặc đã kết thúc, không thể hủy');
     END IF;
+
     UPDATE LICH_HEN SET TRANGTHAI = N'Đã hủy' WHERE MALH = p_malh;
     UPDATE HANG_CHO SET TRANG_THAI = N'Bỏ về'
     WHERE MALH = p_malh AND TRANG_THAI = N'Đang chờ';
-    COMMIT;
 EXCEPTION
-    WHEN NO_DATA_FOUND THEN ROLLBACK; RAISE_APPLICATION_ERROR(-20097, 'LỖI: Mã lịch hẹn không tồn tại!');
-    WHEN OTHERS        THEN ROLLBACK; RAISE;
+    WHEN OTHERS THEN
+        RAISE;
 END SP_HUY_LICH_HEN;
 /
 
@@ -1335,20 +1370,32 @@ CREATE OR REPLACE PROCEDURE SP_CONG_DIEM (
     p_ly_do   IN NVARCHAR2,
     p_mahd    IN VARCHAR2 DEFAULT NULL
 ) AS
+    v_dummy NUMBER;
 BEGIN
+    IF p_so_diem <= 0 THEN
+        RAISE_APPLICATION_ERROR(-20100, 'Số điểm cộng phải lớn hơn 0');
+    END IF;
+
+    BEGIN
+        SELECT 1 INTO v_dummy FROM KHACH_HANG WHERE MAKH = p_makh AND ROWNUM = 1;
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            RAISE_APPLICATION_ERROR(-20101, 'Khách hàng không tồn tại');
+    END;
+
     UPDATE KHACH_HANG SET DIEMTICHLUY = DIEMTICHLUY + p_so_diem WHERE MAKH = p_makh;
     INSERT INTO LICH_SU_DIEM(MALSD, MAKH, LOAI, SO_DIEM, LY_DO, MAHD)
     VALUES (NULL, p_makh, N'Cong', p_so_diem, p_ly_do, p_mahd);
-    COMMIT;
-EXCEPTION WHEN OTHERS THEN ROLLBACK; RAISE;
+EXCEPTION
+    WHEN OTHERS THEN
+        RAISE;
 END SP_CONG_DIEM;
 /
----------------
--------------FUNCTION
+
 -- ============================================================
--- FUNCTION 1: Lấy mã lô hàng tốt nhất theo nguyên tắc FEFO
--- (First Expired First Out) cho một sản phẩm và số lượng cần
+-- 3. FUNCTION (không cần sửa, vì không có COMMIT)
 -- ============================================================
+
 CREATE OR REPLACE FUNCTION FN_GET_MALO_FEFO (
     p_masp        IN VARCHAR2,
     p_soluong_can IN NUMBER
@@ -1356,7 +1403,6 @@ CREATE OR REPLACE FUNCTION FN_GET_MALO_FEFO (
 IS
     v_malo VARCHAR2(50);
 BEGIN
-    -- Chọn lô có hạn sử dụng sớm nhất, còn đủ hàng và chưa hết hạn
     SELECT MALO
     INTO v_malo
     FROM (
@@ -1365,11 +1411,10 @@ BEGIN
         WHERE MASP = p_masp
           AND SOLUONGTON >= p_soluong_can
           AND NGAYHETHAN >= TRUNC(SYSDATE)
-        ORDER BY NGAYHETHAN ASC,          -- hết hạn sớm nhất
-                 SOLUONGTON DESC          -- ưu tiên lô nhiều hàng hơn (có thể bỏ)
+        ORDER BY NGAYHETHAN ASC,
+                 SOLUONGTON DESC
     )
     WHERE ROWNUM = 1;
-
     RETURN v_malo;
 EXCEPTION
     WHEN NO_DATA_FOUND THEN
@@ -1377,10 +1422,6 @@ EXCEPTION
 END FN_GET_MALO_FEFO;
 /
 
--- ============================================================
--- FUNCTION 2: Lấy thông tin lịch sử khám gần nhất của khách hàng
--- Trả về chuỗi dạng: "Ngày khám: dd/mm/yyyy | KL: <kết luận>"
--- ============================================================
 CREATE OR REPLACE FUNCTION FN_LAY_LICH_SU_KHAM_CUOI (
     p_makh IN VARCHAR2
 ) RETURN VARCHAR2
@@ -1389,7 +1430,6 @@ IS
     v_ngaykham DATE;
     v_result   VARCHAR2(2000);
 BEGIN
-    -- Lấy bản ghi hồ sơ thị lực mới nhất của khách hàng
     SELECT KET_LUAN, TRUNC(NGAYKHAM)
     INTO v_ketluan, v_ngaykham
     FROM (
@@ -1399,19 +1439,17 @@ BEGIN
         ORDER BY NGAYKHAM DESC
     )
     WHERE ROWNUM = 1;
-
-    -- Tạo chuỗi kết quả
     v_result := 'Ngày khám gần nhất: ' || TO_CHAR(v_ngaykham, 'DD/MM/YYYY') 
                 || ' | Kết luận: ' || v_ketluan;
     RETURN v_result;
-
 EXCEPTION
     WHEN NO_DATA_FOUND THEN
         RETURN 'Khách hàng chưa có lịch sử khám.';
 END FN_LAY_LICH_SU_KHAM_CUOI;
 /
+
 -- ============================================================
--- PHẦN VI: VIEWS
+-- 4. VIEWS (sửa V_HANG_CHO_HOM_NAY)
 -- ============================================================
 
 CREATE OR REPLACE VIEW V_RATING_BAC_SI AS
@@ -1437,12 +1475,16 @@ FROM   LICH_LAM_VIEC llv
 JOIN   NHAN_SU ns ON llv.MANS = ns.MANS
 WHERE  llv.IS_NGHI = 0 AND llv.NGAY_LAM >= TRUNC(SYSDATE) AND ns.IS_DELETED = 0;
 
+-- SỬA VIEW: tính phút chờ chính xác
 CREATE OR REPLACE VIEW V_HANG_CHO_HOM_NAY AS
 SELECT hc.MAHC, hc.SO_THU_TU, hc.LOAI_KHACH,
        NVL(kh.HOTEN, hc.TEN_KHACH) AS TEN_KHACH, kh.SDT,
        ns.HOTEN AS TEN_BAC_SI, gk.TENGOI AS GOI_KHAM,
        hc.TRANG_THAI, hc.GIO_DANG_KY, hc.GIO_VAO_KHAM,
-       ROUND((SYSTIMESTAMP - hc.GIO_DANG_KY) * 24 * 60) AS PHUT_CHO
+       ROUND((EXTRACT(DAY FROM (SYSTIMESTAMP - hc.GIO_DANG_KY)) * 1440 +
+              EXTRACT(HOUR FROM (SYSTIMESTAMP - hc.GIO_DANG_KY)) * 60 +
+              EXTRACT(MINUTE FROM (SYSTIMESTAMP - hc.GIO_DANG_KY)) +
+              EXTRACT(SECOND FROM (SYSTIMESTAMP - hc.GIO_DANG_KY)) / 60)) AS PHUT_CHO
 FROM   HANG_CHO hc
 LEFT JOIN KHACH_HANG kh ON hc.MAKH = kh.MAKH
 LEFT JOIN NHAN_SU    ns ON hc.MANS_PHAN_CONG = ns.MANS
@@ -1474,6 +1516,25 @@ FROM   LICH_HEN lh
 JOIN   LICH_HEN_TRIEU_CHUNG lhtc ON lh.MALH  = lhtc.MALH
 JOIN   TRIEU_CHUNG          tc   ON lhtc.MA_TC = tc.MA_TC
 LEFT JOIN KHACH_HANG        kh   ON lh.MAKH   = kh.MAKH;
+
+
+-- ============================================================
+-- 6. CHECK CONSTRAINTS
+-- ============================================================
+
+ALTER TABLE CT_HOA_DON ADD CONSTRAINT CHK_CTHD_SOLUONG CHECK (SOLUONG > 0);
+ALTER TABLE CT_HOA_DON ADD CONSTRAINT CHK_CTHD_DONGIA CHECK (DONGIA >= 0);
+ALTER TABLE CT_HOA_DON_DV ADD CONSTRAINT CHK_CTHDDV_SOLUONG CHECK (SOLUONG > 0);
+ALTER TABLE CT_HOA_DON_DV ADD CONSTRAINT CHK_CTHDDV_DONGIA CHECK (DONGIA >= 0);
+ALTER TABLE LO_HANG ADD CONSTRAINT CHK_LO_NGAY CHECK (NGAYHETHAN > NGAYSANXUAT);
+ALTER TABLE LO_HANG ADD CONSTRAINT CHK_LO_SOLUONG CHECK (SOLUONGNHAP > 0 AND SOLUONGTON >= 0);
+ALTER TABLE THANH_TOAN ADD CONSTRAINT CHK_TT_SOTIEN CHECK (SOTIEN > 0);
+ALTER TABLE KHACH_HANG ADD CONSTRAINT CHK_KH_DIEM CHECK (DIEMTICHLUY >= 0);
+ALTER TABLE LICH_HEN ADD CONSTRAINT CHK_LH_THOIGIAN CHECK (GIO_HEN > SYSTIMESTAMP - INTERVAL '1' YEAR); -- ví dụ
+
+-- ============================================================
+-- KẾT THÚC
+-- ============================================================
 
 
 -- ============================================================
