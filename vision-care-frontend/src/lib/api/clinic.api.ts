@@ -50,5 +50,23 @@ export const clinicApi = {
   createChiTietKyThuat: async (data: ChiTietKyThuatRequest): Promise<ChiTietKyThuatResponse> => {
     const response = await axiosClient.post<ChiTietKyThuatResponse>(`${BASE_URL}/kythuat`, data);
     return response.data;
+  },
+
+  // ==========================================
+  // BỔ SUNG: THỐNG KÊ (HẾT LỖI ESLINT)
+  // ==========================================
+
+  getThongKeBenhNhan: async (tuNgay?: string, denNgay?: string): Promise<ThongKeBenhNhan[]> => {
+    const response = await axiosClient.get<ThongKeBenhNhan[]>(`${BASE_URL}/thongke/benh-nhan`, {
+      params: { tuNgay, denNgay }
+    });
+    return response.data;
+  },
+
+  getTopBacSi: async (thang?: number, nam?: number): Promise<TopBacSi[]> => {
+    const response = await axiosClient.get<TopBacSi[]>(`${BASE_URL}/thongke/top-bac-si`, {
+      params: { thang, nam }
+    });
+    return response.data;
   }
 };
