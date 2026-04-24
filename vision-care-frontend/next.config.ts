@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: '/api/:path*',
-        destination: 'http://localhost:8080/api/:path*', // Trỏ về cổng Spring Boot của ông
+        destination: 'http://localhost:8080/api/:path*',
       },
     ];
   },
