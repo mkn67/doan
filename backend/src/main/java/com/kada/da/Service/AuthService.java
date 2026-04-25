@@ -12,4 +12,6 @@ public interface AuthService {
     LoginResponseDTO login(LoginRequestDTO request);
 
     void changePassword(String username, ChangePasswordRequestDTO request);
+
+    void logout(String token);
 }

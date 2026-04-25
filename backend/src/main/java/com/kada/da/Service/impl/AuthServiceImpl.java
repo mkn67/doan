@@ -7,6 +7,7 @@ import com.kada.da.Dto.Response.LoginResponseDTO;
 import com.kada.da.Dto.Response.TaiKhoanResponseDTO;
 import com.kada.da.Entity.KhachHang;
 import com.kada.da.Entity.TaiKhoan;
+import com.kada.da.Entity.TokenBlacklist;
 import com.kada.da.Enum.LoaiTaiKhoan;
 import com.kada.da.Exception.BusinessRuleException;
 import com.kada.da.Exception.ResourceNotFoundException;
@@ -14,6 +15,7 @@ import com.kada.da.Repository.KhachHangRepository;
 import com.kada.da.Repository.TaiKhoanRepository;
 import com.kada.da.Service.AuthService;
 import com.kada.da.Util.JwtTokenUtil;
+import com.kada.da.Repository.TokenBlacklistRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -32,6 +34,7 @@ public class AuthServiceImpl implements AuthService {
     private final KhachHangRepository khachHangRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenUtil jwtTokenUtil;
+    private final TokenBlacklistRepository tokenBlacklistRepository;
 
     @Override
     @Transactional
@@ -157,5 +160,31 @@ public class AuthServiceImpl implements AuthService {
         taiKhoanRepository.save(taiKhoan);
 
         log.info("Đổi mật khẩu thành công cho tài khoản: {}", username);
+    }
+
+    @Override
+    @Transactional
+    public void logout(String authHeader) {
+        // 1. Lấy token sạch (cắt bỏ chuỗi "Bearer ")
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new BusinessRuleException("Token không hợp lệ");
+        }
+        String token = authHeader.substring(7);
+
+        // 2. Lấy thời gian hết hạn của Token từ JwtTokenUtil
+        // (Ông cần viết thêm hàm extractExpiration trong JwtTokenUtil nhé)
+        java.util.Date expiration = jwtTokenUtil.getExpirationDateFromToken(token);
+        java.time.LocalDateTime expiryDate = expiration.toInstant()
+                .atZone(java.time.ZoneId.systemDefault())
+                .toLocalDateTime();
+
+        // 3. Lưu vào Blacklist
+        TokenBlacklist blacklist = TokenBlacklist.builder()
+                .token(token)
+                .expiryDate(expiryDate)
+                .build();
+
+        tokenBlacklistRepository.save(blacklist);
+        log.info("Token đã được đưa vào blacklist: {}", token);
     }
 }
