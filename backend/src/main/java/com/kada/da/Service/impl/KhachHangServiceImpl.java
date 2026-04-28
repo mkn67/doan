@@ -1,21 +1,24 @@
 package com.kada.da.Service.impl;
 
-import com.kada.da.Entity.KhachHang;
-import com.kada.da.Exception.ResourceNotFoundException;
-import com.kada.da.Repository.KhachHangRepository;
-import com.kada.da.Service.KhachHangService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.kada.da.Entity.KhachHang;
+import com.kada.da.Exception.ResourceNotFoundException;
+import com.kada.da.Repository.KhachHangRepository;
+import com.kada.da.Service.KhachHangService;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class KhachHangServiceImpl implements KhachHangService {
 
     private final KhachHangRepository khachHangRepository;

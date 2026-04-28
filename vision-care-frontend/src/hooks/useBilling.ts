@@ -1,47 +1,57 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { AxiosError } from "axios";
 import { billingApi } from "@/lib/api/billing.api";
-import { 
-  ThanhToanRequestDTO, 
-  TaoHoaDonJsonRequest, 
-  HoaDonRequestDTO 
+import {
+  ThanhToanRequestDTO,
+  TaoHoaDonJsonRequest,
+  HoaDonRequestDTO,
 } from "@/types/billing";
 
-// Lấy danh sách hóa đơn chờ thanh toán
 export const useDanhSachHoaDon = () => {
   return useQuery({
     queryKey: ["hoa-don"],
-    queryFn: billingApi.getDanhSachHoaDon,
+    queryFn: () => billingApi.getDanhSachHoaDon(),
+    staleTime: 60 * 1000,
   });
 };
 
-// Thu ngân tạo hóa đơn
 export const useCreateHoaDon = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: HoaDonRequestDTO) => billingApi.createHoaDon(data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["hoa-don"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["hoa-don"] });
+    },
+    onError: (error: AxiosError) => {
+      console.error("Create invoice error:", error.response?.data || error.message);
+    },
   });
 };
 
-// Tạo hóa đơn bằng chuỗi JSON
 export const useCreateHoaDonJson = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: TaoHoaDonJsonRequest) => billingApi.createHoaDonJson(data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["hoa-don"] }),
+    mutationFn: (data: TaoHoaDonJsonRequest) =>
+      billingApi.createHoaDonJson(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["hoa-don"] });
+    },
+    onError: (error: AxiosError) => {
+      console.error("Create JSON invoice error:", error.response?.data || error.message);
+    },
   });
 };
 
-// Xử lý thanh toán
 export const useThanhToan = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: ThanhToanRequestDTO) => billingApi.thanhToan(data),
     onSuccess: () => {
-      // Thanh toán xong thì load lại danh sách hóa đơn
       queryClient.invalidateQueries({ queryKey: ["hoa-don"] });
-      // Đồng thời báo cho thằng Báo cáo (Report) biết để nó update cục tiền trên Dashboard
-      queryClient.invalidateQueries({ queryKey: ["thong-ke-tong-quan"] }); 
+      queryClient.invalidateQueries({ queryKey: ["thong-ke-tong-quan"] });
+    },
+    onError: (error: AxiosError) => {
+      console.error("Payment error:", error.response?.data || error.message);
     },
   });
 };

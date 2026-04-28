@@ -1,26 +1,33 @@
 package com.kada.da.Service.impl;
 
-import com.kada.da.Dto.LichLamViecRequestDTO;
-import com.kada.da.Dto.Response.LichLamViecResponseDTO;
-import com.kada.da.Dto.Response.PageResponseDTO;
-import com.kada.da.Entity.LichLamViec;
-import com.kada.da.Entity.NhanSu;
-import com.kada.da.Exception.BusinessRuleException;
-import com.kada.da.Exception.ResourceNotFoundException;
-import com.kada.da.Repository.LichLamViecRepository;
-import com.kada.da.Repository.NhanSuRepository;
-import com.kada.da.Service.LichLamViecService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
-import java.util.List;
-import java.util.stream.Collectors;
+import com.kada.da.Dto.LichLamViecRequestDTO;
+import com.kada.da.Dto.Response.LichLamViecResponseDTO;
+import com.kada.da.Dto.Response.PageResponseDTO;
+import com.kada.da.Dto.SlotTrongDto;
+import com.kada.da.Entity.LichHen;
+import com.kada.da.Entity.LichLamViec;
+import com.kada.da.Entity.NhanSu;
+import com.kada.da.Enum.TrangThaiLichHen;
+import com.kada.da.Exception.BusinessRuleException;
+import com.kada.da.Exception.ResourceNotFoundException;
+import com.kada.da.Repository.LichHenRepository;
+import com.kada.da.Repository.LichLamViecRepository;
+import com.kada.da.Repository.NhanSuRepository;
+import com.kada.da.Service.LichLamViecService;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
@@ -45,7 +52,7 @@ public class LichLamViecServiceImpl implements LichLamViecService {
                 request.getNgayLam(),
                 request.getGioBatDau(),
                 request.getGioKetThuc(),
-                request.getIsNghi() != null ? request.getIsNghi() : 0);
+                Boolean.TRUE.equals(request.getIsNghi()) ? 1 : 0);
         log.info("Tạo lịch làm việc thành công!");
     }
 
@@ -60,7 +67,6 @@ public class LichLamViecServiceImpl implements LichLamViecService {
     // =========================================================
     // 2. CÁC HÀM GET & UPDATE & DELETE (DÙNG JPA BÌNH THƯỜNG)
     // =========================================================
-
     @Override
     public LichLamViecResponseDTO getLichLamViecById(String maLlv) {
         log.info("Lấy lịch làm việc theo mã: {}", maLlv);
@@ -142,7 +148,7 @@ public class LichLamViecServiceImpl implements LichLamViecService {
         log.info("Lấy danh sách nhân sự rảnh ngày {} lúc {}", ngay, gioBatDau);
         List<LichLamViec> list = lichLamViecRepository.findByNgayLam(ngay);
         return list.stream()
-                .filter(l -> l.getGioBatDau().equals(gioBatDau) && l.getIsNghi() == 0)
+                .filter(l -> l.getGioBatDau().equals(gioBatDau) && Integer.valueOf(0).equals(l.getIsNghi()))
                 .map(this::convertToResponseDTO)
                 .collect(Collectors.toList());
     }
@@ -162,7 +168,7 @@ public class LichLamViecServiceImpl implements LichLamViecService {
             if (isExist) {
                 throw new BusinessRuleException(
                         "Nhân sự đã có lịch làm việc vào ngày " + request.getNgayLam() + " lúc "
-                                + request.getGioBatDau() + "h");
+                        + request.getGioBatDau() + "h");
             }
         }
 
@@ -190,7 +196,6 @@ public class LichLamViecServiceImpl implements LichLamViecService {
     }
 
     // ==================== PRIVATE METHODS ====================
-
     private LichLamViecResponseDTO convertToResponseDTO(LichLamViec entity) {
         return LichLamViecResponseDTO.builder()
                 .maLlv(entity.getMaLlv())
@@ -201,5 +206,39 @@ public class LichLamViecServiceImpl implements LichLamViecService {
                 .gioKetThuc(entity.getGioKetThuc())
                 .isNghi(entity.getIsNghi())
                 .build();
+    }
+
+    // Thêm dependency trong constructor (hoặc dùng @RequiredArgsConstructor)
+    private final LichHenRepository lichHenRepository; // thêm vào field
+
+    @Override
+    public List<SlotTrongDto> getDanhSachSlotTrong() {
+        LocalDate today = LocalDate.now();
+        List<LichLamViec> danhSachLich = lichLamViecRepository.findByIsNghiFalseAndNgayLamGreaterThanEqual(today);
+        List<LichHen> tatCaLichHen = lichHenRepository.findByTrangThaiNot(TrangThaiLichHen.DA_HUY); // dùng enum
+
+        return danhSachLich.stream()
+                .filter(llv -> llv.getNhanSu() != null && llv.getNhanSu().getIsDeleted() == 0)
+                .map(llv -> {
+                    boolean isBooked = tatCaLichHen.stream().anyMatch(lh -> lh.getNhanSu() != null
+                            && lh.getNhanSu().getMaNs().equals(llv.getNhanSu().getMaNs())
+                            && lh.getGioHen() != null
+                            && lh.getGioHen().toLocalDate().equals(llv.getNgayLam())
+                            && isTimeBetween(lh.getGioHen().toLocalTime(), llv.getGioBatDau(), llv.getGioKetThuc()));
+                    return SlotTrongDto.builder()
+                            .maNs(llv.getNhanSu().getMaNs())
+                            .tenBacSi(llv.getNhanSu().getHoTen())
+                            .ngayLam(llv.getNgayLam())
+                            .gioBatDau(llv.getGioBatDau())
+                            .gioKetThuc(llv.getGioKetThuc())
+                            .trangThaiSlot(isBooked ? "Đã đặt" : "Còn trống")
+                            .build();
+                })
+                .collect(Collectors.toList());
+    }
+
+    private boolean isTimeBetween(LocalTime time, Double start, Double end) {
+        double timeAsDouble = time.getHour() + (time.getMinute() / 60.0);
+        return timeAsDouble >= start && timeAsDouble < end;
     }
 }

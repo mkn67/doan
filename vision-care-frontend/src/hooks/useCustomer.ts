@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { AxiosError } from "axios";
 import { customerApi } from "@/lib/api/customer.api";
 import {
   KhachHangRequestDTO,
@@ -8,32 +9,34 @@ import {
 
 export const useDanhSachKhachHang = (filters?: KhachHangFilterDTO) => {
   return useQuery({
-    // queryKey: Là cái tên định danh trong bộ nhớ tạm (Cache).
-    // Nhét thêm filters vào đây để khi filters đổi, nó tự gọi lại API!
     queryKey: ["danh-sach-khach-hang", filters],
     queryFn: () => customerApi.getDanhSachKhachHang(filters),
-    // Optional: Nếu muốn data tự làm mới sau 5 phút
-    // staleTime: 5 * 60 * 1000,
+    staleTime: 2 * 60 * 1000,
   });
 };
 
 export const useCreateKhachHang = () => {
-  const queryClient = useQueryClient(); // Dùng cái này để "búng tay" reset cache
-
+  const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: KhachHangRequestDTO) =>
-      customerApi.createKhachHang(data),
+    mutationFn: (data: KhachHangRequestDTO) => customerApi.createKhachHang(data),
     onSuccess: () => {
-      // TUYỆT CHIÊU: Sau khi thêm khách hàng thành công, báo React Query xóa cache cũ đi
-      // để bảng danh sách tự động gọi lại API và hiện khách hàng mới lên!
       queryClient.invalidateQueries({ queryKey: ["danh-sach-khach-hang"] });
+    },
+    onError: (error: AxiosError) => {
+      console.error("Create customer error:", error.response?.data || error.message);
     },
   });
 };
 
 export const useDatLichKham = () => {
-  // Đặt lịch thì không cần invalidate list khách hàng, chỉ cần trả về kết quả
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: DatLichRequestDTO) => customerApi.datLichKham(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["lich-hen"] });
+    },
+    onError: (error: AxiosError) => {
+      console.error("Booking error:", error.response?.data || error.message);
+    },
   });
 };

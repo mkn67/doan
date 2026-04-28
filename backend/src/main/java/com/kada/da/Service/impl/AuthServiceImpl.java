@@ -1,10 +1,17 @@
 package com.kada.da.Service.impl;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.kada.da.Dto.ChangePasswordRequestDTO;
 import com.kada.da.Dto.LoginRequestDTO;
-import com.kada.da.Dto.TaiKhoanRequestDTO;
 import com.kada.da.Dto.Response.LoginResponseDTO;
 import com.kada.da.Dto.Response.TaiKhoanResponseDTO;
+import com.kada.da.Dto.TaiKhoanRequestDTO;
 import com.kada.da.Entity.KhachHang;
 import com.kada.da.Entity.TaiKhoan;
 import com.kada.da.Entity.TokenBlacklist;
@@ -13,17 +20,12 @@ import com.kada.da.Exception.BusinessRuleException;
 import com.kada.da.Exception.ResourceNotFoundException;
 import com.kada.da.Repository.KhachHangRepository;
 import com.kada.da.Repository.TaiKhoanRepository;
+import com.kada.da.Repository.TokenBlacklistRepository;
 import com.kada.da.Service.AuthService;
 import com.kada.da.Util.JwtTokenUtil;
-import com.kada.da.Repository.TokenBlacklistRepository;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -48,15 +50,14 @@ public class AuthServiceImpl implements AuthService {
         String maTk = generateMaTk();
         TaiKhoan taiKhoan = TaiKhoan.builder()
                 .maTk(maTk)
-                .username(request.getUsername()) // ĐÃ FIX: Sửa lỗi cú pháp và đổi thành username
-                .password(passwordEncoder.encode(request.getPassword())) // ĐÃ FIX: Đổi từ matKhau -> password
+                .username(request.getUsername())
+                .password(passwordEncoder.encode(request.getPassword()))
                 .loaiTk(request.getLoaiTk())
                 .trangThai(1) // 1: hoạt động
                 .build();
         taiKhoan = taiKhoanRepository.save(taiKhoan);
         log.info("Đã tạo tài khoản: {}", maTk);
 
-        // 3. Nếu là tài khoản khách hàng (EXTERNAL) -> tự động tạo KhachHang
         if (LoaiTaiKhoan.EXTERNAL.name().equals(request.getLoaiTk())) {
             String maKh = generateMaKh();
             KhachHang khachHang = KhachHang.builder()
@@ -82,6 +83,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public LoginResponseDTO login(LoginRequestDTO request) {
         TaiKhoan taiKhoan = taiKhoanRepository.findByUsername(request.getUsername()) // ĐÃ FIX
                 .orElseThrow(() -> new BusinessRuleException("Sai tên đăng nhập hoặc mật khẩu"));
@@ -99,7 +101,7 @@ public class AuthServiceImpl implements AuthService {
                 .collect(Collectors.toList());
 
         String token = jwtTokenUtil.generateToken(taiKhoan.getUsername(), roles); // Dùng username thay password để làm
-                                                                                  // subject JWT
+        // subject JWT
 
         return LoginResponseDTO.builder()
                 .token(token)
@@ -145,9 +147,8 @@ public class AuthServiceImpl implements AuthService {
         }
 
         // 2. Tìm tài khoản trong DB (Tùy Entity của ông tên là TaiKhoan hay User nhé)
-        TaiKhoan taiKhoan = taiKhoanRepository.findById(username) // hoặc findByUsername(username)
+        TaiKhoan taiKhoan = taiKhoanRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tài khoản: " + username));
-
         // 3. Kiểm tra mật khẩu cũ có đúng không
         // LƯU Ý: Nếu ông dùng BCrypt thì dùng passwordEncoder.matches(), nếu ông lưu
         // plain-text thì dùng .equals()

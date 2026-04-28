@@ -1,10 +1,6 @@
-// src/modules/inventory/inventory.ts
-
-import axios from "axios";
-
-/* =======================
-   TYPES - REQUEST
-======================= */
+/* ==========================================
+    TYPES - REQUEST (Dữ liệu gửi lên Backend)
+   ========================================== */
 
 export interface SanPhamRequest {
   tenSp: string;
@@ -13,14 +9,15 @@ export interface SanPhamRequest {
   moTa?: string;
   hinhAnh?: string;
   laThuoc: boolean;
+  tonKhoToiThieu?: number; // Bổ sung để phục vụ View cảnh báo
 }
 
 export interface LoHangRequest {
   maSp: string;
   soLuongNhap: number;
   giaNhap: number;
-  ngaySanXuat?: string;
-  ngayHetHan?: string;
+  ngaySanXuat?: string; // YYYY-MM-DD
+  ngayHetHan?: string;  // YYYY-MM-DD
 }
 
 export interface PhieuNhapRequest {
@@ -41,14 +38,14 @@ export interface GiaoDichNccRequest {
   maNcc: string;
   maPn?: string;
   soTien: number;
-  loaiGiaoDich: string;
+  loaiGiaoDich: string; // 'THANH_TOAN' | 'HOAN_TIEN'
   hinhThucThanhToan?: string;
   ghiChu?: string;
 }
 
-/* =======================
-   TYPES - RESPONSE
-======================= */
+/* ==========================================
+    TYPES - RESPONSE (Dữ liệu nhận từ Backend)
+   ========================================== */
 
 export interface SanPhamResponse {
   maSp: string;
@@ -63,17 +60,14 @@ export interface SanPhamResponse {
 
 export interface LoHangResponse {
   maLo: string;
+  maSp: string;
   tenSanPham: string;
   soLuongNhap: number;
-  maSp: string;
   soLuongTon: number;
-
   giaNhap: number;
   ngaySanXuat?: string;
   ngayHetHan?: string;
-
-  trangThaiHsd: string;
-  loaiTk?: string; // enum backend → string
+  trangThaiHsd: string; // 'Con han' | 'Het han' | 'Sap het han'
 }
 
 export interface PhieuNhapResponse {
@@ -109,6 +103,10 @@ export interface GiaoDichNccResponse {
   ghiChu?: string;
 }
 
+/* ==========================================
+    TYPES - THỐNG KÊ & CẢNH BÁO (Từ logic Java/View)
+   ========================================== */
+
 export interface ThongKeSanPham {
   maSp: string;
   tenSanPham: string;
@@ -125,75 +123,16 @@ export interface CanhBaoHetHan {
   ngayHetHan: string;
   soNgayConLai: number;
   tonKho: number;
-  mucDo: string;
+  mucDo: string; // 'Nguy cap' | 'Canh bao'
   nhaCungCap: string;
 }
 
-/* =======================
-   API INSTANCE
-======================= */
-
-const api = axios.create({
-  baseURL: "/api/inventory",
-});
-
-/* =======================
-   SERVICES
-======================= */
-
-// ===== SẢN PHẨM =====
-export const getSanPham = async () => {
-  const res = await api.get<SanPhamResponse[]>("/sanpham");
-  return res.data;
-};
-
-export const createSanPham = async (data: SanPhamRequest) => {
-  const res = await api.post<SanPhamResponse>("/sanpham", data);
-  return res.data;
-};
-
-// ===== LÔ HÀNG =====
-export const createLoHang = async (data: LoHangRequest) => {
-  const res = await api.post<LoHangResponse>("/lohang", data);
-  return res.data;
-};
-
-// ===== PHIẾU NHẬP =====
-export const createPhieuNhap = async (data: PhieuNhapRequest) => {
-  const res = await api.post<PhieuNhapResponse>("/phieunhap", data);
-  return res.data;
-};
-
-export const getPhieuNhap = async () => {
-  const res = await api.get<PhieuNhapResponse[]>("/phieunhap");
-  return res.data;
-};
-
-// ===== NHÀ CUNG CẤP =====
-export const createNhaCungCap = async (data: NhaCungCapRequest) => {
-  const res = await api.post<NhaCungCapResponse>("/nhacungcap", data);
-  return res.data;
-};
-
-export const getNhaCungCap = async () => {
-  const res = await api.get<NhaCungCapResponse[]>("/nhacungcap");
-  return res.data;
-};
-
-// ===== GIAO DỊCH NCC =====
-export const createGiaoDichNcc = async (data: GiaoDichNccRequest) => {
-  const res = await api.post<GiaoDichNccResponse>("/giaodich", data);
-  return res.data;
-};
-
-// ===== THỐNG KÊ =====
-export const getThongKeSanPham = async () => {
-  const res = await api.get<ThongKeSanPham[]>("/thongke/sanpham");
-  return res.data;
-};
-
-// ===== CẢNH BÁO HSD =====
-export const getCanhBaoHetHan = async () => {
-  const res = await api.get<CanhBaoHetHan[]>("/canhbao-hethan");
-  return res.data;
-};
+// Đây là Type cho cái View Cảnh báo tồn kho anh em mình vừa xử lý ở Backend
+export interface CanhBaoTonKhoDto {
+  maSp: string;
+  tenSp: string;
+  donViTinh: string;
+  tongTon: number;
+  tonKhoToiThieu: number;
+  mucDo: "Het hang" | "Sap het" | "Canh bao" | "On dinh";
+}

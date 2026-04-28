@@ -1,26 +1,30 @@
 package com.kada.da.Service.impl;
 
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kada.da.Dto.Response.PageResponseDTO;
 import com.kada.da.Dto.Response.XuLyKinhResponseDTO;
 import com.kada.da.Dto.XuLyKinhRequestDTO;
 import com.kada.da.Entity.XuLyKinh;
+import com.kada.da.Exception.BusinessRuleException;
 import com.kada.da.Repository.XuLyKinhRepository;
 import com.kada.da.Service.XuLyKinhService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import lombok.extern.slf4j.Slf4j;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class XuLyKinhServiceImpl implements XuLyKinhService {
 
     private final XuLyKinhRepository xuLyKinhRepository;
@@ -89,6 +93,8 @@ public class XuLyKinhServiceImpl implements XuLyKinhService {
         try {
             existing.setThongSoKinh(objectMapper.writeValueAsString(thongSoKinh));
         } catch (Exception e) {
+            log.error("Lỗi parse JSON thông số kính: ", e);
+            throw new BusinessRuleException("Dữ liệu thông số kính không hợp lệ!");
         }
         return toDTO(xuLyKinhRepository.save(existing));
     }
@@ -136,7 +142,6 @@ public class XuLyKinhServiceImpl implements XuLyKinhService {
     }
 
     // ==================== PRIVATE METHODS ====================
-
     @Override
     public XuLyKinhResponseDTO createXuLyKinh(XuLyKinhRequestDTO request) {
         throw new UnsupportedOperationException("Dùng taoPhieuGiaoKinh(SP) thay thế cho nghiệp vụ này");

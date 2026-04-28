@@ -66,5 +66,8 @@ export const authApi = {
     // Lưu ý: data có field `MaVaiTro` viết hoa chữ M như ông dặn
     const response = await axiosClient.post<VaiTroResponseDTO>('/api/vai-tro', data);
     return response.data;
-  }
+  },
+  logout: async (): Promise<void> => {
+    await axiosClient.post('/api/auth/logout');
+  },
 };

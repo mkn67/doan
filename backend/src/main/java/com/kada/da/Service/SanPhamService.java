@@ -1,5 +1,6 @@
 package com.kada.da.Service;
 
+import com.kada.da.Dto.CanhBaoTonKhoDto;
 import com.kada.da.Entity.SanPham;
 import java.util.List;
 
@@ -14,5 +15,7 @@ public interface SanPhamService {
 
     List<SanPham> getAllSanPham();
 
-    List<SanPham> getDanhSachThuoc(); // Tiện ích lấy danh sách chỉ là thuốc
+    List<SanPham> getDanhSachThuoc();
+
+    List<CanhBaoTonKhoDto> getCanhBaoTonKho();
 }

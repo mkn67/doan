@@ -1457,6 +1457,7 @@ END;
 -- 4. VIEWS (sửa V_HANG_CHO_HOM_NAY)
 -- ============================================================
 
+
 CREATE OR REPLACE VIEW V_RATING_BAC_SI AS
 SELECT ns.MANS, ns.HOTEN, ns.CHUYENKHOA,
        COUNT(dg.MADG)          AS TONG_LUOT_DANH_GIA,
@@ -1479,9 +1480,7 @@ SELECT llv.MANS, ns.HOTEN AS TEN_BAC_SI, llv.NGAY_LAM, llv.GIO_BAT_DAU, llv.GIO_
 FROM   LICH_LAM_VIEC llv
 JOIN   NHAN_SU ns ON llv.MANS = ns.MANS
 WHERE  llv.IS_NGHI = 0 AND llv.NGAY_LAM >= TRUNC(SYSDATE) AND ns.IS_DELETED = 0;
-
--- SỬA VIEW: tính phút chờ chính xác
-CREATE OR REPLACE VIEW V_HANG_CHO_HOM_NAY AS
+ CREATE OR REPLACE VIEW V_HANG_CHO_HOM_NAY AS
 SELECT hc.MAHC, hc.SO_THU_TU, hc.LOAI_KHACH,
        NVL(kh.HOTEN, hc.TEN_KHACH) AS TEN_KHACH, kh.SDT,
        ns.HOTEN AS TEN_BAC_SI, gk.TENGOI AS GOI_KHAM,
@@ -1522,7 +1521,6 @@ JOIN   LICH_HEN_TRIEU_CHUNG lhtc ON lh.MALH  = lhtc.MALH
 JOIN   TRIEU_CHUNG          tc   ON lhtc.MA_TC = tc.MA_TC
 LEFT JOIN KHACH_HANG        kh   ON lh.MAKH   = kh.MAKH;
 
-
 -- ============================================================
 -- 6. CHECK CONSTRAINTS
 -- ============================================================
@@ -1562,7 +1560,7 @@ CREATE INDEX IDX_TT_MAHD         ON THANH_TOAN(MAHD);
 CREATE INDEX IDX_TT_MANS         ON THANH_TOAN(MANS);
 CREATE INDEX IDX_LSD_MAKH        ON LICH_SU_DIEM(MAKH);
 CREATE INDEX IDX_LSD_MAHD        ON LICH_SU_DIEM(MAHD);
-
+CREATE INDEX idx_token ON blacklisted_tokens(token);
 
 -- ============================================================
 -- PHẦN VIII: SEED DATA CƠ BẢN

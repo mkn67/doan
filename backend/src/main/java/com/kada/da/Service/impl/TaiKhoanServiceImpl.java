@@ -1,16 +1,19 @@
 package com.kada.da.Service.impl;
 
-import com.kada.da.Entity.TaiKhoan;
-import com.kada.da.Repository.TaiKhoanRepository;
-import com.kada.da.Service.TaiKhoanService;
-import lombok.RequiredArgsConstructor;
+import java.util.Optional;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Optional;
+import com.kada.da.Entity.TaiKhoan;
+import com.kada.da.Repository.TaiKhoanRepository;
+import com.kada.da.Service.TaiKhoanService;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class TaiKhoanServiceImpl implements TaiKhoanService {
 
     private final TaiKhoanRepository taiKhoanRepository;

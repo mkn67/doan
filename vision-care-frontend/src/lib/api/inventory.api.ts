@@ -1,11 +1,13 @@
 import axiosClient from '../axios';
+// XÓA cái import { axiosInstance } bị lỗi đi nhé
 import {
   SanPhamRequest, SanPhamResponse,
   LoHangRequest, LoHangResponse,
   PhieuNhapRequest, PhieuNhapResponse,
   NhaCungCapRequest, NhaCungCapResponse,
   GiaoDichNccRequest, GiaoDichNccResponse,
-  ThongKeSanPham, CanhBaoHetHan
+  ThongKeSanPham, CanhBaoHetHan,
+  CanhBaoTonKhoDto
 } from '@/types/inventory';
 
 const BASE_URL = '/api/inventory';
@@ -57,5 +59,10 @@ export const inventoryApi = {
   getCanhBaoHetHan: async (): Promise<CanhBaoHetHan[]> => {
     const response = await axiosClient.get<CanhBaoHetHan[]>(`${BASE_URL}/canhbao-hethan`);
     return response.data;
-  }
+  },
+  getCanhBaoTonKho: async (): Promise<CanhBaoTonKhoDto[]> => {
+    // Đã đổi axiosInstance thành axiosClient và dùng BASE_URL
+    const response = await axiosClient.get<CanhBaoTonKhoDto[]>(`${BASE_URL}/canh-bao-ton-kho`);
+    return response.data;
+  },
 };

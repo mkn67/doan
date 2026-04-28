@@ -1,5 +1,14 @@
 package com.kada.da.Service.impl;
 
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.kada.da.Dto.GoiKhamRequestDTO;
 import com.kada.da.Dto.Response.GoiKhamResponseDTO;
 import com.kada.da.Dto.Response.PageResponseDTO;
@@ -7,15 +16,8 @@ import com.kada.da.Entity.GoiKham;
 import com.kada.da.Exception.ResourceNotFoundException;
 import com.kada.da.Repository.GoiKhamRepository;
 import com.kada.da.Service.GoiKhamService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.util.UUID;
-import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -38,6 +40,7 @@ public class GoiKhamServiceImpl implements GoiKhamService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public GoiKhamResponseDTO getGoiKhamById(String maGoi) {
         GoiKham goiKham = goiKhamRepository.findById(maGoi)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói khám: " + maGoi));
@@ -45,6 +48,7 @@ public class GoiKhamServiceImpl implements GoiKhamService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public PageResponseDTO<GoiKhamResponseDTO> getAllGoiKham(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         Page<GoiKham> goiKhamPage = goiKhamRepository.findAll(pageable);
@@ -62,8 +66,9 @@ public class GoiKhamServiceImpl implements GoiKhamService {
     }
 
     private GoiKhamResponseDTO mapToResponse(GoiKham entity) {
-        if (entity == null)
+        if (entity == null) {
             return null;
+        }
 
         return GoiKhamResponseDTO.builder()
                 .maGoi(entity.getMaGoi())

@@ -1,31 +1,35 @@
 package com.kada.da.Service.impl;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional; // 1. NHỚ IMPORT ENUM
+
 import com.kada.da.Dto.HoaDonRequestDTO;
 import com.kada.da.Dto.Response.HoaDonResponseDTO;
-import com.kada.da.Entity.HoaDon;
 import com.kada.da.Entity.CtHoaDon;
 import com.kada.da.Entity.CtHoaDonId;
+import com.kada.da.Entity.HoaDon;
 import com.kada.da.Entity.LoHang;
-import com.kada.da.Enum.TrangThaiHoaDon; // 1. NHỚ IMPORT ENUM
+import com.kada.da.Enum.TrangThaiHoaDon;
 import com.kada.da.Exception.BusinessRuleException;
 import com.kada.da.Exception.ResourceNotFoundException;
 import com.kada.da.Repository.CtHoaDonRepository;
 import com.kada.da.Repository.HoaDonRepository;
 import com.kada.da.Repository.LoHangRepository;
 import com.kada.da.Service.HoaDonService;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.Map;
-import java.util.UUID;
-import java.util.List;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class HoaDonServiceImpl implements HoaDonService {
 
     private final HoaDonRepository hoaDonRepository;
@@ -53,8 +57,8 @@ public class HoaDonServiceImpl implements HoaDonService {
                     .orElseThrow(() -> new BusinessRuleException("Lô hàng không tồn tại!"));
 
             if (loHang.getSoLuongTon() < ct.getSoLuong()) {
-                throw new BusinessRuleException("Sản phẩm " + loHang.getSanPham().getTenSp() +
-                        " trong lô " + loHang.getMaLo() + " không đủ số lượng tồn!");
+                throw new BusinessRuleException("Sản phẩm " + loHang.getSanPham().getTenSp()
+                        + " trong lô " + loHang.getMaLo() + " không đủ số lượng tồn!");
             }
 
             // Trừ tồn kho
@@ -62,10 +66,8 @@ public class HoaDonServiceImpl implements HoaDonService {
             loHangRepository.save(loHang);
 
             ct.setHoaDon(hoaDon);
+            ctHoaDonRepository.save(ct);
 
-            // 3. ĐÃ FIX LỖI BigDecimal:
-            // Nếu ct.getDonGia() ĐÃ LÀ BigDecimal thì không dùng BigDecimal.valueOf() nữa.
-            // Ép kiểu ct.getSoLuong() (Integer) sang BigDecimal để nhân.
             BigDecimal lineTotal = ct.getDonGia().multiply(BigDecimal.valueOf(ct.getSoLuong()));
 
             tongTien = tongTien.add(lineTotal);
@@ -77,6 +79,7 @@ public class HoaDonServiceImpl implements HoaDonService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public HoaDon findById(String maHd) {
         return hoaDonRepository.findById(maHd)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hóa đơn mã: " + maHd));
@@ -117,8 +120,9 @@ public class HoaDonServiceImpl implements HoaDonService {
             List<LoHang> danhSachLo = loHangRepository.getDanhSachLoFefo(item.getMaLo());
 
             for (LoHang lo : danhSachLo) {
-                if (soLuongCanMua <= 0)
+                if (soLuongCanMua <= 0) {
                     break;
+                }
 
                 int layTuLoNay = Math.min(soLuongCanMua, lo.getSoLuongTon());
 

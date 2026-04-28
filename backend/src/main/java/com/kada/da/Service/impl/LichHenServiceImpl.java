@@ -1,8 +1,17 @@
 package com.kada.da.Service.impl;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.kada.da.Dto.LichHenTrieuChungDto;
 import com.kada.da.Dto.Response.DatLichResponseDTO;
-import com.kada.da.Dto.Response.LichHenResponseDTO;
 import com.kada.da.Dto.Response.HangChoResponseDTO;
+import com.kada.da.Dto.Response.LichHenResponseDTO;
 import com.kada.da.Entity.HangCho;
 import com.kada.da.Entity.LichHen;
 import com.kada.da.Entity.LichHenTrieuChung;
@@ -13,25 +22,20 @@ import com.kada.da.Exception.ResourceNotFoundException;
 import com.kada.da.Repository.HangChoRepository;
 import com.kada.da.Repository.LichHenRepository;
 import com.kada.da.Service.LichHenService;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class LichHenServiceImpl implements LichHenService {
 
     private final LichHenRepository lichHenRepository;
     private final HangChoRepository hangChoRepository;
 
     // ==================== CÁC HÀM DÙNG STORED PROCEDURE ====================
-
     @Override
     @Transactional
     public DatLichResponseDTO datLichHen(String maKh, String maNs, String maGoi, LocalDate ngayHen,
@@ -63,7 +67,6 @@ public class LichHenServiceImpl implements LichHenService {
     }
 
     // ==================== CÁC HÀM DÙNG JPA BÌNH THƯỜNG ====================
-
     @Override
     @Transactional
     public LichHenResponseDTO confirmLichHen(String maLichHen) {
@@ -85,7 +88,7 @@ public class LichHenServiceImpl implements LichHenService {
         }
 
         LocalDate today = LocalDate.now();
-        if (lichHen.getNgayHen() == null || !lichHen.getNgayHen().toLocalDate().equals(today)) {
+        if (lichHen.getNgayHen() == null || !lichHen.getNgayHen().toLocalDate().isEqual(today)) {
             throw new BusinessRuleException("Lịch hẹn không phải hôm nay, không thể check-in");
         }
 
@@ -109,7 +112,6 @@ public class LichHenServiceImpl implements LichHenService {
     }
 
     // ==================== PRIVATE MAPPER METHODS ====================
-
     private LichHen findLichHenById(String maLichHen) {
         return lichHenRepository.findById(maLichHen)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lịch hẹn mã: " + maLichHen));
@@ -125,8 +127,12 @@ public class LichHenServiceImpl implements LichHenService {
                 .maLh(entity.getMaLh())
                 .tenKhachHang(entity.getKhachHang() != null ? entity.getKhachHang().getHoTen() : null)
                 .tenBacSi(entity.getNhanSu() != null ? entity.getNhanSu().getHoTen() : null)
-                .ngayHen(entity.getNgayHen() != null ? entity.getNgayHen().toLocalDate() : null)
-                .gioHen(entity.getGioHen() != null ? entity.getGioHen().toLocalTime() : null)
+                .ngayHen(entity.getNgayHen() != null ? entity.getNgayHen().toLocalDate() : null) // Giữ nguyên kiểu trả
+                // về của DTO nếu DTO
+                // yêu cầu LocalDate
+                .gioHen(entity.getGioHen() != null ? entity.getGioHen().toLocalTime() : null) // Giữ nguyên kiểu trả về
+                // của DTO nếu DTO yêu cầu
+                // LocalTime
                 .trieuChung(trieuChungStr)
                 .loaiLich(entity.getLoaiLich())
                 .trangThai(entity.getTrangThai() != null ? entity.getTrangThai().name() : null)
@@ -143,5 +149,26 @@ public class LichHenServiceImpl implements LichHenService {
                 .thoiGianChoDoiPhut(0L)
                 .trangThai(entity.getTrangThai() != null ? entity.getTrangThai().name() : null)
                 .build();
+    }
+
+    @Override
+    public List<LichHenTrieuChungDto> getLichHenKemTrieuChung() {
+        List<LichHen> listLichHen = lichHenRepository.findAllKemTrieuChung();
+        return listLichHen.stream().map(lh -> {
+            List<String> trieuChungs = (lh.getDanhSachTrieuChung() != null)
+                    ? lh.getDanhSachTrieuChung().stream()
+                            .map(lhtc -> lhtc.getTrieuChung().getTenTc()
+                            + (lhtc.getMoTaTuDo() != null ? " (" + lhtc.getMoTaTuDo() + ")" : ""))
+                            .collect(Collectors.toList())
+                    : List.of();
+
+            return LichHenTrieuChungDto.builder()
+                    .maLh(lh.getMaLh())
+                    .ngayHen(lh.getNgayHen())
+                    .tenKhach(lh.getKhachHang() != null ? lh.getKhachHang().getHoTen() : "Khách vãng lai")
+                    .trangThai(lh.getTrangThai() != null ? lh.getTrangThai().name() : null)
+                    .danhSachTrieuChung(trieuChungs)
+                    .build();
+        }).collect(Collectors.toList());
     }
 }

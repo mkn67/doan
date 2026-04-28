@@ -3,9 +3,10 @@ package com.kada.da.Service;
 import com.kada.da.Dto.Response.HangChoResponseDTO;
 import com.kada.da.Dto.Response.LichHenResponseDTO;
 import com.kada.da.Dto.Response.DatLichResponseDTO;
-
+import com.kada.da.Dto.LichHenTrieuChungDto;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public interface LichHenService {
 
@@ -18,4 +19,6 @@ public interface LichHenService {
     LichHenResponseDTO confirmLichHen(String maLichHen);
 
     HangChoResponseDTO checkIn(String maLichHen);
+
+    List<LichHenTrieuChungDto> getLichHenKemTrieuChung();
 }

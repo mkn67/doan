@@ -1,5 +1,14 @@
 package com.kada.da.Service.impl;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.kada.da.Dto.NhaCungCapRequestDTO;
 import com.kada.da.Dto.Response.NhaCungCapResponseDTO;
 import com.kada.da.Dto.Response.PageResponseDTO;
@@ -8,16 +17,9 @@ import com.kada.da.Exception.BusinessRuleException;
 import com.kada.da.Exception.ResourceNotFoundException;
 import com.kada.da.Repository.NhaCungCapRepository;
 import com.kada.da.Service.NhaCungCapService;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -69,10 +71,8 @@ public class NhaCungCapServiceImpl implements NhaCungCapService {
         Pageable pageable = PageRequest.of(page, size);
         Page<NhaCungCap> nhaCungCapPage;
 
-        // Bổ sung logic tìm kiếm
         if (keyword != null && !keyword.trim().isEmpty()) {
-            // Giả định Repository đã có hàm findByTenNccContainingIgnoreCase
-            nhaCungCapPage = nhaCungCapRepository.findAll(pageable);
+            nhaCungCapPage = nhaCungCapRepository.findByTenNccContainingIgnoreCase(keyword.trim(), pageable);
         } else {
             nhaCungCapPage = nhaCungCapRepository.findAll(pageable);
         }
@@ -119,7 +119,6 @@ public class NhaCungCapServiceImpl implements NhaCungCapService {
     }
 
     // ==================== PRIVATE METHODS ====================
-
     private NhaCungCap findById(String maNcc) {
         return nhaCungCapRepository.findById(maNcc)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy nhà cung cấp với mã: " + maNcc));

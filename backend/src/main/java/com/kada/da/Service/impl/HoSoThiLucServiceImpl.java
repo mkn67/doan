@@ -1,5 +1,13 @@
 package com.kada.da.Service.impl;
 
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.kada.da.Entity.HoSoThiLuc;
 import com.kada.da.Entity.LichHen;
 import com.kada.da.Enum.TrangThaiLichHen;
@@ -8,15 +16,9 @@ import com.kada.da.Exception.ResourceNotFoundException;
 import com.kada.da.Repository.HoSoThiLucRepository;
 import com.kada.da.Repository.LichHenRepository;
 import com.kada.da.Service.HoSoThiLucService;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 
 @Slf4j
 @Service
@@ -74,6 +76,7 @@ public class HoSoThiLucServiceImpl implements HoSoThiLucService {
 
     // --- Method mới gọi SP (dùng chính repository đó) ---
     @Override
+    @Transactional
     public Map<String, String> taoHoSoKhamBangSP(
             String maKhachHang, String maBacSi, String ketLuan,
             Double matTraiSph, Double matTraiCyl, Integer matTraiAx, Double docongTrai,

@@ -1,27 +1,5 @@
 package com.kada.da.Service.impl;
 
-import com.kada.da.Dto.DanhGiaRequestDTO;
-import com.kada.da.Dto.Response.DanhGiaResponseDTO;
-import com.kada.da.Dto.Response.PageResponseDTO;
-import com.kada.da.Entity.DanhGia;
-import com.kada.da.Entity.KhachHang;
-import com.kada.da.Entity.HoSoThiLuc;
-import com.kada.da.Entity.NhanSu;
-import com.kada.da.Exception.BusinessRuleException;
-import com.kada.da.Exception.ResourceNotFoundException;
-import com.kada.da.Repository.DanhGiaRepository;
-import com.kada.da.Repository.KhachHangRepository;
-import com.kada.da.Repository.HoSoThiLucRepository;
-import com.kada.da.Repository.NhanSuRepository;
-import com.kada.da.Service.DanhGiaService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -29,9 +7,34 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.kada.da.Dto.DanhGiaRequestDTO;
+import com.kada.da.Dto.Response.DanhGiaResponseDTO;
+import com.kada.da.Dto.Response.PageResponseDTO;
+import com.kada.da.Entity.DanhGia;
+import com.kada.da.Entity.HoSoThiLuc;
+import com.kada.da.Entity.KhachHang;
+import com.kada.da.Entity.NhanSu;
+import com.kada.da.Exception.BusinessRuleException;
+import com.kada.da.Exception.ResourceNotFoundException;
+import com.kada.da.Repository.DanhGiaRepository;
+import com.kada.da.Repository.HoSoThiLucRepository;
+import com.kada.da.Repository.KhachHangRepository;
+import com.kada.da.Repository.NhanSuRepository;
+import com.kada.da.Service.DanhGiaService;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class DanhGiaServiceImpl implements DanhGiaService {
 
     private final DanhGiaRepository danhGiaRepository;
@@ -163,8 +166,9 @@ public class DanhGiaServiceImpl implements DanhGiaService {
     public Object getTyLeDanhGia() {
         // Trả về map tỷ lệ % các sao (1 sao, 2 sao... 5 sao)
         long total = danhGiaRepository.count();
-        if (total == 0)
+        if (total == 0) {
             return new HashMap<>();
+        }
 
         Map<Integer, Double> tyle = new HashMap<>();
         for (int i = 1; i <= 5; i++) {

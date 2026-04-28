@@ -1,5 +1,14 @@
 package com.kada.da.Service.impl;
 
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.kada.da.Dto.DichVuKhamRequestDTO;
 import com.kada.da.Dto.Response.DichVuKhamResponseDTO;
 import com.kada.da.Dto.Response.PageResponseDTO;
@@ -7,15 +16,8 @@ import com.kada.da.Entity.DichVuKham;
 import com.kada.da.Exception.ResourceNotFoundException;
 import com.kada.da.Repository.DichVuKhamRepository;
 import com.kada.da.Service.DichVuKhamService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.util.UUID;
-import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -58,13 +60,12 @@ public class DichVuKhamServiceImpl implements DichVuKhamService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public PageResponseDTO<DichVuKhamResponseDTO> getAllDichVu(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
 
-        // LƯU Ý MỞ RỘNG: Thường thì getAll chỉ lấy những dịch vụ đang Active.
-        // Nếu sau này ông viết thêm hàm findByIsActive(1, pageable) trong Repository
-        // thì thay vào đây là điểm 10 tuyệt đối luôn!
-        Page<DichVuKham> dichVuPage = dichVuKhamRepository.findAll(pageable);
+        // ĐÃ SỬA: Lấy những dịch vụ có isActive = 1 thay vì lấy tất cả (kể cả cái đã xóa)
+        Page<DichVuKham> dichVuPage = dichVuKhamRepository.findByIsActive(1, pageable);
 
         return PageResponseDTO.<DichVuKhamResponseDTO>builder()
                 .content(dichVuPage.getContent().stream().map(this::mapToResponse).collect(Collectors.toList()))
@@ -80,7 +81,6 @@ public class DichVuKhamServiceImpl implements DichVuKhamService {
         return DichVuKhamResponseDTO.builder()
                 .maDv(entity.getMaDv())
                 .tenDv(entity.getTenDv())
-
                 // SỬA: Dùng getGia() từ Entity để map sang giaDv của DTO
                 .giaDv(entity.getGia())
                 .moTa(entity.getMoTa())

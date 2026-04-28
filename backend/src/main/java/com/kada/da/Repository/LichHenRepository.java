@@ -1,9 +1,13 @@
 package com.kada.da.Repository;
 
 import com.kada.da.Entity.LichHen;
+import com.kada.da.Entity.SanPham;
 import com.kada.da.Enum.TrangThaiLichHen;
 import com.kada.da.Repository.custom.LichHenRepositoryCustom;
+
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
@@ -18,4 +22,18 @@ public interface LichHenRepository extends JpaRepository<LichHen, String>, LichH
 
     // FIX TẠI ĐÂY: Đổi List<String> thành List<TrangThaiLichHen>
     boolean existsByKhachHang_MaKhAndTrangThaiIn(String maKhachHang, List<TrangThaiLichHen> trangThai);
+
+    List<LichHen> findByTrangThaiNot(TrangThaiLichHen trangThai);
+
+    // Tên trong attributePaths PHẢI GIỐNG HỆT tên biến List<LoHang> trong Entity
+    // SanPham của ông
+    @EntityGraph(attributePaths = { "danhSachLoHang" })
+    @Query("SELECT sp FROM SanPham sp")
+    List<SanPham> findAllKemLoHang();
+
+    // Trở lại file Service, thay vì gọi findAll(), ông gọi findAllKemLoHang() là
+    // xong!
+    @EntityGraph(attributePaths = { "khachHang", "danhSachLichHenTrieuChung", "danhSachLichHenTrieuChung.trieuChung" })
+    @Query("SELECT lh FROM LichHen lh")
+    List<LichHen> findAllKemTrieuChung();
 }

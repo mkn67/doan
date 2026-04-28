@@ -1,36 +1,39 @@
 package com.kada.da.Service.impl;
 
-import com.kada.da.Entity.TaiKhoan;
-import com.kada.da.Dto.NhomRequestDTO;
-import com.kada.da.Dto.Response.NhomResponseDTO;
-import com.kada.da.Dto.Response.PageResponseDTO;
-import com.kada.da.Dto.Response.VaiTroResponseDTO;
-import com.kada.da.Entity.Nhom;
-import com.kada.da.Entity.VaiTro;
-import com.kada.da.Entity.NhanSu;
-import com.kada.da.Exception.BusinessRuleException;
-import com.kada.da.Exception.ResourceNotFoundException;
-import com.kada.da.Repository.NhomRepository;
-import com.kada.da.Repository.VaiTroRepository;
-import com.kada.da.Repository.NhanSuRepository;
-import com.kada.da.Repository.TaiKhoanRepository;
-import com.kada.da.Service.NhomService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
+import com.kada.da.Dto.NhomRequestDTO;
+import com.kada.da.Dto.Response.NhomResponseDTO;
+import com.kada.da.Dto.Response.PageResponseDTO;
+import com.kada.da.Dto.Response.VaiTroResponseDTO;
+import com.kada.da.Entity.NhanSu;
+import com.kada.da.Entity.Nhom;
+import com.kada.da.Entity.TaiKhoan;
+import com.kada.da.Entity.VaiTro;
+import com.kada.da.Exception.BusinessRuleException;
+import com.kada.da.Exception.ResourceNotFoundException;
+import com.kada.da.Repository.NhanSuRepository;
+import com.kada.da.Repository.NhomRepository;
+import com.kada.da.Repository.TaiKhoanRepository;
+import com.kada.da.Repository.VaiTroRepository;
+import com.kada.da.Service.NhomService;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class NhomServiceImpl implements NhomService {
 
     private final NhomRepository nhomRepository;
@@ -130,7 +133,6 @@ public class NhomServiceImpl implements NhomService {
     }
 
     // ==================== PHÂN QUYỀN NHÂN SỰ - NHÓM ====================
-
     @Override
     @Transactional
     public void assignNhanSuToNhom(String maNhom, List<String> maNsList) {
@@ -160,7 +162,6 @@ public class NhomServiceImpl implements NhomService {
     }
 
     // ==================== PRIVATE METHODS ====================
-
     private Nhom findById(String maNhom) {
         return nhomRepository.findById(maNhom)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy nhóm: " + maNhom));

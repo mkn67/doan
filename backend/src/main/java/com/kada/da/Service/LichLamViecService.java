@@ -3,7 +3,7 @@ package com.kada.da.Service;
 import com.kada.da.Dto.LichLamViecRequestDTO;
 import com.kada.da.Dto.Response.LichLamViecResponseDTO;
 import com.kada.da.Dto.Response.PageResponseDTO;
-
+import com.kada.da.Dto.SlotTrongDto;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -40,4 +40,6 @@ public interface LichLamViecService {
     LichLamViecResponseDTO updateLichLamViec(String maLlv, LichLamViecRequestDTO request);
 
     void deleteLichLamViec(String maLlv);
+
+    List<SlotTrongDto> getDanhSachSlotTrong();
 }

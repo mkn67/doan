@@ -1,6 +1,8 @@
 package com.kada.da.Repository;
 
 import com.kada.da.Entity.SanPham;
+
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -20,4 +22,9 @@ public interface SanPhamRepository extends JpaRepository<SanPham, String> {
 
     // Tìm kiếm sản phẩm theo Loại sản phẩm
     List<SanPham> findByLoaiSanPham_MaLoai(String maLoai);
+
+    @EntityGraph(attributePaths = { "danhSachLoHang" })
+    @Query("SELECT sp FROM SanPham sp")
+    List<SanPham> findAllKemLoHang();
+    // Trở lại file Service, thay vì gọi findAll(), ông gọi findAllKemLoHang() là
 }

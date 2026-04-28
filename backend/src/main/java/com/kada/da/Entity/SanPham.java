@@ -3,6 +3,8 @@ package com.kada.da.Entity;
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "SAN_PHAM")
@@ -36,4 +38,10 @@ public class SanPham {
 
     @Column(name = "DON_VI_TINH_KHO", length = 20)
     private String donViTinhKho;
+
+    @OneToMany(mappedBy = "sanPham", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @Builder.Default
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
+    private List<LoHang> danhSachLoHang = new ArrayList<>();
 }

@@ -6,7 +6,10 @@ import {
   LichLamViecRequestDTO, LichLamViecResponseDTO,
   LichHenFilterDTO, LichHenResponseDTO,
   HangChoRequestDTO, HangChoResponseDTO,
-  XuLyKinhRequestDTO, XuLyKinhResponseDTO
+  XuLyKinhRequestDTO, XuLyKinhResponseDTO,
+  HangChoHomNayDTO,
+  LichHenTrieuChungDTO,
+  SlotTrongDTO // FIX: Đã bổ sung import SlotTrongDTO vào đây
 } from '@/types/staff';
 
 export const staffApi = {
@@ -52,5 +55,22 @@ export const staffApi = {
   createPhieuXuLyKinh: async (data: XuLyKinhRequestDTO): Promise<XuLyKinhResponseDTO> => {
     const response = await axiosClient.post<XuLyKinhResponseDTO>('/api/xu-ly-kinh', data);
     return response.data;
-  }
+  },
+
+  // FIX: Đổi axiosInstance thành axiosClient và thêm "/api" cho chuẩn đường dẫn Backend
+  getHangChoHomNay: async (): Promise<HangChoHomNayDTO[]> => {
+    const response = await axiosClient.get<HangChoHomNayDTO[]>("/api/hang-cho/hom-nay");
+    return response.data;
+  },
+
+  getLichHenTrieuChung: async (): Promise<LichHenTrieuChungDTO[]> => {
+    const response = await axiosClient.get<LichHenTrieuChungDTO[]>("/api/lich-hen/trieu-chung");
+    return response.data;
+  },
+
+  getSlotTrong: async (ngay?: string): Promise<SlotTrongDTO[]> => {
+      const params = ngay ? { ngay } : {};
+      const response = await axiosClient.get<SlotTrongDTO[]>("/api/lich-lam-viec/slot-trong", { params });
+      return response.data;
+  },
 };

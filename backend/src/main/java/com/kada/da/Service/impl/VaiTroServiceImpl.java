@@ -1,29 +1,32 @@
 package com.kada.da.Service.impl;
 
-import com.kada.da.Dto.VaiTroRequestDTO;
-import com.kada.da.Dto.Response.NhomResponseDTO;
-import com.kada.da.Dto.Response.PageResponseDTO;
-import com.kada.da.Dto.Response.VaiTroResponseDTO;
-import com.kada.da.Entity.VaiTro;
-import com.kada.da.Exception.BusinessRuleException;
-import com.kada.da.Exception.ResourceNotFoundException;
-import com.kada.da.Repository.NhomRepository;
-import com.kada.da.Repository.VaiTroRepository;
-import com.kada.da.Service.VaiTroService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import com.kada.da.Dto.Response.NhomResponseDTO;
+import com.kada.da.Dto.Response.PageResponseDTO;
+import com.kada.da.Dto.Response.VaiTroResponseDTO;
+import com.kada.da.Dto.VaiTroRequestDTO;
+import com.kada.da.Entity.VaiTro;
+import com.kada.da.Exception.BusinessRuleException;
+import com.kada.da.Exception.ResourceNotFoundException;
+import com.kada.da.Repository.NhomRepository;
+import com.kada.da.Repository.VaiTroRepository;
+import com.kada.da.Service.VaiTroService;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class VaiTroServiceImpl implements VaiTroService {
 
     private final VaiTroRepository vaiTroRepository;

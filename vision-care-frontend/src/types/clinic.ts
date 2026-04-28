@@ -1,6 +1,5 @@
 // src/modules/clinic/clinic.ts
 
-import axios from "axios";
 
 /* =======================
    TYPES - REQUEST
@@ -192,61 +191,3 @@ export interface TopBacSi {
   tongSoCaKham: number;
   diemDanhGiaTrungBinh: number;
 }
-
-/* =======================
-   API INSTANCE
-======================= */
-
-const api = axios.create({
-  baseURL: "/api/clinic",
-});
-
-/* =======================
-   SERVICES
-======================= */
-
-// Hồ sơ khám
-export const createHoSoKham = async (data: HoSoKhamRequest) => {
-  const res = await api.post<HoSoKhamResponse>("/hoso", data);
-  return res.data;
-};
-
-export const getHoSoKham = async (maHoSo: string) => {
-  const res = await api.get<HoSoKhamResponse>(`/hoso/${maHoSo}`);
-  return res.data;
-};
-
-// Kê đơn
-export const createPhieuKeDon = async (data: PhieuKeDonRequest) => {
-  const res = await api.post<PhieuKeDonResponse>("/kedon", data);
-  return res.data;
-};
-
-// Dịch vụ khám
-export const getDichVu = async () => {
-  const res = await api.get<DichVuKhamResponse[]>("/dichvu");
-  return res.data;
-};
-
-export const createDichVu = async (data: DichVuKhamRequest) => {
-  const res = await api.post<DichVuKhamResponse>("/dichvu", data);
-  return res.data;
-};
-
-// Gói khám
-export const createGoiKham = async (data: GoiKhamRequest) => {
-  const res = await api.post<GoiKhamResponse>("/goikham", data);
-  return res.data;
-};
-
-// Đánh giá
-export const createDanhGia = async (data: DanhGiaRequest) => {
-  const res = await api.post<DanhGiaResponse>("/danhgia", data);
-  return res.data;
-};
-
-// Kỹ thuật
-export const createChiTietKyThuat = async (data: ChiTietKyThuatRequest) => {
-  const res = await api.post<ChiTietKyThuatResponse>("/kythuat", data);
-  return res.data;
-};

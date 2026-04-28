@@ -1,7 +1,6 @@
 package com.kada.da.Service;
 
 import com.kada.da.Entity.HoaDon;
-// 👉 THÊM 2 IMPORT NÀY VÀO ĐỂ NHẬN DIỆN DTO
 import com.kada.da.Dto.HoaDonRequestDTO;
 import com.kada.da.Dto.Response.HoaDonResponseDTO;
 

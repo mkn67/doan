@@ -1,10 +1,13 @@
 package com.kada.da.Repository;
 
-import com.kada.da.Entity.NhaCungCap;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+
+import com.kada.da.Entity.NhaCungCap;
 
 @Repository
 public interface NhaCungCapRepository extends JpaRepository<NhaCungCap, String> {
@@ -23,4 +26,6 @@ public interface NhaCungCapRepository extends JpaRepository<NhaCungCap, String> 
     // Nếu không có, dùng câu query trực tiếp:
     @Query("SELECT CASE WHEN COUNT(p) > 0 THEN TRUE ELSE FALSE END FROM PhieuNhap p WHERE p.nhaCungCap.maNcc = :maNcc")
     boolean hasPhieuNhap(@Param("maNcc") String maNcc);
+
+    Page<NhaCungCap> findByTenNccContainingIgnoreCase(String keyword, Pageable pageable);
 }

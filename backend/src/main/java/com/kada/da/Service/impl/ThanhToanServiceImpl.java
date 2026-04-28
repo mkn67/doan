@@ -1,19 +1,22 @@
 package com.kada.da.Service.impl;
 
-import com.kada.da.Entity.ThanhToan;
-import com.kada.da.Repository.ThanhToanRepository;
-import com.kada.da.Service.ThanhToanService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.time.LocalDateTime;
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.List;
+import com.kada.da.Entity.ThanhToan;
+import com.kada.da.Repository.ThanhToanRepository;
+import com.kada.da.Service.ThanhToanService;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class ThanhToanServiceImpl implements ThanhToanService {
 
     private final ThanhToanRepository thanhToanRepository;
@@ -68,7 +71,7 @@ public class ThanhToanServiceImpl implements ThanhToanService {
     }
 
     // Hàm tự sinh mã TT
-    private String generateMaTt() {
+    private synchronized String generateMaTt() {
         String maxCode = thanhToanRepository.findMaxMaTt();
         if (maxCode == null || maxCode.length() < 3) {
             return "TT001";

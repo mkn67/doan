@@ -1,21 +1,24 @@
 package com.kada.da.Controller;
 
-import com.kada.da.Dto.ChangePasswordRequestDTO;
-import com.kada.da.Dto.LoginRequestDTO;
-import com.kada.da.Dto.Response.LoginResponseDTO;
-import com.kada.da.Dto.Response.TaiKhoanResponseDTO;
-import com.kada.da.Dto.TaiKhoanRequestDTO;
-import com.kada.da.Service.AuthService;
-import jakarta.validation.Valid;
 import java.security.Principal;
 import java.util.Map;
-import lombok.RequiredArgsConstructor;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import com.kada.da.Dto.ChangePasswordRequestDTO;
+import com.kada.da.Dto.LoginRequestDTO;
+import com.kada.da.Dto.Response.LoginResponseDTO;
+import com.kada.da.Dto.Response.TaiKhoanResponseDTO;
+import com.kada.da.Dto.TaiKhoanRequestDTO;
+import com.kada.da.Service.AuthService;
+
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -30,7 +33,6 @@ public class AuthController {
         return ResponseEntity.ok(authService.login(request));
     }
 
-    // 👇 ĐÂY LÀ CHÌA KHÓA VÀNG MỞ RA CHỮ 200 OK 👇
     @PostMapping("/register")
     public ResponseEntity<TaiKhoanResponseDTO> register(
             @RequestBody TaiKhoanRequestDTO request) {

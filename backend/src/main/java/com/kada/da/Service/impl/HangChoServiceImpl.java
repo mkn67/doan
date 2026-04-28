@@ -1,13 +1,20 @@
 package com.kada.da.Service.impl;
 
-import com.kada.da.Repository.HangChoRepository;
-import com.kada.da.Service.HangChoService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.time.LocalDateTime;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import com.kada.da.Dto.HangChoHomNayDto;
+import com.kada.da.Entity.HangCho;
+import com.kada.da.Repository.HangChoRepository;
+import com.kada.da.Service.HangChoService;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
@@ -29,5 +36,40 @@ public class HangChoServiceImpl implements HangChoService {
         hangChoRepository.capNhatHangCho(maHc, trangThai, timestampOracle);
 
         log.info("Cập nhật hàng chờ thành công!");
+    }
+
+    @Override
+    @Transactional(readOnly = true) // ĐÃ SỬA: Tối ưu cho hàm chỉ đọc
+    public List<HangChoHomNayDto> getHangChoHomNay() {
+        // Lấy list hàng chờ của ngày hôm nay từ Repo (Viết thêm hàm
+        // findByGioDangKyToday trong Repo nhé)
+        List<HangCho> listHc = hangChoRepository.findHangChoToday();
+        LocalDateTime now = LocalDateTime.now();
+
+        return listHc.stream()
+                .filter(hc -> hc.getTrangThai() != null && !hc.getTrangThai().name().equals("HOAN_THANH")
+                && !hc.getTrangThai().name().equals("BO_VE"))
+                .map(hc -> {
+                    // Tính số phút chờ
+                    long phutCho = java.time.temporal.ChronoUnit.MINUTES.between(hc.getGioDangKy(), now);
+
+                    String tenKhach = hc.getKhachHang() != null ? hc.getKhachHang().getHoTen() : hc.getTenKhach();
+                    String tenBs = hc.getNhanSuPhanCong() != null ? hc.getNhanSuPhanCong().getHoTen() : null;
+                    String goiKham = (hc.getLichHen() != null && hc.getLichHen().getGoiKham() != null)
+                            ? hc.getLichHen().getGoiKham().getTenGoi()
+                            : null;
+
+                    return HangChoHomNayDto.builder()
+                            .maHc(hc.getMaHc()).soThuTu(hc.getSoThuTu()).loaiKhach(hc.getLoaiKhach())
+                            .tenKhach(tenKhach).sdt(hc.getKhachHang() != null ? hc.getKhachHang().getSdt() : null)
+                            .tenBacSi(tenBs).goiKham(goiKham)
+                            .trangThai(hc.getTrangThai() != null ? hc.getTrangThai().name() : null)
+                            .gioDangKy(hc.getGioDangKy()).phutCho(phutCho)
+                            .build();
+                })
+                // ORDER BY: Walk-in lên trước, sau đó xếp theo Số thứ tự
+                .sorted(Comparator.comparing((HangChoHomNayDto dto) -> dto.getLoaiKhach().equals("Walk-in") ? 0 : 1)
+                        .thenComparing(HangChoHomNayDto::getSoThuTu))
+                .collect(Collectors.toList());
     }
 }

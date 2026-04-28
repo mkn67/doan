@@ -1,42 +1,53 @@
 package com.kada.da.Service.impl;
 
-import com.kada.da.Dto.NhanSuRequestDTO;
-import com.kada.da.Dto.Response.NhanSuResponseDTO;
-import com.kada.da.Dto.Response.PageResponseDTO;
-import com.kada.da.Entity.ChucVu;
-import com.kada.da.Entity.NhanSu;
-import com.kada.da.Exception.ResourceNotFoundException;
-import com.kada.da.Repository.ChucVuRepository;
-import com.kada.da.Repository.NhanSuRepository;
-import com.kada.da.Service.NhanSuService;
-import lombok.RequiredArgsConstructor;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.UUID;
-import java.util.stream.Collectors;
+import com.kada.da.Dto.NhanSuRequestDTO;
+import com.kada.da.Dto.Response.NhanSuResponseDTO;
+import com.kada.da.Dto.Response.PageResponseDTO; // IMPORT REPOSITORY
+import com.kada.da.Dto.Response.TopBacSiDTO;
+import com.kada.da.Entity.ChucVu;
+import com.kada.da.Entity.NhanSu;
+import com.kada.da.Entity.VRatingBacSi;
+import com.kada.da.Exception.ResourceNotFoundException;
+import com.kada.da.Repository.ChucVuRepository;
+import com.kada.da.Repository.NhanSuRepository;
+import com.kada.da.Repository.VRatingBacSiRepository; // FIX LỖI 1: QUÊN IMPORT LIST
+import com.kada.da.Service.NhanSuService;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class NhanSuServiceImpl implements NhanSuService {
 
     private final NhanSuRepository nhanSuRepository;
     private final ChucVuRepository chucVuRepository;
 
+    // FIX LỖI 2: QUÊN INJECT REPOSITORY VÀO ĐÂY
+    private final VRatingBacSiRepository vRatingBacSiRepository;
+
     @Override
     @Transactional
     public NhanSuResponseDTO createNhanSu(NhanSuRequestDTO request) {
         ChucVu chucVu = chucVuRepository.findById(request.getMaChucVu())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chức vụ: " + request.getMaChucVu()));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                "Không tìm thấy chức vụ: " + request.getMaChucVu()));
 
         NhanSu nhanSu = NhanSu.builder()
                 .maNs("NS" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
                 .hoTen(request.getHoTen())
                 .sdt(request.getSdt())
-                .cccd(request.getDiaChi()) // Giả định mapping từ request
+                .cccd(request.getCccd())
                 .ngaySinh(request.getNgaySinh())
                 .gioiTinh(request.getGioiTinh())
                 .diaChi(request.getDiaChi())
@@ -54,7 +65,8 @@ public class NhanSuServiceImpl implements NhanSuService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy nhân sự: " + maNs));
 
         ChucVu chucVu = chucVuRepository.findById(request.getMaChucVu())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chức vụ: " + request.getMaChucVu()));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                "Không tìm thấy chức vụ: " + request.getMaChucVu()));
 
         nhanSu.setHoTen(request.getHoTen());
         nhanSu.setSdt(request.getSdt());
@@ -81,7 +93,8 @@ public class NhanSuServiceImpl implements NhanSuService {
                 : nhanSuRepository.findByHoTenContainingIgnoreCase(keyword, pageable);
 
         return PageResponseDTO.<NhanSuResponseDTO>builder()
-                .content(nhanSuPage.getContent().stream().map(this::mapToResponse).collect(Collectors.toList()))
+                .content(nhanSuPage.getContent().stream().map(this::mapToResponse)
+                        .collect(Collectors.toList()))
                 .pageNo(nhanSuPage.getNumber())
                 .pageSize(nhanSuPage.getSize())
                 .totalElements(nhanSuPage.getTotalElements())
@@ -100,5 +113,19 @@ public class NhanSuServiceImpl implements NhanSuService {
                 .gioiTinh(entity.getGioiTinh())
                 .tenChucVu(entity.getChucVu() != null ? entity.getChucVu().getTenCv() : null)
                 .build();
+    }
+
+    @Override
+    public List<TopBacSiDTO> getTopBacSiRating() {
+        // 1. Gọi Repository lấy list View đã sắp xếp từ DB
+        List<VRatingBacSi> listTopView = vRatingBacSiRepository.findAllByOrderByRatingTrungBinhDesc();
+
+        // 2. Map Entity View sang DTO
+        return listTopView.stream().map(view -> TopBacSiDTO.builder()
+                .maNs(view.getMaNs())
+                .tenBacSi(view.getHoTen())
+                .tongSoCaKham(view.getTongLuotDanhGia())
+                .diemDanhGiaTrungBinh(view.getRatingTrungBinh())
+                .build()).collect(Collectors.toList());
     }
 }

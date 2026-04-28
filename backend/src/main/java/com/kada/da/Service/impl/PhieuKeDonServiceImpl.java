@@ -1,17 +1,20 @@
 package com.kada.da.Service.impl;
 
-import com.kada.da.Entity.PhieuKeDon;
-import com.kada.da.Repository.PhieuKeDonRepository;
-import com.kada.da.Service.PhieuKeDonService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.kada.da.Entity.PhieuKeDon;
+import com.kada.da.Repository.PhieuKeDonRepository;
+import com.kada.da.Service.PhieuKeDonService;
+
+import lombok.RequiredArgsConstructor;
+
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class PhieuKeDonServiceImpl implements PhieuKeDonService {
 
     private final PhieuKeDonRepository phieuKeDonRepository;
@@ -40,7 +43,7 @@ public class PhieuKeDonServiceImpl implements PhieuKeDonService {
     }
 
     // Hàm sinh mã tự động
-    private String generateMaDon() {
+    private synchronized String generateMaDon() {
         String maxCode = phieuKeDonRepository.findMaxMaDon();
         if (maxCode == null || maxCode.length() < 3) {
             return "PK001";

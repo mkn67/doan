@@ -1,36 +1,33 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { staffApi } from '@/lib/api/staff.api';
-import {
-  LichHenFilterDTO,
-  LichLamViecRequestDTO
-} from "@/types/staff";
-
-// ==========================================================
-// 1. QUẢN LÝ LỊCH HẸN (Dành cho Lễ tân xem khách đặt lịch)
-// ==========================================================
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { AxiosError } from "axios";
+import { staffApi } from "@/lib/api/staff.api";
+import { LichHenFilterDTO, LichLamViecRequestDTO } from "@/types/staff";
 
 export const useDanhSachLichHen = (filters?: LichHenFilterDTO) => {
   return useQuery({
-    // Đưa filters vào queryKey để khi đổi ngày/trạng thái, API tự động gọi lại
-    queryKey: ['lich-hen', filters],
+    queryKey: ["lich-hen", filters],
     queryFn: () => staffApi.getDanhSachLichHen(filters),
-    // Tự động load lại sau mỗi 30s để Lễ tân cập nhật lịch mới nhất từ web khách hàng
-    refetchInterval: 1000 * 30, 
+    refetchInterval: 30 * 1000,
   });
 };
 
-// ==========================================================
-// 2. QUẢN LÝ LỊCH LÀM VIỆC (Dành cho Admin xếp ca cho Bác sĩ)
-// ==========================================================
-
 export const useCreateLichLamViec = () => {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: (data: LichLamViecRequestDTO) => staffApi.createLichLamViec(data),
     onSuccess: () => {
-      // Invalidate để tự động làm mới bảng danh sách ca làm việc (nếu ông có làm)
-      queryClient.invalidateQueries({ queryKey: ['lich-lam-viec'] });
+      queryClient.invalidateQueries({ queryKey: ["lich-lam-viec"] });
     },
+    onError: (error: AxiosError) => {
+      console.error("Create work schedule error:", error.response?.data || error.message);
+    },
+  });
+};
+export const useSlotTrong = (ngay?: string) => {
+  return useQuery({
+    queryKey: ["slot-trong", ngay],
+    queryFn: () => staffApi.getSlotTrong(ngay),
+    enabled: !!ngay, // chỉ gọi khi có ngày
+    staleTime: 2 * 60 * 1000,
   });
 };

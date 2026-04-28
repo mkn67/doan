@@ -1,14 +1,26 @@
 package com.kada.da.Controller;
 
+import java.util.List;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping; // Tự tạo file Service tương ứng nhé
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.kada.da.Dto.NhanSuRequestDTO;
 import com.kada.da.Dto.Response.NhanSuResponseDTO;
 import com.kada.da.Dto.Response.PageResponseDTO;
-import com.kada.da.Service.NhanSuService; // Tự tạo file Service tương ứng nhé
+import com.kada.da.Dto.Response.TopBacSiDTO;
+import com.kada.da.Service.NhanSuService;
+
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/nhan-su")
@@ -39,5 +51,11 @@ public class NhanSuController {
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String keyword) {
         return ResponseEntity.ok(nhanSuService.getAllNhanSu(page, size, keyword));
+    }
+
+    @GetMapping("/top-rating")
+    public ResponseEntity<List<TopBacSiDTO>> getTopBacSiRating() {
+        // Viết ngắn gọn thế này thôi, Spring Boot nó đủ thông minh để tự hiểu!
+        return ResponseEntity.ok(nhanSuService.getTopBacSiRating());
     }
 }

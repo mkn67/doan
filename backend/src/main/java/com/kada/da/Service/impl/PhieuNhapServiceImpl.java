@@ -1,26 +1,29 @@
 package com.kada.da.Service.impl;
 
-import com.kada.da.Dto.PhieuNhapRequestDTO;
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.kada.da.Dto.LoHangRequestDTO;
+import com.kada.da.Dto.PhieuNhapRequestDTO;
 import com.kada.da.Dto.Response.LoHangResponseDTO;
 import com.kada.da.Dto.Response.PageResponseDTO;
 import com.kada.da.Dto.Response.PhieuNhapResponseDTO;
 import com.kada.da.Entity.PhieuNhap;
 import com.kada.da.Repository.PhieuNhapRepository;
 import com.kada.da.Service.PhieuNhapService;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class PhieuNhapServiceImpl implements PhieuNhapService {
 
     private final PhieuNhapRepository phieuNhapRepository;
@@ -84,15 +87,15 @@ public class PhieuNhapServiceImpl implements PhieuNhapService {
     private PhieuNhapResponseDTO toDTO(PhieuNhap entity) {
         List<LoHangResponseDTO> loHangDTOs = entity.getDanhSachLoHang().stream()
                 .map(lo -> LoHangResponseDTO.builder()
-                        .maLo(lo.getMaLo())
-                        .maSp(lo.getSanPham() != null ? lo.getSanPham().getMaSp() : null)
-                        .tenSanPham(lo.getSanPham() != null ? lo.getSanPham().getTenSp() : null)
-                        .ngaySanXuat(lo.getNgaySanXuat())
-                        .ngayHetHan(lo.getNgayHetHan())
-                        .soLuongNhap(lo.getSoLuongNhap())
-                        .soLuongTon(lo.getSoLuongTon())
-                        .giaNhap(lo.getGiaNhap())
-                        .build())
+                .maLo(lo.getMaLo())
+                .maSp(lo.getSanPham() != null ? lo.getSanPham().getMaSp() : null)
+                .tenSanPham(lo.getSanPham() != null ? lo.getSanPham().getTenSp() : null)
+                .ngaySanXuat(lo.getNgaySanXuat())
+                .ngayHetHan(lo.getNgayHetHan())
+                .soLuongNhap(lo.getSoLuongNhap())
+                .soLuongTon(lo.getSoLuongTon())
+                .giaNhap(lo.getGiaNhap())
+                .build())
                 .collect(Collectors.toList());
 
         return PhieuNhapResponseDTO.builder()
