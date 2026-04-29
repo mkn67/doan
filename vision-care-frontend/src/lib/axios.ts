@@ -1,53 +1,29 @@
 import axios from 'axios';
 
-// 1. Tạo một instance riêng biệt
+// 1. Xác định BASE_URL duy nhất tại đây
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1";
+
+// 2. Tạo một instance (thực thể) dùng chung cho toàn bộ app
 const axiosClient = axios.create({
-  // Nhớ cấu hình file .env.local có biến NEXT_PUBLIC_API_URL nhé
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080',
+  baseURL: BASE_URL,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
+  // Có thể thêm timeout để tránh app treo quá lâu
+  timeout: 10000,
 });
 
-// 2. INTERCEPTOR REQUEST: TRƯỚC KHI GỬI ĐI
+// 3. (Optional) Cấu hình Interceptors - "Người gác cổng"
+// Tự động đính kèm Token vào Header mỗi khi gọi API
 axiosClient.interceptors.request.use(
   (config) => {
-    if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('token');
-      // Nếu có token trong máy -> Tự động gắn vào Header Authorization
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
+    const token = localStorage.getItem("token"); // Hoặc lấy từ Cookies
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
-// 3. INTERCEPTOR RESPONSE: SAU KHI NHẬN KẾT QUẢ VỀ
-axiosClient.interceptors.response.use(
-  (response) => {
-    // Nếu API thành công (Code 200) thì trả data về bình thường
-    return response;
-  },
-  (error) => {
-    // Nếu Backend chửi về lỗi 401 (Unauthorized)
-    if (error.response && error.response.status === 401) {
-      console.warn("Token không hợp lệ, hết hạn hoặc đã bị Blacklist! Đang đăng xuất...");
-      
-      // Dọn rác và đá về trang login ngay lập tức
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('token');
-        // Dùng window.location.href thay vì router.push để reload lại toàn bộ state của App cho sạch
-        window.location.href = '/auth/login'; 
-      }
-    }
-    
-    // Ném lỗi ra để màn hình UI (hoặc React Query) tự hiện Toast thông báo
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
 export default axiosClient;

@@ -1,5 +1,6 @@
 package com.kada.da.Controller;
 
+import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.http.HttpStatus;
@@ -23,8 +24,8 @@ public class TaiKhoanController {
     private final TaiKhoanService taiKhoanService;
 
     /**
-     * API Lấy thông tin tài khoản theo Username
-     * URL: GET http://localhost:8080/api/tai-khoan/{username}
+     * API Lấy thông tin tài khoản theo Username URL: GET
+     * http://localhost:8080/api/tai-khoan/{username}
      */
     @GetMapping("/{username}")
     public ResponseEntity<?> getUserByUsername(@PathVariable String username) {
@@ -35,7 +36,7 @@ public class TaiKhoanController {
             return ResponseEntity.ok(taiKhoan.get());
         } else {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body("Không tìm thấy người dùng: " + username);
+                    .body(Map.of("message", "Không tìm thấy người dùng: " + username));
         }
     }
 

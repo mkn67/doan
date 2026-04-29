@@ -3,6 +3,7 @@ package com.kada.da.Controller;
 import java.security.Principal;
 import java.util.Map;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -12,7 +13,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.kada.da.Dto.ChangePasswordRequestDTO;
 import com.kada.da.Dto.LoginRequestDTO;
-import com.kada.da.Dto.Response.LoginResponseDTO;
 import com.kada.da.Dto.Response.TaiKhoanResponseDTO;
 import com.kada.da.Dto.TaiKhoanRequestDTO;
 import com.kada.da.Service.AuthService;
@@ -28,9 +28,15 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponseDTO> login(
+    public ResponseEntity<?> login(
             @RequestBody LoginRequestDTO request) {
-        return ResponseEntity.ok(authService.login(request));
+        try {
+            return ResponseEntity.ok(authService.login(request));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
+                    Map.of("message", e.getMessage() != null ? e.getMessage() : "Sai tên đăng nhập hoặc mật khẩu")
+            );
+        }
     }
 
     @PostMapping("/register")

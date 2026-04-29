@@ -52,8 +52,9 @@ public class AuthServiceImpl implements AuthService {
                 .maTk(maTk)
                 .username(request.getUsername())
                 .password(passwordEncoder.encode(request.getPassword()))
+                .loaiTk("KHACH_HANG")
                 .loaiTk(request.getLoaiTk())
-                .trangThai(1) // 1: hoạt động
+                .trangThai(1)
                 .build();
         taiKhoan = taiKhoanRepository.save(taiKhoan);
         log.info("Đã tạo tài khoản: {}", maTk);
@@ -73,10 +74,9 @@ public class AuthServiceImpl implements AuthService {
             log.info("Đã tạo khách hàng: {} cho tài khoản: {}", maKh, maTk);
         }
 
-        // 4. Trả về response
         return TaiKhoanResponseDTO.builder()
                 .maTk(taiKhoan.getMaTk())
-                .username(taiKhoan.getUsername()) // ĐÃ FIX: getTenDangNhap() -> getUsername()
+                .username(taiKhoan.getUsername())
                 .loaiTk(taiKhoan.getLoaiTk())
                 .trangThai(taiKhoan.getTrangThai())
                 .build();
