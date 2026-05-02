@@ -7,6 +7,7 @@ import Link from "next/link" // THÊM IMPORT LINK
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
+import Cookies from 'js-cookie'
 
 // Import UI Components của shadcn
 import { Button } from "@/components/ui/button"
@@ -53,15 +54,31 @@ export default function LoginPage() {
 
       if (!response.ok) throw new Error(data.message || "Đăng nhập thất bại");
 
-      // Lưu token vào localStorage
+      Cookies.set('token', data.token, { expires: 7, path: '/' });
+
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data));
 
-      router.push('/staff/admin/employees')
-      
+      const userRole = data.loaiTk?.toUpperCase().trim();
+
+      // 3. Điều hướng dựa trên cây thư mục (Lưu ý: Next.js App Router không bao gồm (group) trong URL)
+      switch (userRole) {
+        case 'ADMIN':
+          router.push('/staff/admin');
+          break;
+        case 'KHACH_HANG':
+          router.push('/');
+          break;
+        case 'RECEPTIONIST':
+          router.push('/staff/reception');
+          break;
+        default:
+          router.push('/staff/dashboard');
+          break;
+      }
     } catch (error) {
-      console.error("Lỗi đăng nhập:", error)
-      // Chỗ này gọi Toast ra báo lỗi (VD: Sai tài khoản mật khẩu)
+      console.error("Lỗi:", error)
+      alert(error instanceof Error ? error.message : "Có lỗi xảy ra!");
     } finally {
       setIsLoading(false)
     }

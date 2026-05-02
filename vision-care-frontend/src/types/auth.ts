@@ -52,8 +52,6 @@ export interface LoginResponseDTO {
   token: string;
   username: string;
   loaiTk: string;
-  // ĐÃ SỬA: Đổi maNhom thành optional (?) vì Backend hiện tại không trả về field này. 
-  // Nhom/Quyền hiện tại đang được Backend giấu bên trong chuỗi JWT Token.
   maNhom?: string; 
 }
 

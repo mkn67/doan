@@ -1,10 +1,21 @@
+import "@/app/globals.css"
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { CalendarDays, Phone, ShieldCheck, Eye, ArrowRight, Clock } from "lucide-react";
+import { CalendarDays, Phone, ShieldCheck, Eye, ArrowRight, Clock, UserCircle } from "lucide-react";
 
 export default function CustomerHomePage() {
   return (
-    <div className="flex flex-col min-h-screen font-sans">
+    <div className="flex flex-col w-full font-sans">
+      {/* Nút Đăng nhập ở góc phải */}
+      <div className="absolute top-6 right-6 z-50">
+        <Link href="/auth/login">
+          <Button variant="ghost" className="text-white hover:bg-white/20 backdrop-blur-md border border-white/30 rounded-full px-6">
+            <UserCircle className="mr-2 h-5 w-5" />
+            Đăng nhập
+          </Button>
+        </Link>
+      </div>
+
       {/* 1. HERO BANNER - Trái tim của trang web */}
       <section className="relative bg-gradient-to-r from-blue-900 to-blue-700 text-white overflow-hidden shadow-lg">
         <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1584362917165-526a968579e8?q=80&w=2000')] bg-cover bg-center opacity-10 mix-blend-overlay"></div>
@@ -23,13 +34,13 @@ export default function CustomerHomePage() {
           
           <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
             <Link href="/booking" className="w-full sm:w-auto">
-              <Button size="lg" className="bg-white text-blue-800 hover:bg-gray-100 w-full text-base font-bold h-14 px-8 shadow-md transition-all hover:scale-105">
+              <Button size="lg" className="bg-blue-500 text-white hover:bg-blue-600 w-full text-base font-bold h-14 px-8 shadow-md transition-all hover:scale-105 border-none">
                 <CalendarDays className="mr-2 h-5 w-5" />
                 Đặt Lịch Khám Ngay
               </Button>
             </Link>
             <Link href="tel:19001000" className="w-full sm:w-auto">
-              <Button size="lg" variant="outline" className="text-white border-white/50 hover:bg-white/10 w-full text-base h-14 px-8 backdrop-blur-sm transition-all">
+              <Button size="lg" className="bg-blue-500 text-white hover:bg-blue-600 w-full text-base font-bold h-14 px-8 shadow-md transition-all hover:scale-105 border-none">
                 <Phone className="mr-2 h-5 w-5" />
                 Hotline: 1900 1000
               </Button>
