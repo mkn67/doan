@@ -5,6 +5,8 @@ import {
   HoSoKhamRequest,
   DichVuKhamRequest,
   GoiKhamRequest,
+  DatLichRequest, 
+  DatLichResponse,
 } from "@/types/clinic";
 
 export const useDanhSachDichVu = () => {
@@ -59,6 +61,23 @@ export const useCreateHoSoKham = () => {
     },
     onError: (error: AxiosError) => {
       console.error("Create medical record error:", error.response?.data || error.message);
+    },
+  });
+};
+
+export const useDatLich = () => {
+  return useMutation({
+    mutationFn: (data: DatLichRequest) => clinicApi.datLich(data),
+
+    onSuccess: (data: DatLichResponse) => {
+      console.log("Đặt lịch OK:", data);
+    },
+
+    onError: (error: AxiosError) => {
+      console.error(
+        "Booking error:",
+        error.response?.data || error.message
+      );
     },
   });
 };
