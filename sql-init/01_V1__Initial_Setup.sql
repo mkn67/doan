@@ -1616,3 +1616,4 @@ INSERT INTO DICH_VU_KHAM VALUES ('DV07', N'Phí chụp OCT',           350000, N
 INSERT INTO DICH_VU_KHAM VALUES ('DV08', N'Phí khám thủy tinh thể', 120000, N'Kiểm tra tình trạng thủy tinh thể, phát hiện đục sớm', 1);
 
 COMMIT;
+

@@ -4,11 +4,16 @@ import { useState } from "react";
 import { clinicApi } from "@/lib/api/clinic.api";
 import { Button } from "@/components/ui/button";
 
+interface PrescriptionItem {
+  maSp: string;
+  soLuong: number;
+}
+
 export default function PrescriptionPage() {
   const [form, setForm] = useState({
     maHoSo: "",
     maNs: "",
-    danhSachKeDon: [] as any[],
+    danhSachKeDon: [] as PrescriptionItem[],
   });
 
   const addRow = () => {
@@ -19,7 +24,7 @@ export default function PrescriptionPage() {
   };
 
   const handleSubmit = async () => {
-    await clinicApi.createPhieuKeDon(form as any);
+    await clinicApi.createPhieuKeDon(form);
   };
 
   return (
