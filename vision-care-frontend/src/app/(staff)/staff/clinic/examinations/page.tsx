@@ -1,8 +1,32 @@
-﻿export default function ExaminationsPage() {
+﻿"use client";
+
+import { useState } from "react";
+import { useCreateHoSoKham } from "@/hooks/useClinic";
+import { Button } from "@/components/ui/button";
+
+export default function ExaminationPage() {
+  const mutation = useCreateHoSoKham();
+
+  const [form, setForm] = useState({
+    makh: "",
+    mans: "",
+    matTraiSph: 0,
+    matPhaiSph: 0,
+    pd: 0,
+  });
+
+  const handleSubmit = () => {
+    mutation.mutate(form as any);
+  };
+
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold">Trang examinations</h1>
-      <p className="text-zinc-500 mt-2">Giao diện sẽ được con vợ Minh Anh dựng...</p>
+    <div>
+      <h1>Khám bệnh</h1>
+
+      <input placeholder="Mã KH" onChange={(e) => setForm({ ...form, makh: e.target.value })} />
+      <input placeholder="Mã bác sĩ" onChange={(e) => setForm({ ...form, mans: e.target.value })} />
+
+      <Button onClick={handleSubmit}>Lưu</Button>
     </div>
   );
 }
