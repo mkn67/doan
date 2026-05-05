@@ -68,9 +68,10 @@ export default function BookingPage() {
         </div>
 
         {/* Ngày */}
-        <div className="space-y-1">
-          <label className="text-sm font-medium text-gray-600">Ngày khám</label>
+        <div className="space-y-1 flex flex-col">
+          <label htmlFor="ngayHen" className="text-sm font-medium text-gray-600">Ngày khám</label>
           <input
+            id="ngayHen"
             type="date"
             onChange={(e) => setNgayHen(e.target.value)}
             className="w-full p-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
@@ -78,9 +79,10 @@ export default function BookingPage() {
         </div>
 
         {/* Giờ */}
-        <div className="space-y-1">
-          <label className="text-sm font-medium text-gray-600">Giờ khám</label>
+        <div className="space-y-1 flex flex-col">
+          <label htmlFor="gioHen" className="text-sm font-medium text-gray-600">Giờ khám</label>
           <input
+            id="gioHen"
             type="time"
             onChange={(e) => setGioHen(e.target.value)}
             className="w-full p-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
