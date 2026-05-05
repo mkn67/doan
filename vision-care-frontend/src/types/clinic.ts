@@ -191,3 +191,23 @@ export interface TopBacSi {
   tongSoCaKham: number;
   diemDanhGiaTrungBinh: number;
 }
+
+export interface DatLichRequest {
+  maKh: string;
+  maNs: string;
+  maGoi: string;
+  ngayHen: string;      
+  gioHen: string;       
+}
+
+export interface DatLichResponse {
+  maLh: string;
+  maKhachHang: string;
+  tenKhachHang: string;
+  maBacSi: string;
+  tenBacSi: string;
+  ngayHen: string;
+  gioHen: string;
+  trangThai: string;
+  thongBao: string;
+}
