@@ -4,14 +4,26 @@ import { useState } from "react";
 import { useCreatePhieuNhap, useDanhSachPhieuNhap } from "@/hooks/useInventory";
 import { Button } from "@/components/ui/button";
 
+interface LoHang {
+  maSp: string;
+  soLuongNhap: number;
+  giaNhap: number;
+}
+
+interface PhieuNhapForm {
+  maNcc: string;
+  maNs: string;
+  loHangList: LoHang[];
+}
+
 export default function ImportsPage() {
   const { data } = useDanhSachPhieuNhap();
   const createMutation = useCreatePhieuNhap();
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<PhieuNhapForm>({
     maNcc: "",
     maNs: "",
-    loHangList: [] as any[],
+    loHangList: [],
   });
 
   const addRow = () => {
@@ -22,7 +34,7 @@ export default function ImportsPage() {
   };
 
   const handleSubmit = () => {
-    createMutation.mutate(form as any);
+    createMutation.mutate(form);
   };
 
   return (

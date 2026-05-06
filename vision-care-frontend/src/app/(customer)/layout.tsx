@@ -1,18 +1,18 @@
 'use client'
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 export default function CustomerLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const [user, setUser] = useState<string | null>(null)
-
-  useEffect(() => {
-    const username = localStorage.getItem('username')
-    setUser(username)
-  }, [])
+  const [user] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('username')
+    }
+    return null
+  })
 
   const logout = () => {
     localStorage.clear()

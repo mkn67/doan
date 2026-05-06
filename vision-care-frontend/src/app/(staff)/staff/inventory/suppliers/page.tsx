@@ -9,13 +9,13 @@ export default function SuppliersPage() {
   const { data } = useDanhSachNhaCungCap();
   const createMutation = useCreateNhaCungCap();
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<{ tenNcc: string; sdt: string }>({
     tenNcc: "",
     sdt: "",
   });
 
   const handleSubmit = () => {
-    createMutation.mutate(form as any);
+    createMutation.mutate(form);
   };
 
   return (

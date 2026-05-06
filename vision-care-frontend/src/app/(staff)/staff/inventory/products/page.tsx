@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 export default function ProductsPage() {
-  const { data, isLoading } = useDanhSachSanPham();
+  const { data } = useDanhSachSanPham();
   const createMutation = useCreateSanPham();
 
   const [form, setForm] = useState({
@@ -18,7 +18,7 @@ export default function ProductsPage() {
   });
 
   const handleSubmit = () => {
-    createMutation.mutate(form as any);
+    createMutation.mutate(form);
   };
 
   return (
