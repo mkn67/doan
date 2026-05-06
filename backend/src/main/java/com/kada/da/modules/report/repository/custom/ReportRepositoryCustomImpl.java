@@ -1,7 +1,7 @@
-package com.kada.da.modules.billing.repository.custom;
+package com.kada.da.modules.report.repository.custom;
 
 import com.kada.da.modules.inventory.dto.CanhBaoHetHanDTO;
-import com.kada.da.Dto.Response.DoanhThuResponseDTO;
+import com.kada.da.modules.report.dto.DoanhThuResponseDTO;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.ParameterMode;
 import jakarta.persistence.PersistenceContext;

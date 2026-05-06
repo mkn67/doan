@@ -1,4 +1,4 @@
-package com.kada.da.Service.impl;
+package com.kada.da.modules.customer.service;
 
 import java.util.List;
 import java.util.UUID;
@@ -7,10 +7,9 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.kada.da.Entity.KhachHang;
+import com.kada.da.modules.customer.domain.KhachHang;
 import com.kada.da.Exception.ResourceNotFoundException;
-import com.kada.da.Repository.KhachHangRepository;
-import com.kada.da.Service.KhachHangService;
+import com.kada.da.modules.customer.repository.KhachHangRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

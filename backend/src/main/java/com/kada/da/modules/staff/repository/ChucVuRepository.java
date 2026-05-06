@@ -1,4 +1,4 @@
-package com.kada.da.Repository;
+package com.kada.da.modules.staff.repository;
 
 import com.kada.da.modules.staff.domain.ChucVu;
 import org.springframework.data.jpa.repository.JpaRepository;

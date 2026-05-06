@@ -1,13 +1,12 @@
-package com.kada.da.Service.impl;
+package com.kada.da.modules.auth.service;
 
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.kada.da.Entity.TaiKhoan;
-import com.kada.da.Repository.TaiKhoanRepository;
-import com.kada.da.Service.TaiKhoanService;
+import com.kada.da.modules.auth.domain.TaiKhoan;
+import com.kada.da.modules.auth.repository.TaiKhoanRepository;
 
 import lombok.RequiredArgsConstructor;
 

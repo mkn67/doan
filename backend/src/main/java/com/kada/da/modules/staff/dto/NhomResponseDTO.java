@@ -1,5 +1,6 @@
-package com.kada.da.modules.auth.dto;
+package com.kada.da.modules.staff.dto;
 
+import com.kada.da.modules.auth.dto.VaiTroResponseDTO;
 import lombok.*;
 import java.util.List;
 

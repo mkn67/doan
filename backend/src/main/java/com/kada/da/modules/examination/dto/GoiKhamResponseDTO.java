@@ -1,4 +1,4 @@
-package com.kada.da.Dto.Response;
+package com.kada.da.modules.examination.dto;
 
 import lombok.*;
 import java.math.BigDecimal;

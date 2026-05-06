@@ -1,4 +1,4 @@
-package com.kada.da.Service.impl;
+package com.kada.da.modules.booking.service;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -11,20 +11,19 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.kada.da.Dto.LichLamViecRequestDTO;
-import com.kada.da.Dto.Response.LichLamViecResponseDTO;
-import com.kada.da.Dto.Response.PageResponseDTO;
-import com.kada.da.Dto.SlotTrongDto;
+import com.kada.da.modules.booking.dto.LichLamViecRequestDTO;
+import com.kada.da.modules.booking.dto.LichLamViecResponseDTO;
+import com.kada.da.modules.staff.dto.PageResponseDTO;
+import com.kada.da.modules.booking.dto.SlotTrongDto;
 import com.kada.da.modules.booking.domain.LichHen;
-import com.kada.da.Entity.LichLamViec;
+import com.kada.da.modules.booking.domain.LichLamViec;
 import com.kada.da.modules.staff.domain.NhanSu;
-import com.kada.da.Enum.TrangThaiLichHen;
+import com.kada.da.modules.booking.Enum.TrangThaiLichHen;
 import com.kada.da.Exception.BusinessRuleException;
 import com.kada.da.Exception.ResourceNotFoundException;
 import com.kada.da.modules.booking.repository.LichHenRepository;
-import com.kada.da.Repository.LichLamViecRepository;
-import com.kada.da.Repository.NhanSuRepository;
-import com.kada.da.Service.LichLamViecService;
+import com.kada.da.modules.booking.repository.LichLamViecRepository;
+import com.kada.da.modules.staff.repository.NhanSuRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

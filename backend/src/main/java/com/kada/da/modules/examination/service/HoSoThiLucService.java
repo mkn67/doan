@@ -1,6 +1,6 @@
-package com.kada.da.Service;
+package com.kada.da.modules.examination.service;
 
-import com.kada.da.Entity.HoSoThiLuc;
+import com.kada.da.modules.examination.domain.HoSoThiLuc;
 import java.util.List;
 import java.util.Map;
 

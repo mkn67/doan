@@ -1,8 +1,8 @@
-package com.kada.da.Service;
+package com.kada.da.modules.inventory.service;
 
-import com.kada.da.Dto.LoHangRequestDTO;
-import com.kada.da.Dto.Response.LoHangResponseDTO;
-import com.kada.da.Dto.Response.PageResponseDTO;
+import com.kada.da.modules.inventory.dto.LoHangRequestDTO;
+import com.kada.da.modules.inventory.dto.LoHangResponseDTO;
+import com.kada.da.modules.staff.dto.PageResponseDTO;
 
 import java.util.List;
 

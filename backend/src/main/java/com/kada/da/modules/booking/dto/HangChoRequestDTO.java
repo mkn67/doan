@@ -1,4 +1,4 @@
-package com.kada.da.Dto;
+package com.kada.da.modules.booking.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;

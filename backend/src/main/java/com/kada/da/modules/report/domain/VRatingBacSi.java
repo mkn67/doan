@@ -1,4 +1,4 @@
-package com.kada.da.Entity;
+package com.kada.da.modules.report.domain;
 
 import org.hibernate.annotations.Immutable;
 

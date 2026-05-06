@@ -1,4 +1,4 @@
-package com.kada.da.Mapper;
+package com.kada.da.modules.prescription.mapper;
 
 import com.kada.da.modules.prescription.dto.XuLyKinhRequestDTO;
 import com.kada.da.modules.prescription.dto.XuLyKinhResponseDTO;

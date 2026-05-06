@@ -1,7 +1,7 @@
-package com.kada.da.Mapper;
+package com.kada.da.modules.inventory.mapper;
 
-import com.kada.da.Dto.LoHangRequestDTO;
-import com.kada.da.Dto.Response.LoHangResponseDTO;
+import com.kada.da.modules.inventory.dto.LoHangRequestDTO;
+import com.kada.da.modules.inventory.dto.LoHangResponseDTO;
 import com.kada.da.modules.inventory.domain.LoHang;
 
 public class LoHangMapper {

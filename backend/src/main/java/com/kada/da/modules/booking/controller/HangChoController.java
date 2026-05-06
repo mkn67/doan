@@ -1,4 +1,4 @@
-package com.kada.da.Controller;
+package com.kada.da.modules.booking.controller;
 
 import java.time.LocalDateTime;
 
@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.kada.da.Service.HangChoService;
+import com.kada.da.modules.booking.service.HangChoService;
 
 import lombok.RequiredArgsConstructor;
 

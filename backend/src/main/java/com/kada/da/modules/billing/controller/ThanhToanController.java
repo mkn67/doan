@@ -1,7 +1,7 @@
-package com.kada.da.Controller;
+package com.kada.da.modules.billing.controller;
 
-import com.kada.da.Entity.ThanhToan;
-import com.kada.da.Service.ThanhToanService;
+import com.kada.da.modules.billing.domain.ThanhToan;
+import com.kada.da.modules.billing.service.ThanhToanService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

@@ -1,6 +1,6 @@
-package com.kada.da.Repository;
+package com.kada.da.modules.auth.repository;
 
-import com.kada.da.Entity.TaiKhoan;
+import com.kada.da.modules.auth.domain.TaiKhoan;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;

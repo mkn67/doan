@@ -1,8 +1,8 @@
-package com.kada.da.Controller;
+package com.kada.da.modules.inventory.controller;
 
-import com.kada.da.Dto.Response.LoHangResponseDTO;
-import com.kada.da.Dto.Response.PageResponseDTO;
-import com.kada.da.Service.LoHangService;
+import com.kada.da.modules.inventory.dto.LoHangResponseDTO;
+import com.kada.da.modules.staff.dto.PageResponseDTO;
+import com.kada.da.modules.inventory.service.LoHangService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

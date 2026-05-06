@@ -1,4 +1,4 @@
-package com.kada.da.Service.impl;
+package com.kada.da.modules.auth.service;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -9,16 +9,15 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.kada.da.Dto.Response.NhomResponseDTO;
-import com.kada.da.Dto.Response.PageResponseDTO;
-import com.kada.da.Dto.Response.VaiTroResponseDTO;
-import com.kada.da.Dto.VaiTroRequestDTO;
+import com.kada.da.modules.staff.dto.NhomResponseDTO;
+import com.kada.da.modules.staff.dto.PageResponseDTO;
+import com.kada.da.modules.auth.dto.VaiTroResponseDTO;
+import com.kada.da.modules.auth.dto.VaiTroRequestDTO;
 import com.kada.da.modules.auth.domain.VaiTro;
 import com.kada.da.Exception.BusinessRuleException;
 import com.kada.da.Exception.ResourceNotFoundException;
-import com.kada.da.Repository.NhomRepository;
+import com.kada.da.modules.staff.repository.NhomRepository;
 import com.kada.da.modules.auth.repository.VaiTroRepository;
-import com.kada.da.Service.VaiTroService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

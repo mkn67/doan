@@ -1,4 +1,4 @@
-package com.kada.da.Service.impl;
+package com.kada.da.modules.examination.service;
 
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -9,13 +9,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.kada.da.Dto.GoiKhamRequestDTO;
-import com.kada.da.Dto.Response.GoiKhamResponseDTO;
-import com.kada.da.Dto.Response.PageResponseDTO;
-import com.kada.da.Entity.GoiKham;
+import com.kada.da.modules.examination.dto.GoiKhamRequestDTO;
+import com.kada.da.modules.examination.dto.GoiKhamResponseDTO;
+import com.kada.da.modules.staff.dto.PageResponseDTO;
+import com.kada.da.modules.examination.domain.GoiKham;
 import com.kada.da.Exception.ResourceNotFoundException;
-import com.kada.da.Repository.GoiKhamRepository;
-import com.kada.da.Service.GoiKhamService;
+import com.kada.da.modules.examination.repository.GoiKhamRepository;
 
 import lombok.RequiredArgsConstructor;
 

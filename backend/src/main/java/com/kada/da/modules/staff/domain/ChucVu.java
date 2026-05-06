@@ -1,4 +1,4 @@
-package com.kada.da.Entity;
+package com.kada.da.modules.staff.domain;
 
 import jakarta.persistence.*;
 import lombok.*;

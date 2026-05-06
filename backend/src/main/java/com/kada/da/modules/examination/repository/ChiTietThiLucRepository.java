@@ -1,4 +1,4 @@
-package com.kada.da.Repository;
+package com.kada.da.modules.examination.repository;
 
 import com.kada.da.modules.examination.domain.ChiTietThiLuc;
 import com.kada.da.modules.examination.domain.ChiTietThiLucId;

@@ -1,4 +1,4 @@
-package com.kada.da.Enum;
+package com.kada.da.modules.booking.Enum;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 

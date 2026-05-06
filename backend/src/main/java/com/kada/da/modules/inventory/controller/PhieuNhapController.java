@@ -1,9 +1,9 @@
-package com.kada.da.Controller;
+package com.kada.da.modules.inventory.controller;
 
-import com.kada.da.Dto.PhieuNhapRequestDTO;
-import com.kada.da.Dto.Response.PageResponseDTO;
-import com.kada.da.Dto.Response.PhieuNhapResponseDTO;
-import com.kada.da.Service.PhieuNhapService;
+import com.kada.da.modules.inventory.dto.PhieuNhapRequestDTO;
+import com.kada.da.modules.staff.dto.PageResponseDTO;
+import com.kada.da.modules.inventory.dto.PhieuNhapResponseDTO;
+import com.kada.da.modules.inventory.service.PhieuNhapService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

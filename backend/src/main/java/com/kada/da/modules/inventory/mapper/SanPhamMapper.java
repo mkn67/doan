@@ -1,7 +1,7 @@
-package com.kada.da.Mapper;
+package com.kada.da.modules.inventory.mapper;
 
-import com.kada.da.Dto.SanPhamRequestDTO;
-import com.kada.da.Dto.Response.SanPhamResponseDTO;
+import com.kada.da.modules.inventory.dto.SanPhamRequestDTO;
+import com.kada.da.modules.inventory.dto.SanPhamResponseDTO;
 import com.kada.da.modules.inventory.domain.SanPham;
 
 public class SanPhamMapper {

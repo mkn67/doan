@@ -1,4 +1,4 @@
-package com.kada.da.Entity;
+package com.kada.da.modules.staff.domain;
 
 import com.kada.da.modules.auth.domain.TaiKhoan;
 import com.kada.da.modules.auth.domain.VaiTro;

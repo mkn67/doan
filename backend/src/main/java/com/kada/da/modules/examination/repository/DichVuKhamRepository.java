@@ -1,4 +1,4 @@
-package com.kada.da.Repository;
+package com.kada.da.modules.examination.repository;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

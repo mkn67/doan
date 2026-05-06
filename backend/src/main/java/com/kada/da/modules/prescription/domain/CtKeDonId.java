@@ -1,4 +1,4 @@
-package com.kada.da.Entity;
+package com.kada.da.modules.prescription.domain;
 
 import java.io.Serializable;
 

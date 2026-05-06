@@ -1,4 +1,4 @@
-package com.kada.da.Repository;
+package com.kada.da.modules.booking.repository;
 
 import com.kada.da.modules.booking.domain.LichLamViec;
 import com.kada.da.modules.staff.domain.NhanSu;

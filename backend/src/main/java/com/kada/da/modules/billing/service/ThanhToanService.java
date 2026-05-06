@@ -1,6 +1,6 @@
-package com.kada.da.Service;
+package com.kada.da.modules.billing.service;
 
-import com.kada.da.Entity.ThanhToan;
+import com.kada.da.modules.billing.domain.ThanhToan;
 import java.util.List;
 
 public interface ThanhToanService {

@@ -1,4 +1,4 @@
-package com.kada.da.Enum;
+package com.kada.da.modules.inventory.Enum;
 
 import lombok.Getter;
 

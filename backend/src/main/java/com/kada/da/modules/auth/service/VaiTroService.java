@@ -1,9 +1,9 @@
-package com.kada.da.Service;
+package com.kada.da.modules.auth.service;
 
-import com.kada.da.Dto.VaiTroRequestDTO;
-import com.kada.da.Dto.Response.NhomResponseDTO;
-import com.kada.da.Dto.Response.PageResponseDTO;
-import com.kada.da.Dto.Response.VaiTroResponseDTO;
+import com.kada.da.modules.auth.dto.VaiTroRequestDTO;
+import com.kada.da.modules.staff.dto.NhomResponseDTO;
+import com.kada.da.modules.staff.dto.PageResponseDTO;
+import com.kada.da.modules.auth.dto.VaiTroResponseDTO;
 import java.util.List;
 
 public interface VaiTroService {

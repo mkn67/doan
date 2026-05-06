@@ -1,4 +1,4 @@
-package com.kada.da.modules.inventory.repository;
+package com.kada.da.modules.booking.repository;
 
 import com.kada.da.modules.booking.domain.HangCho;
 

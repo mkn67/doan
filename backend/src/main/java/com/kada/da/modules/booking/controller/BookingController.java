@@ -1,10 +1,10 @@
-package com.kada.da.Controller;
+package com.kada.da.modules.booking.controller;
 
-import com.kada.da.Dto.DatLichRequestDTO;
-import com.kada.da.Dto.Response.DatLichResponseDTO;
-import com.kada.da.Dto.Response.HangChoResponseDTO;
-import com.kada.da.Dto.Response.LichHenResponseDTO;
-import com.kada.da.Service.LichHenService;
+import com.kada.da.modules.booking.dto.DatLichRequestDTO;
+import com.kada.da.modules.booking.dto.DatLichResponseDTO;
+import com.kada.da.modules.booking.dto.HangChoResponseDTO;
+import com.kada.da.modules.booking.dto.LichHenResponseDTO;
+import com.kada.da.modules.booking.service.LichHenService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

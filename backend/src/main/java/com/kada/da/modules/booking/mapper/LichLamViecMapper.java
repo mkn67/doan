@@ -1,8 +1,8 @@
-package com.kada.da.Mapper;
+package com.kada.da.modules.booking.mapper;
 
-import com.kada.da.Dto.LichLamViecRequestDTO;
-import com.kada.da.Dto.Response.LichLamViecResponseDTO;
-import com.kada.da.Entity.LichLamViec;
+import com.kada.da.modules.booking.dto.LichLamViecRequestDTO;
+import com.kada.da.modules.booking.dto.LichLamViecResponseDTO;
+import com.kada.da.modules.booking.domain.LichLamViec;
 
 public class LichLamViecMapper {
 

@@ -1,5 +1,6 @@
-package com.kada.da.Entity;
+package com.kada.da.modules.billing.domain;
 
+import com.kada.da.modules.inventory.domain.LoHang;
 import jakarta.persistence.*;
 import lombok.*;
 

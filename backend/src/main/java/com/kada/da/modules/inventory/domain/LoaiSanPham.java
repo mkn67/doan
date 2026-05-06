@@ -1,4 +1,4 @@
-package com.kada.da.Entity;
+package com.kada.da.modules.inventory.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

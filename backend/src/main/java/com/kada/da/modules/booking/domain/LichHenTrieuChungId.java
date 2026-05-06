@@ -1,4 +1,4 @@
-package com.kada.da.Entity;
+package com.kada.da.modules.booking.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;

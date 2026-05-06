@@ -1,4 +1,4 @@
-package com.kada.da.Repository;
+package com.kada.da.modules.prescription.repository;
 
 import com.kada.da.modules.prescription.domain.PhieuKeDon;
 import org.springframework.data.jpa.repository.JpaRepository;

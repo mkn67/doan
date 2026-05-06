@@ -1,4 +1,4 @@
-package com.kada.da.modules.billing.repository.custom;
+package com.kada.da.modules.examination.repository.custom;
 
 import java.util.Map;
 

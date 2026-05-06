@@ -1,4 +1,4 @@
-package com.kada.da.Service.impl;
+package com.kada.da.modules.prescription.service;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -7,8 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.kada.da.modules.prescription.domain.PhieuKeDon;
-import com.kada.da.Repository.PhieuKeDonRepository;
-import com.kada.da.modules.prescription.service.PhieuKeDonService;
+import com.kada.da.modules.prescription.repository.PhieuKeDonRepository;
 
 import lombok.RequiredArgsConstructor;
 

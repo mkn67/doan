@@ -1,10 +1,9 @@
-package com.kada.da.modules.inventory.repository;
+package com.kada.da.modules.booking.repository;
 
 import com.kada.da.modules.booking.domain.LichHen;
 import com.kada.da.modules.inventory.domain.SanPham;
-import com.kada.da.Enum.TrangThaiLichHen;
+import com.kada.da.modules.booking.Enum.TrangThaiLichHen;
 
-import com.kada.da.modules.inventory.repository.custom.LichHenRepositoryCustom;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;

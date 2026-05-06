@@ -1,4 +1,4 @@
-package com.kada.da.Dto.Response;
+package com.kada.da.modules.customer.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

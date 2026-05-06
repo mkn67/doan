@@ -1,11 +1,11 @@
-package com.kada.da.Service;
+package com.kada.da.modules.staff.service;
 
 import java.util.List;
 
-import com.kada.da.Dto.NhanSuRequestDTO;
-import com.kada.da.Dto.Response.NhanSuResponseDTO;
-import com.kada.da.Dto.Response.PageResponseDTO;
-import com.kada.da.Dto.Response.TopBacSiDTO;
+import com.kada.da.modules.staff.dto.NhanSuRequestDTO;
+import com.kada.da.modules.staff.dto.NhanSuResponseDTO;
+import com.kada.da.modules.staff.dto.PageResponseDTO;
+import com.kada.da.modules.report.dto.TopBacSiDTO;
 
 public interface NhanSuService {
     NhanSuResponseDTO createNhanSu(NhanSuRequestDTO request);

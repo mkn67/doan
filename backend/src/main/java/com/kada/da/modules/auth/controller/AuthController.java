@@ -1,4 +1,4 @@
-package com.kada.da.Controller;
+package com.kada.da.modules.auth.controller;
 
 import java.security.Principal;
 import java.util.Map;
@@ -11,11 +11,11 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.kada.da.Dto.ChangePasswordRequestDTO;
-import com.kada.da.Dto.LoginRequestDTO;
-import com.kada.da.Dto.Response.TaiKhoanResponseDTO;
-import com.kada.da.Dto.TaiKhoanRequestDTO;
-import com.kada.da.Service.AuthService;
+import com.kada.da.modules.auth.dto.ChangePasswordRequestDTO;
+import com.kada.da.modules.auth.dto.LoginRequestDTO;
+import com.kada.da.modules.auth.dto.TaiKhoanResponseDTO;
+import com.kada.da.modules.auth.dto.TaiKhoanRequestDTO;
+import com.kada.da.modules.auth.service.AuthService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

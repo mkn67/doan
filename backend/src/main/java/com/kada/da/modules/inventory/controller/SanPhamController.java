@@ -1,7 +1,7 @@
-package com.kada.da.Controller;
+package com.kada.da.modules.inventory.controller;
 
-import com.kada.da.Entity.SanPham;
-import com.kada.da.Service.SanPhamService;
+import com.kada.da.modules.inventory.domain.SanPham;
+import com.kada.da.modules.inventory.service.SanPhamService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

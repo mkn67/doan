@@ -1,7 +1,7 @@
-package com.kada.da.Repository;
+package com.kada.da.modules.billing.repository;
 
 import com.kada.da.modules.billing.domain.ThanhToan;
-import com.kada.da.Repository.custom.ThanhToanRepositoryCustom;
+import com.kada.da.modules.billing.repository.custom.ThanhToanRepositoryCustom;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.query.Procedure;

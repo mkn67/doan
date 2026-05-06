@@ -1,4 +1,4 @@
-package com.kada.da.modules.auth.service;
+package com.kada.da.modules.staff.service;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,9 +11,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.kada.da.modules.auth.dto.NhomRequestDTO;
-import com.kada.da.modules.auth.dto.NhomResponseDTO;
-import com.kada.da.Dto.Response.PageResponseDTO;
+import com.kada.da.modules.staff.dto.NhomRequestDTO;
+import com.kada.da.modules.staff.dto.NhomResponseDTO;
+import com.kada.da.modules.staff.dto.PageResponseDTO;
 import com.kada.da.modules.auth.dto.VaiTroResponseDTO;
 import com.kada.da.modules.staff.domain.NhanSu;
 import com.kada.da.modules.staff.domain.Nhom;
@@ -21,8 +21,8 @@ import com.kada.da.modules.auth.domain.TaiKhoan;
 import com.kada.da.modules.auth.domain.VaiTro;
 import com.kada.da.Exception.BusinessRuleException;
 import com.kada.da.Exception.ResourceNotFoundException;
-import com.kada.da.Repository.NhanSuRepository;
-import com.kada.da.Repository.NhomRepository;
+import com.kada.da.modules.staff.repository.NhanSuRepository;
+import com.kada.da.modules.staff.repository.NhomRepository;
 import com.kada.da.modules.auth.repository.TaiKhoanRepository;
 import com.kada.da.modules.auth.repository.VaiTroRepository;
 

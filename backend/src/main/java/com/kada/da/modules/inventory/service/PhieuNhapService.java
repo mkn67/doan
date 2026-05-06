@@ -1,8 +1,8 @@
-package com.kada.da.Service;
+package com.kada.da.modules.inventory.service;
 
-import com.kada.da.Dto.PhieuNhapRequestDTO;
-import com.kada.da.Dto.Response.PageResponseDTO;
-import com.kada.da.Dto.Response.PhieuNhapResponseDTO;
+import com.kada.da.modules.inventory.dto.PhieuNhapRequestDTO;
+import com.kada.da.modules.staff.dto.PageResponseDTO;
+import com.kada.da.modules.inventory.dto.PhieuNhapResponseDTO;
 
 import java.util.List;
 

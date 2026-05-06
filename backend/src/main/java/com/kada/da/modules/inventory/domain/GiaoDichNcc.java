@@ -1,6 +1,5 @@
-package com.kada.da.Entity;
+package com.kada.da.modules.inventory.domain;
 
-import com.kada.da.modules.inventory.domain.NhaCungCap;
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;

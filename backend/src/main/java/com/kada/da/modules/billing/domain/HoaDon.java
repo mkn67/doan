@@ -1,10 +1,11 @@
-package com.kada.da.Entity;
+package com.kada.da.modules.billing.domain;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import com.kada.da.Enum.TrangThaiHoaDon;
+import com.kada.da.modules.staff.domain.NhanSu;
+import com.kada.da.modules.billing.Enum.TrangThaiHoaDon;
 
 import com.kada.da.modules.customer.domain.KhachHang;
 import com.kada.da.modules.examination.domain.HoSoThiLuc;

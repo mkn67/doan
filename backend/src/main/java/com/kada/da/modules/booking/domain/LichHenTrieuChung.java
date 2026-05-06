@@ -1,7 +1,7 @@
-package com.kada.da.Entity;
+package com.kada.da.modules.booking.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.kada.da.modules.booking.domain.LichHen;
+import com.kada.da.modules.examination.domain.TrieuChung;
 import jakarta.persistence.*;
 import lombok.*;
 

@@ -1,7 +1,7 @@
-package com.kada.da.Repository;
+package com.kada.da.modules.prescription.repository;
 
 import com.kada.da.modules.prescription.domain.CtKeDon;
-import com.kada.da.Entity.CtKeDonId; // Khóa chính tổng hợp
+import com.kada.da.modules.prescription.domain.CtKeDonId; // Khóa chính tổng hợp
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import java.util.List;

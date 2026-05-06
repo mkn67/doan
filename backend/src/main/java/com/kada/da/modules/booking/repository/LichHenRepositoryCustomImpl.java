@@ -1,4 +1,4 @@
-package com.kada.da.modules.inventory.repository.custom;
+package com.kada.da.modules.booking.repository;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.ParameterMode;

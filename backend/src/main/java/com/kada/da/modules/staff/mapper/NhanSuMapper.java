@@ -1,7 +1,7 @@
-package com.kada.da.Mapper;
+package com.kada.da.modules.staff.mapper;
 
-import com.kada.da.Dto.NhanSuRequestDTO;
-import com.kada.da.Dto.Response.NhanSuResponseDTO;
+import com.kada.da.modules.staff.dto.NhanSuRequestDTO;
+import com.kada.da.modules.staff.dto.NhanSuResponseDTO;
 import com.kada.da.modules.auth.dto.TaiKhoanResponseDTO;
 import com.kada.da.modules.report.dto.TopBacSiDTO;
 import com.kada.da.modules.auth.mapper.TaiKhoanMapper;

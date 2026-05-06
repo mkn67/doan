@@ -1,7 +1,7 @@
-package com.kada.da.Controller;
+package com.kada.da.modules.prescription.controller;
 
-import com.kada.da.Entity.PhieuKeDon;
-import com.kada.da.Service.PhieuKeDonService;
+import com.kada.da.modules.prescription.domain.PhieuKeDon;
+import com.kada.da.modules.prescription.service.PhieuKeDonService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

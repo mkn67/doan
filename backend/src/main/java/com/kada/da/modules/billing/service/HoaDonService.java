@@ -1,8 +1,8 @@
-package com.kada.da.Service;
+package com.kada.da.modules.billing.service;
 
-import com.kada.da.Entity.HoaDon;
-import com.kada.da.Dto.HoaDonRequestDTO;
-import com.kada.da.Dto.Response.HoaDonResponseDTO;
+import com.kada.da.modules.billing.domain.HoaDon;
+import com.kada.da.modules.billing.dto.HoaDonRequestDTO;
+import com.kada.da.modules.billing.dto.HoaDonResponseDTO;
 
 import java.util.Map;
 

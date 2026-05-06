@@ -1,6 +1,6 @@
-package com.kada.da.Repository;
+package com.kada.da.modules.auth.repository;
 
-import com.kada.da.Entity.TokenBlacklist;
+import com.kada.da.modules.auth.domain.TokenBlacklist;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;

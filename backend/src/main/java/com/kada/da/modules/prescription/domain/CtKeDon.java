@@ -1,7 +1,8 @@
-package com.kada.da.Entity;
+package com.kada.da.modules.prescription.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+import com.kada.da.modules.inventory.domain.SanPham;
 import jakarta.persistence.*;
 import lombok.*;
 

@@ -1,9 +1,9 @@
-package com.kada.da.Controller;
+package com.kada.da.modules.examination.controller;
 
-import com.kada.da.Dto.DanhGiaRequestDTO;
-import com.kada.da.Dto.Response.DanhGiaResponseDTO;
-import com.kada.da.Dto.Response.PageResponseDTO;
-import com.kada.da.Service.DanhGiaService;
+import com.kada.da.modules.examination.dto.DanhGiaRequestDTO;
+import com.kada.da.modules.examination.dto.DanhGiaResponseDTO;
+import com.kada.da.modules.staff.dto.PageResponseDTO;
+import com.kada.da.modules.examination.service.DanhGiaService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

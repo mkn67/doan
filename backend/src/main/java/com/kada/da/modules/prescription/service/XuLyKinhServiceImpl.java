@@ -1,4 +1,4 @@
-package com.kada.da.Service.impl;
+package com.kada.da.modules.prescription.service;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -10,13 +10,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.kada.da.Dto.Response.PageResponseDTO;
-import com.kada.da.Dto.Response.XuLyKinhResponseDTO;
-import com.kada.da.Dto.XuLyKinhRequestDTO;
-import com.kada.da.Entity.XuLyKinh;
+import com.kada.da.modules.staff.dto.PageResponseDTO;
+import com.kada.da.modules.prescription.dto.XuLyKinhResponseDTO;
+import com.kada.da.modules.prescription.dto.XuLyKinhRequestDTO;
+import com.kada.da.modules.prescription.domain.XuLyKinh;
 import com.kada.da.Exception.BusinessRuleException;
-import com.kada.da.Repository.XuLyKinhRepository;
-import com.kada.da.Service.XuLyKinhService;
+import com.kada.da.modules.prescription.repository.XuLyKinhRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

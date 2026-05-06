@@ -1,4 +1,4 @@
-package com.kada.da.Service.impl;
+package com.kada.da.modules.inventory.service;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -9,14 +9,13 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.kada.da.Dto.NhaCungCapRequestDTO;
-import com.kada.da.Dto.Response.NhaCungCapResponseDTO;
-import com.kada.da.Dto.Response.PageResponseDTO;
+import com.kada.da.modules.inventory.dto.NhaCungCapRequestDTO;
+import com.kada.da.modules.inventory.dto.NhaCungCapResponseDTO;
+import com.kada.da.modules.staff.dto.PageResponseDTO;
 import com.kada.da.modules.inventory.domain.NhaCungCap;
 import com.kada.da.Exception.BusinessRuleException;
 import com.kada.da.Exception.ResourceNotFoundException;
-import com.kada.da.Repository.NhaCungCapRepository;
-import com.kada.da.Service.NhaCungCapService;
+import com.kada.da.modules.inventory.repository.NhaCungCapRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

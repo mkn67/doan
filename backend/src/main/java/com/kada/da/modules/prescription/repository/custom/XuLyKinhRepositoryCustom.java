@@ -1,4 +1,4 @@
-package com.kada.da.modules.billing.repository.custom;
+package com.kada.da.modules.prescription.repository.custom;
 
 public interface XuLyKinhRepositoryCustom {
     // Trả về String chính là cái Mã Xử Lý (p_maxl_out)

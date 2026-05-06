@@ -1,7 +1,7 @@
-package com.kada.da.Repository;
+package com.kada.da.modules.examination.repository;
 
 import com.kada.da.modules.examination.domain.HoSoThiLuc;
-import com.kada.da.Repository.custom.HoSoThiLucRepositoryCustom;
+import com.kada.da.modules.examination.repository.custom.HoSoThiLucRepositoryCustom;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import java.util.List;

@@ -1,4 +1,4 @@
-package com.kada.da.Service.impl;
+package com.kada.da.modules.booking.service;
 
 import java.time.LocalDateTime;
 import java.util.Comparator;
@@ -8,10 +8,9 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.kada.da.Dto.HangChoHomNayDto;
+import com.kada.da.modules.booking.dto.HangChoHomNayDto;
 import com.kada.da.modules.booking.domain.HangCho;
 import com.kada.da.modules.booking.repository.HangChoRepository;
-import com.kada.da.Service.HangChoService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

@@ -1,4 +1,4 @@
-package com.kada.da.Repository;
+package com.kada.da.modules.billing.repository;
 
 import com.kada.da.modules.billing.domain.CtHoaDon;
 import com.kada.da.modules.billing.domain.CtHoaDonId;

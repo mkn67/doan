@@ -1,5 +1,6 @@
 package com.kada.da.Security;
 
+import com.kada.da.modules.auth.security.JwtAuthFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;

@@ -1,4 +1,4 @@
-package com.kada.da.Entity;
+package com.kada.da.modules.examination.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 

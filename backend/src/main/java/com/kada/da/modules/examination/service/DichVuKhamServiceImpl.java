@@ -1,4 +1,4 @@
-package com.kada.da.Service.impl;
+package com.kada.da.modules.examination.service;
 
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -9,13 +9,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.kada.da.Dto.DichVuKhamRequestDTO;
-import com.kada.da.Dto.Response.DichVuKhamResponseDTO;
-import com.kada.da.Dto.Response.PageResponseDTO;
-import com.kada.da.Entity.DichVuKham;
+import com.kada.da.modules.examination.dto.DichVuKhamRequestDTO;
+import com.kada.da.modules.examination.dto.DichVuKhamResponseDTO;
+import com.kada.da.modules.staff.dto.PageResponseDTO;
+import com.kada.da.modules.examination.domain.DichVuKham;
 import com.kada.da.Exception.ResourceNotFoundException;
-import com.kada.da.Repository.DichVuKhamRepository;
-import com.kada.da.Service.DichVuKhamService;
+import com.kada.da.modules.examination.repository.DichVuKhamRepository;
 
 import lombok.RequiredArgsConstructor;
 

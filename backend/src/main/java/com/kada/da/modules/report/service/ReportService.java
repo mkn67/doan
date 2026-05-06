@@ -1,7 +1,7 @@
-package com.kada.da.Service;
+package com.kada.da.modules.report.service;
 
-import com.kada.da.Dto.Response.CanhBaoHetHanDTO;
-import com.kada.da.Dto.Response.DoanhThuResponseDTO;
+import com.kada.da.modules.inventory.dto.CanhBaoHetHanDTO;
+import com.kada.da.modules.report.dto.DoanhThuResponseDTO;
 
 import java.util.List;
 

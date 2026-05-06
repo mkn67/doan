@@ -1,4 +1,4 @@
-package com.kada.da.Entity;
+package com.kada.da.modules.auth.domain;
 
 import java.time.LocalDateTime;
 

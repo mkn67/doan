@@ -1,4 +1,4 @@
-package com.kada.da.Dto.Response;
+package com.kada.da.modules.inventory.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-import com.kada.da.Enum.LoaiTaiKhoan;
+import com.kada.da.modules.auth.Enum.LoaiTaiKhoan;
 
 @Data
 @NoArgsConstructor

@@ -1,8 +1,8 @@
-package com.kada.da.Service;
+package com.kada.da.modules.inventory.service;
 
-import com.kada.da.Dto.NhaCungCapRequestDTO;
-import com.kada.da.Dto.Response.NhaCungCapResponseDTO;
-import com.kada.da.Dto.Response.PageResponseDTO;
+import com.kada.da.modules.inventory.dto.NhaCungCapRequestDTO;
+import com.kada.da.modules.inventory.dto.NhaCungCapResponseDTO;
+import com.kada.da.modules.staff.dto.PageResponseDTO;
 
 public interface NhaCungCapService {
     NhaCungCapResponseDTO createNhaCungCap(NhaCungCapRequestDTO request);

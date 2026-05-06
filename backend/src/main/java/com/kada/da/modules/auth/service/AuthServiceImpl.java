@@ -1,4 +1,4 @@
-package com.kada.da.Service.impl;
+package com.kada.da.modules.auth.service;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -7,21 +7,20 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.kada.da.Dto.ChangePasswordRequestDTO;
-import com.kada.da.Dto.LoginRequestDTO;
-import com.kada.da.Dto.Response.LoginResponseDTO;
-import com.kada.da.Dto.Response.TaiKhoanResponseDTO;
-import com.kada.da.Dto.TaiKhoanRequestDTO;
-import com.kada.da.Entity.KhachHang;
-import com.kada.da.Entity.TaiKhoan;
-import com.kada.da.Entity.TokenBlacklist;
-import com.kada.da.Enum.LoaiTaiKhoan;
+import com.kada.da.modules.auth.dto.ChangePasswordRequestDTO;
+import com.kada.da.modules.auth.dto.LoginRequestDTO;
+import com.kada.da.modules.auth.dto.LoginResponseDTO;
+import com.kada.da.modules.auth.dto.TaiKhoanResponseDTO;
+import com.kada.da.modules.auth.dto.TaiKhoanRequestDTO;
+import com.kada.da.modules.customer.domain.KhachHang;
+import com.kada.da.modules.auth.domain.TaiKhoan;
+import com.kada.da.modules.auth.domain.TokenBlacklist;
+import com.kada.da.modules.auth.Enum.LoaiTaiKhoan;
 import com.kada.da.Exception.BusinessRuleException;
 import com.kada.da.Exception.ResourceNotFoundException;
-import com.kada.da.Repository.KhachHangRepository;
-import com.kada.da.Repository.TaiKhoanRepository;
-import com.kada.da.Repository.TokenBlacklistRepository;
-import com.kada.da.Service.AuthService;
+import com.kada.da.modules.customer.repository.KhachHangRepository;
+import com.kada.da.modules.auth.repository.TaiKhoanRepository;
+import com.kada.da.modules.auth.repository.TokenBlacklistRepository;
 import com.kada.da.Util.JwtTokenUtil;
 
 import lombok.RequiredArgsConstructor;

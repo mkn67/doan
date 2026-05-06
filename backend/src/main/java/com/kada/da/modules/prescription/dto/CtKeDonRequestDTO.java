@@ -1,4 +1,4 @@
-package com.kada.da.Dto;
+package com.kada.da.modules.prescription.dto;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;

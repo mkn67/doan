@@ -1,8 +1,8 @@
-package com.kada.da.Mapper;
+package com.kada.da.modules.auth.mapper;
 
-import com.kada.da.Dto.TaiKhoanRequestDTO;
-import com.kada.da.Dto.Response.TaiKhoanResponseDTO;
-import com.kada.da.Entity.Nhom;
+import com.kada.da.modules.auth.dto.TaiKhoanRequestDTO;
+import com.kada.da.modules.auth.dto.TaiKhoanResponseDTO;
+import com.kada.da.modules.staff.domain.Nhom;
 import com.kada.da.modules.auth.domain.TaiKhoan;
 import java.util.ArrayList;
 import java.util.List;

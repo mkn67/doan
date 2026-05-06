@@ -1,4 +1,4 @@
-package com.kada.da.Service.impl;
+package com.kada.da.modules.staff.service;
 
 import java.util.List;
 import java.util.UUID;
@@ -10,18 +10,17 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.kada.da.Dto.NhanSuRequestDTO;
-import com.kada.da.Dto.Response.NhanSuResponseDTO;
-import com.kada.da.Dto.Response.PageResponseDTO; // IMPORT REPOSITORY
-import com.kada.da.Dto.Response.TopBacSiDTO;
-import com.kada.da.Entity.ChucVu;
-import com.kada.da.Entity.NhanSu;
-import com.kada.da.Entity.VRatingBacSi;
+import com.kada.da.modules.staff.dto.NhanSuRequestDTO;
+import com.kada.da.modules.staff.dto.NhanSuResponseDTO;
+import com.kada.da.modules.staff.dto.PageResponseDTO; // IMPORT REPOSITORY
+import com.kada.da.modules.report.dto.TopBacSiDTO;
+import com.kada.da.modules.staff.domain.ChucVu;
+import com.kada.da.modules.staff.domain.NhanSu;
+import com.kada.da.modules.report.domain.VRatingBacSi;
 import com.kada.da.Exception.ResourceNotFoundException;
-import com.kada.da.Repository.ChucVuRepository;
-import com.kada.da.Repository.NhanSuRepository;
-import com.kada.da.Repository.VRatingBacSiRepository; // FIX LỖI 1: QUÊN IMPORT LIST
-import com.kada.da.Service.NhanSuService;
+import com.kada.da.modules.staff.repository.ChucVuRepository;
+import com.kada.da.modules.staff.repository.NhanSuRepository;
+import com.kada.da.modules.report.repository.VRatingBacSiRepository; // FIX LỖI 1: QUÊN IMPORT LIST
 
 import lombok.RequiredArgsConstructor;
 

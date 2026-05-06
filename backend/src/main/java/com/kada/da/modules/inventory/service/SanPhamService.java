@@ -1,7 +1,7 @@
-package com.kada.da.Service;
+package com.kada.da.modules.inventory.service;
 
-import com.kada.da.Dto.CanhBaoTonKhoDto;
-import com.kada.da.Entity.SanPham;
+import com.kada.da.modules.inventory.dto.CanhBaoTonKhoDto;
+import com.kada.da.modules.inventory.domain.SanPham;
 import java.util.List;
 
 public interface SanPhamService {

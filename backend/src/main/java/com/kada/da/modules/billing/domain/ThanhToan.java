@@ -1,5 +1,6 @@
-package com.kada.da.Entity;
+package com.kada.da.modules.billing.domain;
 
+import com.kada.da.modules.staff.domain.NhanSu;
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;

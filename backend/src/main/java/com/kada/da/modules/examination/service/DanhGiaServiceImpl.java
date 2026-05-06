@@ -1,4 +1,4 @@
-package com.kada.da.Service.impl;
+package com.kada.da.modules.examination.service;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -13,20 +13,19 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.kada.da.Dto.DanhGiaRequestDTO;
-import com.kada.da.Dto.Response.DanhGiaResponseDTO;
-import com.kada.da.Dto.Response.PageResponseDTO;
-import com.kada.da.Entity.DanhGia;
+import com.kada.da.modules.examination.dto.DanhGiaRequestDTO;
+import com.kada.da.modules.examination.dto.DanhGiaResponseDTO;
+import com.kada.da.modules.staff.dto.PageResponseDTO;
+import com.kada.da.modules.examination.domain.DanhGia;
 import com.kada.da.modules.examination.domain.HoSoThiLuc;
 import com.kada.da.modules.customer.domain.KhachHang;
 import com.kada.da.modules.staff.domain.NhanSu;
 import com.kada.da.Exception.BusinessRuleException;
 import com.kada.da.Exception.ResourceNotFoundException;
-import com.kada.da.Repository.DanhGiaRepository;
+import com.kada.da.modules.examination.repository.DanhGiaRepository;
 import com.kada.da.modules.examination.repository.HoSoThiLucRepository;
 import com.kada.da.modules.customer.repository.KhachHangRepository;
-import com.kada.da.Repository.NhanSuRepository;
-import com.kada.da.Service.DanhGiaService;
+import com.kada.da.modules.staff.repository.NhanSuRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

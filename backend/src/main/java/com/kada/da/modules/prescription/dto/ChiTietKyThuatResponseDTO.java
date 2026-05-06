@@ -1,4 +1,4 @@
-package com.kada.da.Dto.Response;
+package com.kada.da.modules.prescription.dto;
 
 import lombok.*;
 import java.time.LocalDateTime;

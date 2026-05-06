@@ -1,4 +1,4 @@
-package com.kada.da.Repository;
+package com.kada.da.modules.staff.repository;
 
 import com.kada.da.modules.staff.domain.NhanSu;
 import org.springframework.data.domain.Page;

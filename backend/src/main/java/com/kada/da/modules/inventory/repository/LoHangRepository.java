@@ -1,4 +1,4 @@
-package com.kada.da.Repository;
+package com.kada.da.modules.inventory.repository;
 
 import java.time.LocalDate;
 import java.util.List;

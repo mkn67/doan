@@ -1,8 +1,8 @@
-package com.kada.da.modules.auth.service;
+package com.kada.da.modules.staff.service;
 
-import com.kada.da.modules.auth.dto.NhomRequestDTO;
-import com.kada.da.modules.auth.dto.NhomResponseDTO;
-import com.kada.da.Dto.Response.PageResponseDTO;
+import com.kada.da.modules.staff.dto.NhomRequestDTO;
+import com.kada.da.modules.staff.dto.NhomResponseDTO;
+import com.kada.da.modules.staff.dto.PageResponseDTO;
 import com.kada.da.modules.auth.dto.VaiTroResponseDTO;
 import java.util.List;
 

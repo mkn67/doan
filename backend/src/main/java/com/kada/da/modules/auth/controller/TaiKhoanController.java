@@ -1,4 +1,4 @@
-package com.kada.da.Controller;
+package com.kada.da.modules.auth.controller;
 
 import java.util.Map;
 import java.util.Optional;

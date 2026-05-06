@@ -1,5 +1,6 @@
-package com.kada.da.Entity;
+package com.kada.da.modules.auth.domain;
 
+import com.kada.da.modules.staff.domain.Nhom;
 import jakarta.persistence.*;
 import lombok.*;
 import java.util.ArrayList;

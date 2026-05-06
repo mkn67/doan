@@ -1,9 +1,9 @@
-package com.kada.da.Service;
+package com.kada.da.modules.booking.service;
 
-import com.kada.da.Dto.Response.HangChoResponseDTO;
+import com.kada.da.modules.booking.dto.HangChoResponseDTO;
 import com.kada.da.modules.booking.dto.LichHenResponseDTO;
-import com.kada.da.Dto.Response.DatLichResponseDTO;
-import com.kada.da.Dto.LichHenTrieuChungDto;
+import com.kada.da.modules.booking.dto.DatLichResponseDTO;
+import com.kada.da.modules.booking.dto.LichHenTrieuChungDto;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;

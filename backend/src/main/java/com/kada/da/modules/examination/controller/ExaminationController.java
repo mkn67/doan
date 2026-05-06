@@ -1,4 +1,4 @@
-package com.kada.da.Controller;
+package com.kada.da.modules.examination.controller;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.kada.da.Dto.HoSoKhamRequestDTO;
+import com.kada.da.modules.examination.dto.HoSoKhamRequestDTO;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.ParameterMode;

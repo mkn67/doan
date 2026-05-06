@@ -1,11 +1,11 @@
-package com.kada.da.Controller;
+package com.kada.da.modules.billing.controller;
 
-import com.kada.da.Dto.TaoHoaDonJsonRequest;
+import com.kada.da.modules.billing.dto.TaoHoaDonJsonRequest;
 import com.lowagie.text.*;
 import com.lowagie.text.pdf.PdfWriter;
-import com.kada.da.Entity.HoaDon;
-import com.kada.da.Entity.CtHoaDon;
-import com.kada.da.Service.HoaDonService;
+import com.kada.da.modules.billing.domain.HoaDon;
+import com.kada.da.modules.billing.domain.CtHoaDon;
+import com.kada.da.modules.billing.service.HoaDonService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;

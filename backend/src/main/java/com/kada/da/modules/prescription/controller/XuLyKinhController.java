@@ -1,8 +1,8 @@
-package com.kada.da.Controller;
+package com.kada.da.modules.prescription.controller;
 
-import com.kada.da.Dto.XuLyKinhRequestDTO;
-import com.kada.da.Dto.Response.PageResponseDTO;
-import com.kada.da.Dto.Response.XuLyKinhResponseDTO;
+import com.kada.da.modules.prescription.dto.XuLyKinhRequestDTO;
+import com.kada.da.modules.staff.dto.PageResponseDTO;
+import com.kada.da.modules.prescription.dto.XuLyKinhResponseDTO;
 import com.kada.da.modules.prescription.service.XuLyKinhService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

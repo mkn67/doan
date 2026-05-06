@@ -1,4 +1,4 @@
-package com.kada.da.Service.impl;
+package com.kada.da.modules.inventory.service;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -8,14 +8,13 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.kada.da.Dto.LoHangRequestDTO;
-import com.kada.da.Dto.PhieuNhapRequestDTO;
-import com.kada.da.Dto.Response.LoHangResponseDTO;
-import com.kada.da.Dto.Response.PageResponseDTO;
-import com.kada.da.Dto.Response.PhieuNhapResponseDTO;
-import com.kada.da.Entity.PhieuNhap;
-import com.kada.da.Repository.PhieuNhapRepository;
-import com.kada.da.Service.PhieuNhapService;
+import com.kada.da.modules.inventory.dto.LoHangRequestDTO;
+import com.kada.da.modules.inventory.dto.PhieuNhapRequestDTO;
+import com.kada.da.modules.inventory.dto.LoHangResponseDTO;
+import com.kada.da.modules.staff.dto.PageResponseDTO;
+import com.kada.da.modules.inventory.dto.PhieuNhapResponseDTO;
+import com.kada.da.modules.inventory.domain.PhieuNhap;
+import com.kada.da.modules.inventory.repository.PhieuNhapRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

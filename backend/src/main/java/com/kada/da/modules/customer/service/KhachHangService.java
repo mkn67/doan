@@ -1,6 +1,6 @@
-package com.kada.da.Service;
+package com.kada.da.modules.customer.service;
 
-import com.kada.da.Entity.KhachHang;
+import com.kada.da.modules.customer.domain.KhachHang;
 import java.util.List;
 
 public interface KhachHangService {

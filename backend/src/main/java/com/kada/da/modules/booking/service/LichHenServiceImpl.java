@@ -1,4 +1,4 @@
-package com.kada.da.Service.impl;
+package com.kada.da.modules.booking.service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -8,20 +8,19 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.kada.da.Dto.LichHenTrieuChungDto;
-import com.kada.da.Dto.Response.DatLichResponseDTO;
-import com.kada.da.Dto.Response.HangChoResponseDTO;
-import com.kada.da.Dto.Response.LichHenResponseDTO;
-import com.kada.da.Entity.HangCho;
-import com.kada.da.Entity.LichHen;
-import com.kada.da.Entity.LichHenTrieuChung;
-import com.kada.da.Enum.TrangThaiHangCho;
-import com.kada.da.Enum.TrangThaiLichHen;
+import com.kada.da.modules.booking.dto.LichHenTrieuChungDto;
+import com.kada.da.modules.booking.dto.DatLichResponseDTO;
+import com.kada.da.modules.booking.dto.HangChoResponseDTO;
+import com.kada.da.modules.booking.dto.LichHenResponseDTO;
+import com.kada.da.modules.booking.domain.HangCho;
+import com.kada.da.modules.booking.domain.LichHen;
+import com.kada.da.modules.booking.domain.LichHenTrieuChung;
+import com.kada.da.modules.booking.Enum.TrangThaiHangCho;
+import com.kada.da.modules.booking.Enum.TrangThaiLichHen;
 import com.kada.da.Exception.BusinessRuleException;
 import com.kada.da.Exception.ResourceNotFoundException;
-import com.kada.da.Repository.HangChoRepository;
-import com.kada.da.Repository.LichHenRepository;
-import com.kada.da.Service.LichHenService;
+import com.kada.da.modules.booking.repository.HangChoRepository;
+import com.kada.da.modules.booking.repository.LichHenRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

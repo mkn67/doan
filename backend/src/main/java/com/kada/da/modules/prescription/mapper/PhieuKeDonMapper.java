@@ -1,4 +1,4 @@
-package com.kada.da.Mapper;
+package com.kada.da.modules.prescription.mapper;
 
 import com.kada.da.modules.prescription.dto.PhieuKeDonRequestDTO;
 import com.kada.da.modules.prescription.dto.PhieuKeDonResponseDTO;

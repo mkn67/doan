@@ -1,8 +1,8 @@
-package com.kada.da.Service;
+package com.kada.da.modules.examination.service;
 
-import com.kada.da.Dto.GoiKhamRequestDTO;
-import com.kada.da.Dto.Response.GoiKhamResponseDTO;
-import com.kada.da.Dto.Response.PageResponseDTO;
+import com.kada.da.modules.examination.dto.GoiKhamRequestDTO;
+import com.kada.da.modules.examination.dto.GoiKhamResponseDTO;
+import com.kada.da.modules.staff.dto.PageResponseDTO;
 
 public interface GoiKhamService {
     GoiKhamResponseDTO createGoiKham(GoiKhamRequestDTO request);

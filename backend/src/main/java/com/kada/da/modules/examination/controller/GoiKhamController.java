@@ -1,9 +1,9 @@
-package com.kada.da.Controller;
+package com.kada.da.modules.examination.controller;
 
-import com.kada.da.Dto.GoiKhamRequestDTO;
-import com.kada.da.Dto.Response.GoiKhamResponseDTO;
-import com.kada.da.Dto.Response.PageResponseDTO;
-import com.kada.da.Service.GoiKhamService;
+import com.kada.da.modules.examination.dto.GoiKhamRequestDTO;
+import com.kada.da.modules.examination.dto.GoiKhamResponseDTO;
+import com.kada.da.modules.staff.dto.PageResponseDTO;
+import com.kada.da.modules.examination.service.GoiKhamService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

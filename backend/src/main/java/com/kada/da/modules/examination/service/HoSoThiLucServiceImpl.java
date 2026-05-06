@@ -1,4 +1,4 @@
-package com.kada.da.Service.impl;
+package com.kada.da.modules.examination.service;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -10,12 +10,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.kada.da.modules.examination.domain.HoSoThiLuc;
 import com.kada.da.modules.booking.domain.LichHen;
-import com.kada.da.Enum.TrangThaiLichHen;
+import com.kada.da.modules.booking.Enum.TrangThaiLichHen;
 import com.kada.da.Exception.BusinessRuleException;
 import com.kada.da.Exception.ResourceNotFoundException;
 import com.kada.da.modules.examination.repository.HoSoThiLucRepository;
 import com.kada.da.modules.booking.repository.LichHenRepository;
-import com.kada.da.modules.examination.service.HoSoThiLucService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

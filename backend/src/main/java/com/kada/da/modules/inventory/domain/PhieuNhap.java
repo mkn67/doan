@@ -1,7 +1,5 @@
-package com.kada.da.Entity;
+package com.kada.da.modules.inventory.domain;
 
-import com.kada.da.modules.inventory.domain.LoHang;
-import com.kada.da.modules.inventory.domain.NhaCungCap;
 import com.kada.da.modules.staff.domain.NhanSu;
 import jakarta.persistence.*;
 import lombok.*;

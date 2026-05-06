@@ -1,6 +1,6 @@
-package com.kada.da.Service;
+package com.kada.da.modules.prescription.service;
 
-import com.kada.da.Entity.PhieuKeDon;
+import com.kada.da.modules.prescription.domain.PhieuKeDon;
 import java.util.List;
 
 public interface PhieuKeDonService {

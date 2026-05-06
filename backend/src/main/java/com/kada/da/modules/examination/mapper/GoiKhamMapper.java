@@ -1,4 +1,4 @@
-package com.kada.da.Mapper;
+package com.kada.da.modules.examination.mapper;
 
 import com.kada.da.modules.examination.dto.GoiKhamRequestDTO;
 import com.kada.da.modules.examination.dto.GoiKhamResponseDTO;

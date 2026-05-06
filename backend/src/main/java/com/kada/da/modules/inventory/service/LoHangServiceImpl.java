@@ -1,15 +1,14 @@
-package com.kada.da.Service.impl;
+package com.kada.da.modules.inventory.service;
 
-import com.kada.da.Dto.LoHangRequestDTO;
-import com.kada.da.Dto.Response.LoHangResponseDTO;
-import com.kada.da.Dto.Response.PageResponseDTO;
-import com.kada.da.Entity.LoHang;
-import com.kada.da.Entity.SanPham;
+import com.kada.da.modules.inventory.dto.LoHangRequestDTO;
+import com.kada.da.modules.inventory.dto.LoHangResponseDTO;
+import com.kada.da.modules.staff.dto.PageResponseDTO;
+import com.kada.da.modules.inventory.domain.LoHang;
+import com.kada.da.modules.inventory.domain.SanPham;
 import com.kada.da.Exception.BusinessRuleException;
 import com.kada.da.Exception.ResourceNotFoundException;
-import com.kada.da.Repository.LoHangRepository;
-import com.kada.da.Repository.SanPhamRepository;
-import com.kada.da.Service.LoHangService;
+import com.kada.da.modules.inventory.repository.LoHangRepository;
+import com.kada.da.modules.inventory.repository.SanPhamRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;

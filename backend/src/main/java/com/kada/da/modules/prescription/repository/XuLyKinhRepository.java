@@ -1,7 +1,7 @@
-package com.kada.da.Repository;
+package com.kada.da.modules.prescription.repository;
 
 import com.kada.da.modules.prescription.domain.XuLyKinh;
-import com.kada.da.modules.billing.repository.custom.XuLyKinhRepositoryCustom;
+import com.kada.da.modules.prescription.repository.custom.XuLyKinhRepositoryCustom;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;

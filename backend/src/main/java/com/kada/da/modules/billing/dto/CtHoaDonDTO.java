@@ -1,4 +1,4 @@
-package com.kada.da.Dto;
+package com.kada.da.modules.billing.dto;
 
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;

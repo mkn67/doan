@@ -1,9 +1,9 @@
-package com.kada.da.Service;
+package com.kada.da.modules.booking.service;
 
-import com.kada.da.Dto.LichLamViecRequestDTO;
-import com.kada.da.Dto.Response.LichLamViecResponseDTO;
-import com.kada.da.Dto.Response.PageResponseDTO;
-import com.kada.da.Dto.SlotTrongDto;
+import com.kada.da.modules.booking.dto.LichLamViecRequestDTO;
+import com.kada.da.modules.booking.dto.LichLamViecResponseDTO;
+import com.kada.da.modules.staff.dto.PageResponseDTO;
+import com.kada.da.modules.booking.dto.SlotTrongDto;
 import java.time.LocalDate;
 import java.util.List;
 

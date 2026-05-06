@@ -1,7 +1,7 @@
-package com.kada.da.Controller;
+package com.kada.da.modules.customer.controller;
 
-import com.kada.da.Entity.KhachHang;
-import com.kada.da.Service.KhachHangService;
+import com.kada.da.modules.customer.domain.KhachHang;
+import com.kada.da.modules.customer.service.KhachHangService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

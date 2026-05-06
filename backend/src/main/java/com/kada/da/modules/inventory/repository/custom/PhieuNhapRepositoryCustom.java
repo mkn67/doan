@@ -1,4 +1,4 @@
-package com.kada.da.Repository.custom;
+package com.kada.da.modules.inventory.repository.custom;
 
 import java.util.Map;
 

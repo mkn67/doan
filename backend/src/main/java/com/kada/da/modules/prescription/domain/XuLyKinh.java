@@ -1,6 +1,6 @@
-package com.kada.da.Entity;
+package com.kada.da.modules.prescription.domain;
 
-import com.kada.da.modules.prescription.domain.PhieuKeDon;
+import com.kada.da.modules.staff.domain.NhanSu;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;

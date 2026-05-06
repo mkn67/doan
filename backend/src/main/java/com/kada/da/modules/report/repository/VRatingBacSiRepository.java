@@ -1,11 +1,11 @@
-package com.kada.da.Repository;
+package com.kada.da.modules.report.repository;
 
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import com.kada.da.Entity.VRatingBacSi;
+import com.kada.da.modules.report.domain.VRatingBacSi;
 
 @Repository
 public interface VRatingBacSiRepository extends JpaRepository<VRatingBacSi, String> {

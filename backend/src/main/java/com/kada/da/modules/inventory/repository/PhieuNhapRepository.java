@@ -1,7 +1,7 @@
-package com.kada.da.Repository;
+package com.kada.da.modules.inventory.repository;
 
 import com.kada.da.modules.inventory.domain.NhaCungCap;
-import com.kada.da.Entity.PhieuNhap;
+import com.kada.da.modules.inventory.domain.PhieuNhap;
 import com.kada.da.modules.inventory.repository.custom.PhieuNhapRepositoryCustom;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;

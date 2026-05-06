@@ -1,4 +1,4 @@
-package com.kada.da.Service.impl;
+package com.kada.da.modules.inventory.service;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -7,11 +7,10 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.kada.da.Dto.CanhBaoTonKhoDto;
-import com.kada.da.Entity.LoHang;
-import com.kada.da.Entity.SanPham;
-import com.kada.da.Repository.SanPhamRepository;
-import com.kada.da.Service.SanPhamService;
+import com.kada.da.modules.inventory.dto.CanhBaoTonKhoDto;
+import com.kada.da.modules.inventory.domain.LoHang;
+import com.kada.da.modules.inventory.domain.SanPham;
+import com.kada.da.modules.inventory.repository.SanPhamRepository;
 
 import lombok.RequiredArgsConstructor;
 

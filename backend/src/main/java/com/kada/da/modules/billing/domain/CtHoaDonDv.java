@@ -1,8 +1,8 @@
-package com.kada.da.Entity;
+package com.kada.da.modules.billing.domain;
 
 import java.math.BigDecimal;
 
-import com.kada.da.modules.billing.domain.HoaDon;
+import com.kada.da.modules.examination.domain.DichVuKham;
 import jakarta.persistence.Column;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;

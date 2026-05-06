@@ -1,9 +1,8 @@
-package com.kada.da.Service.impl;
+package com.kada.da.modules.report.service;
 
-import com.kada.da.Dto.Response.CanhBaoHetHanDTO;
-import com.kada.da.Dto.Response.DoanhThuResponseDTO;
-import com.kada.da.Repository.custom.ReportRepositoryCustom;
-import com.kada.da.Service.ReportService;
+import com.kada.da.modules.inventory.dto.CanhBaoHetHanDTO;
+import com.kada.da.modules.report.dto.DoanhThuResponseDTO;
+import com.kada.da.modules.report.repository.custom.ReportRepositoryCustom;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

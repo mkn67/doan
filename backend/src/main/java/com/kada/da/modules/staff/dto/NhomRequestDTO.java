@@ -1,4 +1,4 @@
-package com.kada.da.modules.auth.dto;
+package com.kada.da.modules.staff.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;

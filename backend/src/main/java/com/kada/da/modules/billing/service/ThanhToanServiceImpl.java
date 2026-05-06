@@ -1,4 +1,4 @@
-package com.kada.da.Service.impl;
+package com.kada.da.modules.billing.service;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -6,9 +6,8 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.kada.da.Entity.ThanhToan;
-import com.kada.da.Repository.ThanhToanRepository;
-import com.kada.da.Service.ThanhToanService;
+import com.kada.da.modules.billing.domain.ThanhToan;
+import com.kada.da.modules.billing.repository.ThanhToanRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

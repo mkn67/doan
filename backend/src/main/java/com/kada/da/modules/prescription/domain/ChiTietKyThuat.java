@@ -1,4 +1,4 @@
-package com.kada.da.Entity;
+package com.kada.da.modules.prescription.domain;
 
 import com.kada.da.modules.staff.domain.NhanSu;
 import jakarta.persistence.*;

@@ -1,6 +1,6 @@
 package com.kada.da.Task;
 
-import com.kada.da.Repository.TokenBlacklistRepository;
+import com.kada.da.modules.auth.repository.TokenBlacklistRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;

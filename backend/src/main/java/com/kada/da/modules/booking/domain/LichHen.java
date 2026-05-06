@@ -1,10 +1,14 @@
-package com.kada.da.Entity;
+package com.kada.da.modules.booking.domain;
 
 import java.time.LocalDateTime;
+
+import com.kada.da.modules.examination.domain.GoiKham;
+import com.kada.da.modules.staff.domain.NhanSu;
+import com.kada.da.modules.customer.domain.KhachHang;
 import jakarta.persistence.*;
 import lombok.*;
 import java.util.List;
-import com.kada.da.Enum.TrangThaiLichHen; // Import Enum
+import com.kada.da.modules.booking.Enum.TrangThaiLichHen; // Import Enum
 
 @Entity
 @Table(name = "LICH_HEN")

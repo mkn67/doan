@@ -1,4 +1,4 @@
-package com.kada.da.Dto;
+package com.kada.da.modules.customer.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;

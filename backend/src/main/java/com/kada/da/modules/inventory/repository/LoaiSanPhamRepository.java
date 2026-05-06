@@ -1,6 +1,6 @@
-package com.kada.da.Repository;
+package com.kada.da.modules.inventory.repository;
 
-import com.kada.da.Entity.LoaiSanPham;
+import com.kada.da.modules.inventory.domain.LoaiSanPham;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

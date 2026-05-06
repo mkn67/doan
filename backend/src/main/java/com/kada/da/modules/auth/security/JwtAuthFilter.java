@@ -1,4 +1,4 @@
-package com.kada.da.Security;
+package com.kada.da.modules.auth.security;
 
 import java.io.IOException;
 import java.util.List;
@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.kada.da.Util.JwtTokenUtil;
-import com.kada.da.Repository.TokenBlacklistRepository; // IMPORT THÊM
+import com.kada.da.modules.auth.repository.TokenBlacklistRepository; // IMPORT THÊM
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

@@ -1,4 +1,4 @@
-package com.kada.da.Service.impl;
+package com.kada.da.modules.billing.service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -9,19 +9,18 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional; // 1. NHỚ IMPORT ENUM
 
-import com.kada.da.Dto.HoaDonRequestDTO;
-import com.kada.da.Dto.Response.HoaDonResponseDTO;
-import com.kada.da.Entity.CtHoaDon;
-import com.kada.da.Entity.CtHoaDonId;
-import com.kada.da.Entity.HoaDon;
-import com.kada.da.Entity.LoHang;
-import com.kada.da.Enum.TrangThaiHoaDon;
+import com.kada.da.modules.billing.dto.HoaDonRequestDTO;
+import com.kada.da.modules.billing.dto.HoaDonResponseDTO;
+import com.kada.da.modules.billing.domain.CtHoaDon;
+import com.kada.da.modules.billing.domain.CtHoaDonId;
+import com.kada.da.modules.billing.domain.HoaDon;
+import com.kada.da.modules.inventory.domain.LoHang;
+import com.kada.da.modules.billing.Enum.TrangThaiHoaDon;
 import com.kada.da.Exception.BusinessRuleException;
 import com.kada.da.Exception.ResourceNotFoundException;
-import com.kada.da.Repository.CtHoaDonRepository;
-import com.kada.da.Repository.HoaDonRepository;
-import com.kada.da.Repository.LoHangRepository;
-import com.kada.da.Service.HoaDonService;
+import com.kada.da.modules.billing.repository.CtHoaDonRepository;
+import com.kada.da.modules.billing.repository.HoaDonRepository;
+import com.kada.da.modules.inventory.repository.LoHangRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

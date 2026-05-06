@@ -1,6 +1,6 @@
-package com.kada.da.Dto.Response;
+package com.kada.da.modules.booking.dto;
 
-import com.kada.da.Entity.LichHen;
+import com.kada.da.modules.booking.domain.LichHen;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

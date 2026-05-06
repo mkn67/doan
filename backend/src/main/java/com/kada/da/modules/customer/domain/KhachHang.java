@@ -1,7 +1,8 @@
-package com.kada.da.Entity;
+package com.kada.da.modules.customer.domain;
 
 import java.time.LocalDate;
 
+import com.kada.da.modules.auth.domain.TaiKhoan;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;

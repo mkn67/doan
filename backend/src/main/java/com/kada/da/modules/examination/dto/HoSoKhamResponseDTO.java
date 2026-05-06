@@ -1,6 +1,5 @@
-package com.kada.da.Dto.Response;
+package com.kada.da.modules.examination.dto;
 
-import com.kada.da.Dto.ChiTietThiLucDTO;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

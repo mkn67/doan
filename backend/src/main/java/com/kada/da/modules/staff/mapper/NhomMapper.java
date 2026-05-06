@@ -1,7 +1,7 @@
-package com.kada.da.modules.auth.mapper;
+package com.kada.da.modules.staff.mapper;
 
-import com.kada.da.modules.auth.dto.NhomRequestDTO;
-import com.kada.da.modules.auth.dto.NhomResponseDTO;
+import com.kada.da.modules.staff.dto.NhomRequestDTO;
+import com.kada.da.modules.staff.dto.NhomResponseDTO;
 import com.kada.da.modules.staff.domain.Nhom;
 import com.kada.da.modules.auth.dto.VaiTroResponseDTO;
 

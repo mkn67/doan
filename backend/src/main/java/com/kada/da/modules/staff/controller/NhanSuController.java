@@ -1,4 +1,4 @@
-package com.kada.da.Controller;
+package com.kada.da.modules.staff.controller;
 
 import java.util.List;
 
@@ -13,11 +13,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.kada.da.Dto.NhanSuRequestDTO;
-import com.kada.da.Dto.Response.NhanSuResponseDTO;
-import com.kada.da.Dto.Response.PageResponseDTO;
-import com.kada.da.Dto.Response.TopBacSiDTO;
-import com.kada.da.Service.NhanSuService;
+import com.kada.da.modules.staff.dto.NhanSuRequestDTO;
+import com.kada.da.modules.staff.dto.NhanSuResponseDTO;
+import com.kada.da.modules.staff.dto.PageResponseDTO;
+import com.kada.da.modules.report.dto.TopBacSiDTO;
+import com.kada.da.modules.staff.service.NhanSuService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

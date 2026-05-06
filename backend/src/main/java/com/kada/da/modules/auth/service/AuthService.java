@@ -1,10 +1,10 @@
-package com.kada.da.Service;
+package com.kada.da.modules.auth.service;
 
-import com.kada.da.Dto.ChangePasswordRequestDTO;
-import com.kada.da.Dto.LoginRequestDTO;
-import com.kada.da.Dto.TaiKhoanRequestDTO;
-import com.kada.da.Dto.Response.LoginResponseDTO;
-import com.kada.da.Dto.Response.TaiKhoanResponseDTO;
+import com.kada.da.modules.auth.dto.ChangePasswordRequestDTO;
+import com.kada.da.modules.auth.dto.LoginRequestDTO;
+import com.kada.da.modules.auth.dto.TaiKhoanRequestDTO;
+import com.kada.da.modules.auth.dto.LoginResponseDTO;
+import com.kada.da.modules.auth.dto.TaiKhoanResponseDTO;
 
 public interface AuthService {
     TaiKhoanResponseDTO register(TaiKhoanRequestDTO request);

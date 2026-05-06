@@ -1,4 +1,4 @@
-package com.kada.da.modules.billing.repository;
+package com.kada.da.modules.billing.repository.custom;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.ParameterMode;

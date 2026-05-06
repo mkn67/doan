@@ -1,7 +1,7 @@
-package com.kada.da.Mapper;
+package com.kada.da.modules.auth.mapper;
 
-import com.kada.da.Dto.VaiTroRequestDTO;
-import com.kada.da.Dto.Response.VaiTroResponseDTO;
+import com.kada.da.modules.auth.dto.VaiTroRequestDTO;
+import com.kada.da.modules.auth.dto.VaiTroResponseDTO;
 import com.kada.da.modules.auth.domain.VaiTro;
 
 public class VaiTroMapper {

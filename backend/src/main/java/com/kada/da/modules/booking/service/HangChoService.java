@@ -1,6 +1,6 @@
-package com.kada.da.Service;
+package com.kada.da.modules.booking.service;
 
-import com.kada.da.Dto.HangChoHomNayDto;
+import com.kada.da.modules.booking.dto.HangChoHomNayDto;
 import java.time.LocalDateTime;
 import java.util.List;
 

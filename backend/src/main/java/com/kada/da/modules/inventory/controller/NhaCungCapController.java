@@ -1,9 +1,9 @@
-package com.kada.da.Controller;
+package com.kada.da.modules.inventory.controller;
 
-import com.kada.da.Dto.NhaCungCapRequestDTO;
-import com.kada.da.Dto.Response.NhaCungCapResponseDTO;
-import com.kada.da.Dto.Response.PageResponseDTO;
-import com.kada.da.Service.NhaCungCapService;
+import com.kada.da.modules.inventory.dto.NhaCungCapRequestDTO;
+import com.kada.da.modules.inventory.dto.NhaCungCapResponseDTO;
+import com.kada.da.modules.staff.dto.PageResponseDTO;
+import com.kada.da.modules.inventory.service.NhaCungCapService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
