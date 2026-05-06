@@ -1,5 +1,5 @@
 ﻿"use client";
-
+import "@/app/globals.css";
 import { useState } from "react";
 import { useCreateHoSoKham } from "@/hooks/useClinic";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,7 @@ export default function ExaminationPage() {
   });
 
   const handleSubmit = () => {
-    mutation.mutate(form as any);
+    mutation.mutate(form);
   };
 
   return (
