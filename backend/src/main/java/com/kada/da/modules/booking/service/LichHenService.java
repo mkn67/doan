@@ -1,0 +1,24 @@
+package com.kada.da.Service;
+
+import com.kada.da.Dto.Response.HangChoResponseDTO;
+import com.kada.da.modules.booking.dto.LichHenResponseDTO;
+import com.kada.da.Dto.Response.DatLichResponseDTO;
+import com.kada.da.Dto.LichHenTrieuChungDto;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+
+public interface LichHenService {
+
+    // 1. Dùng Stored Procedure (Nghiệp vụ lõi)
+    DatLichResponseDTO datLichHen(String maKh, String maNs, String maGoi, LocalDate ngayHen, LocalDateTime gioHen);
+
+    void huyLichHen(String maLh);
+
+    // 2. Dùng JPA bình thường (Cập nhật trạng thái)
+    LichHenResponseDTO confirmLichHen(String maLichHen);
+
+    HangChoResponseDTO checkIn(String maLichHen);
+
+    List<LichHenTrieuChungDto> getLichHenKemTrieuChung();
+}
