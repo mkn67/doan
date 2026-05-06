@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import "@/app/globals.css";
 import { useState } from "react";
 import { useDanhSachSanPham, useCreateSanPham } from "@/hooks/useInventory";
 import { Button } from "@/components/ui/button";

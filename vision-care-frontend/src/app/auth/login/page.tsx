@@ -44,15 +44,23 @@ export default function LoginPage() {
   async function onSubmit(values: z.infer<typeof loginSchema>) {
     setIsLoading(true)
     try {
+      console.log("URL:", `${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`);
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(values),
       });
 
-      const data = await response.json();
+      const text = await response.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        console.error("Response text:", text);
+        throw new Error("API không trả JSON (có thể sai URL hoặc lỗi server)");
+      }
 
-      if (!response.ok) throw new Error(data.message || "Đăng nhập thất bại");
+      if (!response.ok) throw new Error(data?.message || "Đăng nhập thất bại");
 
       Cookies.set('token', data.token, { expires: 7, path: '/' });
 
