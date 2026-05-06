@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // 1. Xác định BASE_URL duy nhất tại đây
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1";
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
 
 // 2. Tạo một instance (thực thể) dùng chung cho toàn bộ app
 const axiosClient = axios.create({
