@@ -1,68 +1,74 @@
-// ===== REQUEST =====
+// ==========================================
+// REQUEST DTOs (Dữ liệu gửi lên Backend)
+// ==========================================
+
 export interface LoginRequestDTO {
-  username: string
-  password: string
+  username: string;
+  password: string;
 }
 
 export interface TaiKhoanRequestDTO {
-  maTk: string
-  username: string
-  password: string
-  loaiTk: string
-  hoTen: string
-  sdt: string
-  diaChi: string
-  maNhom: string
+  maTk?: string; // Nên để optional (?) vì lúc tạo mới chưa có mã, backend tự sinh
+  username: string;
+  password: string;
+  loaiTk: string;
+  hoTen?: string; // Optional vì trong Java ông check null
+  sdt?: string;   // Optional
+  diaChi?: string;
+  maNhom?: string;
 }
 
 export interface ChangePasswordRequestDTO {
-  oldPassword: string
-  newPassword: string
-  confirmPassword: string
+  oldPassword: string;
+  newPassword: string;
+  confirmPassword: string;
 }
 
 export interface ForgotPasswordRequestDTO {
-  email: string
+  email: string;
 }
 
 export interface PhanQuyenRequestDTO {
-  maTk: string
-  maNhom: string
+  maTk: string;
+  maNhom: string;
 }
 
 export interface VaiTroRequestDTO {
-  MaVaiTro: string      // chú ý: backend viết hoa chữ M
-  tenVaiTro: string
-  moTa: string
+  MaVaiTro: string; // Chú ý: Backend viết hoa chữ M
+  tenVaiTro: string;
+  moTa: string;
 }
 
 export interface XacNhanEmailDTO {
-  email: string
-  otpCode: string       // đúng 6 ký tự
+  email: string;
+  otpCode: string; // Đúng 6 ký tự
 }
 
-// ===== RESPONSE =====
+// ==========================================
+// RESPONSE DTOs (Dữ liệu Backend trả về)
+// ==========================================
+
 export interface LoginResponseDTO {
-  token: string
-  username: string
-  maNhom: string
-  loaiTk: string
+  token: string;
+  username: string;
+  loaiTk: string;
+  maNhom?: string; 
 }
 
 export interface TaiKhoanResponseDTO {
-  maTk: string
-  username: string
-  loaiTk: string
-  trangThai: number     // 1 = active, 0 = inactive
+  maTk: string;
+  username: string;
+  loaiTk: string;
+  trangThai: number; // 1 = active, 0 = inactive
 }
 
 export interface VaiTroResponseDTO {
-  maVaiTro: string
-  tenVaiTro: string
-  moTa: string
+  maVaiTro: string;
+  tenVaiTro: string;
+  moTa: string;
 }
 
 export interface ChangePasswordResponseDTO {
-  status: string
-  message: string
+  status: string;
+  message: string;
 }

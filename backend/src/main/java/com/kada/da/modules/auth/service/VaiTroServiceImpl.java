@@ -1,0 +1,116 @@
+package com.kada.da.modules.auth.service;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.kada.da.modules.staff.dto.NhomResponseDTO;
+import com.kada.da.modules.staff.dto.PageResponseDTO;
+import com.kada.da.modules.auth.dto.VaiTroResponseDTO;
+import com.kada.da.modules.auth.dto.VaiTroRequestDTO;
+import com.kada.da.modules.auth.domain.VaiTro;
+import com.kada.da.Exception.BusinessRuleException;
+import com.kada.da.Exception.ResourceNotFoundException;
+import com.kada.da.modules.staff.repository.NhomRepository;
+import com.kada.da.modules.auth.repository.VaiTroRepository;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+public class VaiTroServiceImpl implements VaiTroService {
+
+    private final VaiTroRepository vaiTroRepository;
+    private final NhomRepository nhomRepository;
+
+    @Override
+    @Transactional
+    public VaiTroResponseDTO createVaiTro(VaiTroRequestDTO request) {
+        if (vaiTroRepository.existsById(request.getMaVaiTro())) {
+            throw new BusinessRuleException("Mã vai trò đã tồn tại!");
+        }
+
+        VaiTro vaiTro = VaiTro.builder()
+                .maVaiTro(request.getMaVaiTro().toUpperCase())
+                .tenVaiTro(request.getTenVaiTro())
+                .moTa(request.getMoTa())
+                .build();
+
+        return convertToResponse(vaiTroRepository.save(vaiTro));
+    }
+
+    @Override
+    public VaiTroResponseDTO getVaiTroById(String maVaiTro) {
+        return convertToResponse(findById(maVaiTro));
+    }
+
+    @Override
+    public PageResponseDTO<VaiTroResponseDTO> getAllVaiTro(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<VaiTro> pageData = vaiTroRepository.findAll(pageable);
+
+        return PageResponseDTO.<VaiTroResponseDTO>builder()
+                .content(pageData.getContent().stream().map(this::convertToResponse).collect(Collectors.toList()))
+                .pageNo(page)
+                .pageSize(size)
+                .totalElements(pageData.getTotalElements())
+                .totalPages(pageData.getTotalPages())
+                .last(pageData.isLast())
+                .build();
+    }
+
+    @Override
+    public List<VaiTroResponseDTO> getAllVaiTroList() {
+        return vaiTroRepository.findAll().stream().map(this::convertToResponse).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<NhomResponseDTO> getNhomByVaiTro(String maVaiTro) {
+        // Tùy theo cách map entity, giả sử NhomRepository có hàm tìm nhóm theo vai trò
+        return nhomRepository.findByVaiTros_MaVaiTro(maVaiTro).stream()
+                .map(nhom -> NhomResponseDTO.builder().maNhom(nhom.getMaNhom()).tenNhom(nhom.getTenNhom()).build())
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public VaiTroResponseDTO updateVaiTro(String maVaiTro, VaiTroRequestDTO request) {
+        VaiTro vaiTro = findById(maVaiTro);
+        vaiTro.setTenVaiTro(request.getTenVaiTro());
+        vaiTro.setMoTa(request.getMoTa());
+        return convertToResponse(vaiTroRepository.save(vaiTro));
+    }
+
+    @Override
+    @Transactional
+    public void deleteVaiTro(String maVaiTro) {
+        vaiTroRepository.delete(findById(maVaiTro));
+    }
+
+    @Override
+    public List<VaiTroResponseDTO> searchVaiTroByTen(String keyword) {
+        return vaiTroRepository.findByTenVaiTroContainingIgnoreCase(keyword).stream()
+                .map(this::convertToResponse).collect(Collectors.toList());
+    }
+
+    private VaiTro findById(String maVaiTro) {
+        return vaiTroRepository.findById(maVaiTro)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy vai trò: " + maVaiTro));
+    }
+
+    private VaiTroResponseDTO convertToResponse(VaiTro entity) {
+        return VaiTroResponseDTO.builder()
+                .maVaiTro(entity.getMaVaiTro())
+                .tenVaiTro(entity.getTenVaiTro())
+                .moTa(entity.getMoTa())
+                .build();
+    }
+}

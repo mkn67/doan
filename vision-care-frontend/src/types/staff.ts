@@ -127,3 +127,32 @@ export interface XuLyKinhResponseDTO {
   ghiChu?: string
   thongSoKinh?: object
 }
+export interface HangChoHomNayDTO {
+  maHc: string;
+  soThuTu: number;
+  loaiKhach: string; // "Walk-in" or "Hen truoc"
+  tenKhach: string;
+  sdt?: string;
+  tenBacSi?: string;
+  goiKham?: string;
+  trangThai: string;
+  gioDangKy: string; // ISO datetime
+  phutCho: number;
+}
+
+export interface LichHenTrieuChungDTO {
+  maLh: string;
+  ngayHen: string; // ISO datetime
+  tenKhach: string;
+  trangThai: string;
+  danhSachTrieuChung: string[];
+}
+
+export interface SlotTrongDTO {
+  maNs: string;
+  tenBacSi: string;
+  ngayLam: string; // YYYY-MM-DD
+  gioBatDau: number; // 7.5 = 7:30
+  gioKetThuc: number;
+  trangThaiSlot: "Đã đặt" | "Còn trống";
+}

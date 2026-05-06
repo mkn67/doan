@@ -1,8 +1,41 @@
-﻿export default function SuppliersPage() {
+﻿"use client";
+
+import { useState } from "react";
+import { useDanhSachNhaCungCap, useCreateNhaCungCap } from "@/hooks/useInventory";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+
+export default function SuppliersPage() {
+  const { data } = useDanhSachNhaCungCap();
+  const createMutation = useCreateNhaCungCap();
+
+  const [form, setForm] = useState({
+    tenNcc: "",
+    sdt: "",
+  });
+
+  const handleSubmit = () => {
+    createMutation.mutate(form as any);
+  };
+
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold">Trang suppliers</h1>
-      <p className="text-zinc-500 mt-2">Giao diện đang được 2 em đệ tử xây dựng...</p>
+    <div>
+      <h1>Nhà cung cấp</h1>
+
+      <Input placeholder="Tên NCC" onChange={(e) => setForm({ ...form, tenNcc: e.target.value })} />
+      <Input placeholder="SĐT" onChange={(e) => setForm({ ...form, sdt: e.target.value })} />
+      <Button onClick={handleSubmit}>Thêm</Button>
+
+      <table>
+        <tbody>
+          {data?.map((ncc) => (
+            <tr key={ncc.maNcc}>
+              <td>{ncc.tenNcc}</td>
+              <td>{ncc.sdt}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

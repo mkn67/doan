@@ -1,0 +1,130 @@
+package com.kada.da.modules.staff.service;
+
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.kada.da.modules.staff.dto.NhanSuRequestDTO;
+import com.kada.da.modules.staff.dto.NhanSuResponseDTO;
+import com.kada.da.modules.staff.dto.PageResponseDTO; // IMPORT REPOSITORY
+import com.kada.da.modules.report.dto.TopBacSiDTO;
+import com.kada.da.modules.staff.domain.ChucVu;
+import com.kada.da.modules.staff.domain.NhanSu;
+import com.kada.da.modules.report.domain.VRatingBacSi;
+import com.kada.da.Exception.ResourceNotFoundException;
+import com.kada.da.modules.staff.repository.ChucVuRepository;
+import com.kada.da.modules.staff.repository.NhanSuRepository;
+import com.kada.da.modules.report.repository.VRatingBacSiRepository; // FIX LỖI 1: QUÊN IMPORT LIST
+
+import lombok.RequiredArgsConstructor;
+
+@Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+public class NhanSuServiceImpl implements NhanSuService {
+
+    private final NhanSuRepository nhanSuRepository;
+    private final ChucVuRepository chucVuRepository;
+
+    // FIX LỖI 2: QUÊN INJECT REPOSITORY VÀO ĐÂY
+    private final VRatingBacSiRepository vRatingBacSiRepository;
+
+    @Override
+    @Transactional
+    public NhanSuResponseDTO createNhanSu(NhanSuRequestDTO request) {
+        ChucVu chucVu = chucVuRepository.findById(request.getMaChucVu())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                "Không tìm thấy chức vụ: " + request.getMaChucVu()));
+
+        NhanSu nhanSu = NhanSu.builder()
+                .maNs("NS" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
+                .hoTen(request.getHoTen())
+                .sdt(request.getSdt())
+                .cccd(request.getCccd())
+                .ngaySinh(request.getNgaySinh())
+                .gioiTinh(request.getGioiTinh())
+                .diaChi(request.getDiaChi())
+                .chucVu(chucVu)
+                .isDeleted(0)
+                .build();
+
+        return mapToResponse(nhanSuRepository.save(nhanSu));
+    }
+
+    @Override
+    @Transactional
+    public NhanSuResponseDTO updateNhanSu(String maNs, NhanSuRequestDTO request) {
+        NhanSu nhanSu = nhanSuRepository.findById(maNs)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy nhân sự: " + maNs));
+
+        ChucVu chucVu = chucVuRepository.findById(request.getMaChucVu())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                "Không tìm thấy chức vụ: " + request.getMaChucVu()));
+
+        nhanSu.setHoTen(request.getHoTen());
+        nhanSu.setSdt(request.getSdt());
+        nhanSu.setNgaySinh(request.getNgaySinh());
+        nhanSu.setGioiTinh(request.getGioiTinh());
+        nhanSu.setDiaChi(request.getDiaChi());
+        nhanSu.setChucVu(chucVu);
+
+        return mapToResponse(nhanSuRepository.save(nhanSu));
+    }
+
+    @Override
+    public NhanSuResponseDTO getNhanSuById(String maNs) {
+        return nhanSuRepository.findById(maNs)
+                .map(this::mapToResponse)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy nhân sự: " + maNs));
+    }
+
+    @Override
+    public PageResponseDTO<NhanSuResponseDTO> getAllNhanSu(int page, int size, String keyword) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<NhanSu> nhanSuPage = (keyword == null || keyword.isEmpty())
+                ? nhanSuRepository.findAll(pageable)
+                : nhanSuRepository.findByHoTenContainingIgnoreCase(keyword, pageable);
+
+        return PageResponseDTO.<NhanSuResponseDTO>builder()
+                .content(nhanSuPage.getContent().stream().map(this::mapToResponse)
+                        .collect(Collectors.toList()))
+                .pageNo(nhanSuPage.getNumber())
+                .pageSize(nhanSuPage.getSize())
+                .totalElements(nhanSuPage.getTotalElements())
+                .totalPages(nhanSuPage.getTotalPages())
+                .last(nhanSuPage.isLast())
+                .build();
+    }
+
+    private NhanSuResponseDTO mapToResponse(NhanSu entity) {
+        return NhanSuResponseDTO.builder()
+                .maNs(entity.getMaNs())
+                .hoTen(entity.getHoTen())
+                .sdt(entity.getSdt())
+                .diaChi(entity.getDiaChi())
+                .ngaySinh(entity.getNgaySinh())
+                .gioiTinh(entity.getGioiTinh())
+                .tenChucVu(entity.getChucVu() != null ? entity.getChucVu().getTenCv() : null)
+                .build();
+    }
+
+    @Override
+    public List<TopBacSiDTO> getTopBacSiRating() {
+        // 1. Gọi Repository lấy list View đã sắp xếp từ DB
+        List<VRatingBacSi> listTopView = vRatingBacSiRepository.findAllByOrderByRatingTrungBinhDesc();
+
+        // 2. Map Entity View sang DTO
+        return listTopView.stream().map(view -> TopBacSiDTO.builder()
+                .maNs(view.getMaNs())
+                .tenBacSi(view.getHoTen())
+                .tongSoCaKham(view.getTongLuotDanhGia())
+                .diemDanhGiaTrungBinh(view.getRatingTrungBinh())
+                .build()).collect(Collectors.toList());
+    }
+}
