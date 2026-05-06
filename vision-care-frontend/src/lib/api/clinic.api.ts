@@ -10,7 +10,7 @@ import {
   DatLichRequest, DatLichResponse
 } from '@/types/clinic';
 
-const BASE_URL = '/api/clinic';
+const BASE_URL = '/clinic';
 
 export const clinicApi = {
   // --- HỒ SƠ KHÁM ---
@@ -75,7 +75,7 @@ export const clinicApi = {
   // --- BOOKING ---
   datLich: async (data: DatLichRequest): Promise<DatLichResponse> => {
     const response = await axiosClient.post(
-      "/api/bookings/dat-lich",
+      "/bookings/dat-lich",
       data
     );
     return response.data;

@@ -33,10 +33,12 @@ export const useCreateNhanSu = () => {
   return useMutation({
     mutationFn: (data: NhanSuRequestDTO) => staffApi.createNhanSu(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["nhan-su"] });
+      queryClient.invalidateQueries({ queryKey: ["danh-sach-nhan-su"] });
+      alert("Thêm nhân sự và cấp tài khoản thành công!");
     },
-    onError: (error: AxiosError) => {
+    onError: (error: AxiosError<{ message?: string }>) => {
       console.error("Create staff error:", error.response?.data || error.message);
+      alert("Lỗi: " + (error.response?.data?.message || error.message));
     },
   });
 };

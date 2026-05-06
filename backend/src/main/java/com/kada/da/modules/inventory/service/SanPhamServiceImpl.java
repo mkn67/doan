@@ -7,9 +7,8 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.kada.da.modules.inventory.dto.CanhBaoTonKhoDto;
-import com.kada.da.modules.inventory.domain.LoHang;
 import com.kada.da.modules.inventory.domain.SanPham;
+import com.kada.da.modules.inventory.dto.CanhBaoTonKhoDto;
 import com.kada.da.modules.inventory.repository.SanPhamRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -55,12 +54,14 @@ public class SanPhamServiceImpl implements SanPhamService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public SanPham getSanPhamById(String maSp) {
         return sanPhamRepository.findById(maSp)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy Sản phẩm với mã: " + maSp));
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<SanPham> getAllSanPham() {
         return sanPhamRepository.findAll();
     }
@@ -93,18 +94,18 @@ public class SanPhamServiceImpl implements SanPhamService {
             // Cộng dồn tồn kho của các lô hàng chưa hết hạn và còn hàng
             long tongTon = sp.getDanhSachLoHang().stream()
                     .filter(lh -> lh.getNgayHetHan() != null && lh.getNgayHetHan().isAfter(today)
-                    && lh.getSoLuongTon() > 0)
-                    .mapToLong(LoHang::getSoLuongTon)
+                    && lh.getSoLuongTon() != null && lh.getSoLuongTon() > 0)
+                    .mapToLong(lh -> lh.getSoLuongTon() != null ? lh.getSoLuongTon() : 0L)
                     .sum();
 
             int toiThieu = sp.getTonKhoToiThieu() != null ? sp.getTonKhoToiThieu() : 0;
             String mucDo = "On dinh";
 
             if (tongTon == 0) {
-                mucDo = "Het hang"; 
-            }else if (tongTon <= toiThieu) {
-                mucDo = "Sap het"; 
-            }else if (tongTon <= toiThieu * 2) {
+                mucDo = "Het hang";
+            } else if (tongTon <= toiThieu) {
+                mucDo = "Sap het";
+            } else if (tongTon <= toiThieu * 2) {
                 mucDo = "Canh bao";
             }
 

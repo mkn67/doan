@@ -21,7 +21,7 @@ import jakarta.persistence.StoredProcedureQuery;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/examinations")
+@RequestMapping("/api/v1/examinations")
 @RequiredArgsConstructor
 public class ExaminationController {
 

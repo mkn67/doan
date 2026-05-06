@@ -1,16 +1,22 @@
 package com.kada.da.modules.inventory.controller;
 
-import com.kada.da.modules.inventory.dto.LoHangResponseDTO;
-import com.kada.da.modules.staff.dto.PageResponseDTO;
-import com.kada.da.modules.inventory.service.LoHangService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.kada.da.modules.inventory.dto.LoHangResponseDTO;
+import com.kada.da.modules.inventory.service.LoHangService;
+import com.kada.da.modules.staff.dto.PageResponseDTO;
+
+import lombok.RequiredArgsConstructor;
+
 @RestController
-@RequestMapping("/api/inventory")
+@RequestMapping("/api/v1/inventory")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*") // Giữ nguyên CORS cho Frontend dễ gọi
 public class InventoryController {

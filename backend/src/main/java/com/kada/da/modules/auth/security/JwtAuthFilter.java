@@ -10,8 +10,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.kada.da.Util.JwtTokenUtil;
-import com.kada.da.modules.auth.repository.TokenBlacklistRepository; // IMPORT THÊM
+import com.kada.da.modules.auth.repository.TokenBlacklistRepository;
 
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -23,7 +24,18 @@ import lombok.RequiredArgsConstructor;
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtTokenUtil jwtTokenUtil;
-    private final TokenBlacklistRepository tokenBlacklistRepository; // INJECT THÊM
+    private final TokenBlacklistRepository tokenBlacklistRepository;
+
+    // BỔ SUNG HÀM NÀY: Cấp thẻ VIP đi thẳng, không cần soát Token cho Swagger và Auth (Login/Register)
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+        String path = request.getServletPath();
+        return path.startsWith("/v3/api-docs")
+                || path.startsWith("/swagger-ui")
+                || path.startsWith("/webjars")
+                || path.equals("/swagger-ui.html")
+                || path.startsWith("/api/v1/auth");
+    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -50,7 +62,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                             null, List.of(authority));
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
-            } catch (Exception e) {
+            } catch (JwtException | IllegalArgumentException e) {
                 System.out.println("Lỗi xác thực Token: " + e.getMessage());
             }
         }

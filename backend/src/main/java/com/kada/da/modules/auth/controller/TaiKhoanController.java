@@ -17,7 +17,7 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 // Đổi hẳn sang /api/tai-khoan cho chuẩn RESTful và dứt tình với AuthController
-@RequestMapping("/api/tai-khoan")
+@RequestMapping("/api/v1/tai-khoan")
 @RequiredArgsConstructor
 public class TaiKhoanController {
 

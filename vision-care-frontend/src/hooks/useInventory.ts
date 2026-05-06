@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { AxiosError } from "axios";
 import { inventoryApi } from "@/lib/api/inventory.api";
@@ -6,6 +7,8 @@ import {
   PhieuNhapRequest,
   NhaCungCapRequest,
   LoHangRequest,
+  PhieuNhapResponse,
+  PageResponseDTO,
 } from "@/types/inventory";
 
 export const useDanhSachSanPham = () => {
@@ -44,7 +47,7 @@ export const useCreateLoHang = () => {
 
 export const useDanhSachPhieuNhap = () => {
   return useQuery({
-    queryKey: ["phieu-nhap"],
+    queryKey: ['phieu-nhap'],
     queryFn: () => inventoryApi.getPhieuNhap(),
     staleTime: 5 * 60 * 1000,
   });

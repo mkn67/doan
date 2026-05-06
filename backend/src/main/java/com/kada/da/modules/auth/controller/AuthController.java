@@ -13,15 +13,15 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.kada.da.modules.auth.dto.ChangePasswordRequestDTO;
 import com.kada.da.modules.auth.dto.LoginRequestDTO;
-import com.kada.da.modules.auth.dto.TaiKhoanResponseDTO;
 import com.kada.da.modules.auth.dto.TaiKhoanRequestDTO;
+import com.kada.da.modules.auth.dto.TaiKhoanResponseDTO;
 import com.kada.da.modules.auth.service.AuthService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
 public class AuthController {
 

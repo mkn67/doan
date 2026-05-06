@@ -14,7 +14,7 @@ import com.kada.da.modules.booking.service.HangChoService;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/hang-cho")
+@RequestMapping("/api/v1/hang-cho")
 @RequiredArgsConstructor
 public class HangChoController {
 

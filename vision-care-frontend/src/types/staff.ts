@@ -2,15 +2,19 @@
 import type { TaiKhoanResponseDTO, VaiTroResponseDTO } from './auth'
 // ===== REQUEST =====
 export interface NhanSuRequestDTO {
-  maNs?: string
+  username: string
+  password: string
+  maNhom: string
+  maNs?: string // Null khi thêm mới, dùng khi cập nhật
   hoTen: string
   sdt: string
   email?: string
   diaChi?: string
-  ngaySinh?: string       // LocalDate → 'YYYY-MM-DD'
+  ngaySinh?: string       // LocalDate -> 'YYYY-MM-DD'
   gioiTinh?: string
   cccd?: string
-  maChucVu: string
+  maChucVu?: string
+  chuyenKhoa?: string     // Dành riêng cho Bác sĩ
 }
 
 export interface ChucVuDTO {

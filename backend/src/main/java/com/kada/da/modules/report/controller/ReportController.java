@@ -16,7 +16,7 @@ import com.kada.da.modules.report.service.ReportService;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/reports")
+@RequestMapping("/api/v1/reports")
 @RequiredArgsConstructor
 public class ReportController {
 
@@ -30,8 +30,8 @@ public class ReportController {
     }
 
     /**
-     * API Thống kê doanh thu theo tháng/năm
-     * URL: GET http://localhost:8081/api/reports/revenue?thang=3&nam=2026
+     * API Thống kê doanh thu theo tháng/năm URL: GET
+     * http://localhost:8081/api/reports/revenue?thang=3&nam=2026
      */
     @GetMapping("/revenue")
     @PreAuthorize("hasRole('ADMIN') or hasRole('QUAN_LY')")

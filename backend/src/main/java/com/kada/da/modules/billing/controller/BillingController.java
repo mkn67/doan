@@ -1,25 +1,38 @@
 package com.kada.da.modules.billing.controller;
 
-import com.kada.da.modules.billing.dto.TaoHoaDonJsonRequest;
-import com.lowagie.text.*;
-import com.lowagie.text.pdf.PdfWriter;
-import com.kada.da.modules.billing.domain.HoaDon;
-import com.kada.da.modules.billing.domain.CtHoaDon;
-import com.kada.da.modules.billing.service.HoaDonService;
-import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
+import java.io.IOException;
+import java.text.NumberFormat;
+import java.util.Locale;
+import java.util.Map;
+
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.io.IOException;
-import java.text.NumberFormat;
-import java.util.Map;
-import java.util.Locale;
+import com.kada.da.modules.billing.domain.CtHoaDon;
+import com.kada.da.modules.billing.domain.HoaDon;
+import com.kada.da.modules.billing.dto.TaoHoaDonJsonRequest;
+import com.kada.da.modules.billing.service.HoaDonService;
+import com.lowagie.text.Document;
+import com.lowagie.text.Font;
+import com.lowagie.text.FontFactory;
+import com.lowagie.text.PageSize;
+import com.lowagie.text.Paragraph;
+import com.lowagie.text.pdf.PdfWriter;
+
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/billing")
+@RequestMapping("/api/v1/billing")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*")
 public class BillingController {

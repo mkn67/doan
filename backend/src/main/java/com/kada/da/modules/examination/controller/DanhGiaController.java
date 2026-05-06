@@ -1,22 +1,33 @@
 package com.kada.da.modules.examination.controller;
 
-import com.kada.da.modules.examination.dto.DanhGiaRequestDTO;
-import com.kada.da.modules.examination.dto.DanhGiaResponseDTO;
-import com.kada.da.modules.staff.dto.PageResponseDTO;
-import com.kada.da.modules.examination.service.DanhGiaService;
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
+import com.kada.da.modules.examination.dto.DanhGiaRequestDTO;
+import com.kada.da.modules.examination.dto.DanhGiaResponseDTO;
+import com.kada.da.modules.examination.service.DanhGiaService;
+import com.kada.da.modules.staff.dto.PageResponseDTO;
+
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/danh-gia")
+@RequestMapping("/api/v1/danh-gia")
 @RequiredArgsConstructor
 public class DanhGiaController {
 

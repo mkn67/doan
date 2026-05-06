@@ -1,5 +1,6 @@
 package com.kada.da.modules.staff.service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -7,20 +8,25 @@ import java.util.stream.Collectors;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.kada.da.modules.staff.dto.NhanSuRequestDTO;
-import com.kada.da.modules.staff.dto.NhanSuResponseDTO;
-import com.kada.da.modules.staff.dto.PageResponseDTO; // IMPORT REPOSITORY
+import com.kada.da.Exception.ResourceNotFoundException;
+import com.kada.da.modules.auth.domain.TaiKhoan;
+import com.kada.da.modules.auth.repository.TaiKhoanRepository; // IMPORT REPOSITORY
+import com.kada.da.modules.report.domain.VRatingBacSi;
 import com.kada.da.modules.report.dto.TopBacSiDTO;
+import com.kada.da.modules.report.repository.VRatingBacSiRepository;
 import com.kada.da.modules.staff.domain.ChucVu;
 import com.kada.da.modules.staff.domain.NhanSu;
-import com.kada.da.modules.report.domain.VRatingBacSi;
-import com.kada.da.Exception.ResourceNotFoundException;
+import com.kada.da.modules.staff.domain.Nhom;
+import com.kada.da.modules.staff.dto.NhanSuRequestDTO;
+import com.kada.da.modules.staff.dto.NhanSuResponseDTO;
+import com.kada.da.modules.staff.dto.PageResponseDTO;
 import com.kada.da.modules.staff.repository.ChucVuRepository;
 import com.kada.da.modules.staff.repository.NhanSuRepository;
-import com.kada.da.modules.report.repository.VRatingBacSiRepository; // FIX LỖI 1: QUÊN IMPORT LIST
+import com.kada.da.modules.staff.repository.NhomRepository; // FIX LỖI 1: QUÊN IMPORT LIST
 
 import lombok.RequiredArgsConstructor;
 
@@ -31,6 +37,9 @@ public class NhanSuServiceImpl implements NhanSuService {
 
     private final NhanSuRepository nhanSuRepository;
     private final ChucVuRepository chucVuRepository;
+    private final TaiKhoanRepository taiKhoanRepository;
+    private final NhomRepository nhomRepository;
+    private final PasswordEncoder passwordEncoder;
 
     // FIX LỖI 2: QUÊN INJECT REPOSITORY VÀO ĐÂY
     private final VRatingBacSiRepository vRatingBacSiRepository;
@@ -38,22 +47,40 @@ public class NhanSuServiceImpl implements NhanSuService {
     @Override
     @Transactional
     public NhanSuResponseDTO createNhanSu(NhanSuRequestDTO request) {
-        ChucVu chucVu = chucVuRepository.findById(request.getMaChucVu())
-                .orElseThrow(() -> new ResourceNotFoundException(
-                "Không tìm thấy chức vụ: " + request.getMaChucVu()));
+        // 1. Tạo tài khoản
+        if (taiKhoanRepository.existsByUsername(request.getUsername())) {
+            throw new RuntimeException("Tên đăng nhập đã tồn tại!");
+        }
+
+        TaiKhoan taiKhoan = new TaiKhoan();
+        taiKhoan.setMaTk("TK" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+        taiKhoan.setUsername(request.getUsername());
+        taiKhoan.setPassword(passwordEncoder.encode(request.getPassword()));
+        taiKhoan.setLoaiTk("INTERNAL");
+        taiKhoan.setTrangThai(1);
+        taiKhoan.setDanhSachNhom(new ArrayList<>());
+
+        // 2. Gán nhóm quyền
+        Nhom nhomQuyen = nhomRepository.findById(request.getMaNhom())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy nhóm quyền: " + request.getMaNhom()));
+        taiKhoan.getDanhSachNhom().add(nhomQuyen);
+        TaiKhoan savedTk = taiKhoanRepository.save(taiKhoan);
+
+        // 3. Tạo hồ sơ nhân sự
+        ChucVu chucVu = null;
+        if (request.getMaChucVu() != null) {
+            chucVu = chucVuRepository.findById(request.getMaChucVu()).orElse(null);
+        }
 
         NhanSu nhanSu = NhanSu.builder()
                 .maNs("NS" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
                 .hoTen(request.getHoTen())
                 .sdt(request.getSdt())
-                .cccd(request.getCccd())
-                .ngaySinh(request.getNgaySinh())
-                .gioiTinh(request.getGioiTinh())
-                .diaChi(request.getDiaChi())
+                .taiKhoan(savedTk)
                 .chucVu(chucVu)
+                .chuyenKhoa(request.getChuyenKhoa())
                 .isDeleted(0)
                 .build();
-
         return mapToResponse(nhanSuRepository.save(nhanSu));
     }
 

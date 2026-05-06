@@ -1,22 +1,32 @@
 package com.kada.da.modules.prescription.controller;
 
-import com.kada.da.modules.prescription.dto.XuLyKinhRequestDTO;
-import com.kada.da.modules.staff.dto.PageResponseDTO;
-import com.kada.da.modules.prescription.dto.XuLyKinhResponseDTO;
-import com.kada.da.modules.prescription.service.XuLyKinhService;
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
+import com.kada.da.modules.prescription.dto.XuLyKinhRequestDTO;
+import com.kada.da.modules.prescription.dto.XuLyKinhResponseDTO;
+import com.kada.da.modules.prescription.service.XuLyKinhService;
+import com.kada.da.modules.staff.dto.PageResponseDTO;
+
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/xu-ly-kinh")
+@RequestMapping("/api/v1/xu-ly-kinh")
 @RequiredArgsConstructor
 public class XuLyKinhController {
 

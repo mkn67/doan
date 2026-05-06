@@ -8,7 +8,7 @@ export interface SanPhamRequest {
   giaBan: number;
   moTa?: string;
   hinhAnh?: string;
-  laThuoc: boolean;
+  laThuoc: number;
   tonKhoToiThieu?: number; // Bổ sung để phục vụ View cảnh báo
 }
 
@@ -135,4 +135,14 @@ export interface CanhBaoTonKhoDto {
   tongTon: number;
   tonKhoToiThieu: number;
   mucDo: "Het hang" | "Sap het" | "Canh bao" | "On dinh";
+}
+
+// types/common.ts
+export interface PageResponseDTO<T> {
+  content: T[];
+  pageNo: number;
+  pageSize: number;
+  totalElements: number;
+  totalPages: number;
+  last: boolean;
 }
