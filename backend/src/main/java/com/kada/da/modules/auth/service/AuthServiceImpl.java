@@ -10,7 +10,6 @@ import org.springframework.transaction.annotation.Transactional;
 import com.kada.da.Exception.BusinessRuleException;
 import com.kada.da.Exception.ResourceNotFoundException;
 import com.kada.da.Util.JwtTokenUtil;
-import com.kada.da.modules.auth.Enum.LoaiTaiKhoan;
 import com.kada.da.modules.auth.domain.TaiKhoan;
 import com.kada.da.modules.auth.domain.TokenBlacklist;
 import com.kada.da.modules.auth.dto.ChangePasswordRequestDTO;
@@ -40,38 +39,36 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public TaiKhoanResponseDTO register(TaiKhoanRequestDTO request) {
-        // 1. Kiểm tra username đã tồn tại
+        // 1. Kiểm tra username
         if (taiKhoanRepository.existsByUsername(request.getUsername())) {
             throw new BusinessRuleException("Tên đăng nhập đã tồn tại");
         }
 
-        // 2. Tạo tài khoản mới
+        // 2. Tạo tài khoản ép cứng là EXTERNAL (Khách Hàng)
         String maTk = generateMaTk();
         TaiKhoan taiKhoan = TaiKhoan.builder()
                 .maTk(maTk)
                 .username(request.getUsername())
                 .password(passwordEncoder.encode(request.getPassword()))
-                .loaiTk("KHACH_HANG")
-                .loaiTk(request.getLoaiTk())
+                .loaiTk("EXTERNAL") // CHỈ 1 DÒNG NÀY THÔI, ÉP LUÔN LÀ EXTERNAL
                 .trangThai(1)
                 .build();
         taiKhoan = taiKhoanRepository.save(taiKhoan);
         log.info("Đã tạo tài khoản: {}", maTk);
 
-        if (LoaiTaiKhoan.EXTERNAL.name().equals(request.getLoaiTk())) {
-            String maKh = generateMaKh();
-            KhachHang khachHang = KhachHang.builder()
-                    .maKh(maKh)
-                    .taiKhoan(taiKhoan)
-                    .hoTen(request.getHoTen() != null ? request.getHoTen() : request.getUsername())
-                    .sdt(request.getSdt() != null ? request.getSdt() : "")
-                    .diaChi(request.getDiaChi())
-                    .diemTichLuy(0)
-                    .isDeleted(0)
-                    .build();
-            khachHangRepository.save(khachHang);
-            log.info("Đã tạo khách hàng: {} cho tài khoản: {}", maKh, maTk);
-        }
+        // 3. Luôn luôn tạo record trong bảng KHACH_HANG vì đây là API đăng ký của khách
+        String maKh = generateMaKh();
+        KhachHang khachHang = KhachHang.builder()
+                .maKh(maKh)
+                .taiKhoan(taiKhoan)
+                .hoTen(request.getHoTen() != null ? request.getHoTen() : request.getUsername())
+                .sdt(request.getSdt() != null ? request.getSdt() : "")
+                .diaChi(request.getDiaChi() != null ? request.getDiaChi() : "Chưa cập nhật")
+                .diemTichLuy(0)
+                .isDeleted(0)
+                .build();
+        khachHangRepository.save(khachHang);
+        log.info("Đã tạo hồ sơ khách hàng: {} cho tài khoản: {}", maKh, maTk);
 
         return TaiKhoanResponseDTO.builder()
                 .maTk(taiKhoan.getMaTk())

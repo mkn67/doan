@@ -7,20 +7,19 @@ import { usePathname, useRouter } from "next/navigation";
 import { 
   LayoutDashboard, Calendar, Users, Package, Activity, 
   Settings, LogOut, Glasses 
-} from "lucide-react"; // ĐÃ XÓA FileText dư thừa ở đây
+} from "lucide-react"; 
 import Cookies from "js-cookie";
 
-// ĐÃ XÓA Metadata (vì Metadata không được dùng trong file "use client")
 
 const ALL_MENUS = [
   { title: "Dashboard", href: "/staff/dashboard", icon: LayoutDashboard, roles: ["NH04"] },
   { title: "Lịch hẹn", href: "/staff/reception/appointments", icon: Calendar, roles: ["NH04", "NH06", "NH01"] },
   { title: "Khách hàng", href: "/staff/reception/customers", icon: Users, roles: ["NH04", "NH06"] },
   { title: "Kho hàng", href: "/staff/inventory/products", icon: Package, roles: ["NH04", "NH03"] },
-  // 🏥 KHÁM BỆNH: Chỉ Bác sĩ (NH01) mới được vào, Quản lý (NH04) không cần thấy
-  { title: "Khám bệnh", href: "/staff/clinic/examinations", icon: Activity, roles: ["NH01"] },
-  // 👓 ĐƠN KÍNH: Dành cho Bác sĩ (NH01) hoặc Kỹ thuật viên (NH05)
-  { title: "Đơn kính", href: "/staff/workshop/glasses", icon: Glasses, roles: ["NH01", "NH05"] },
+  // Dành riêng cho Bác sĩ (Kê đơn xong là hết việc)
+  { title: "Khám & Kê đơn", href: "/staff/clinic/examinations", icon: Activity, roles: ["NH01"] },
+  // Dành Riêng cho Kỹ thuật viên (Chỉ vào xưởng nhận đơn và mài kính)
+  { title: "Xưởng gia công", href: "/staff/workshop/glasses", icon: Glasses, roles: ["NH05"] },
   { title: "Quản trị", href: "/staff/admin/employees", icon: Settings, roles: ["NH04"] },
 ];
 
@@ -76,7 +75,7 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
   if (!isMounted) return null;
 
   return (
-    <div className="flex h-screen bg-slate-50">
+    <div className="flex h-screen bg-slate-50 font-sans">
       <aside className="w-64 bg-white border-r flex flex-col">
         <div className="p-6">
           <h2 className="text-2xl font-bold text-blue-600">Vision Care</h2>

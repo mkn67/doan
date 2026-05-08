@@ -5,6 +5,7 @@ import {
   HangChoRequestDTO,
   NhanSuRequestDTO,
   NhomRequestDTO,
+  LichHenFilterDTO,
 } from "@/types/staff";
 
 export const useDanhSachHangCho = () => {
@@ -85,5 +86,22 @@ export const useLichHenTrieuChung = () => {
     queryKey: ["lich-hen-trieu-chung"],
     queryFn: () => staffApi.getLichHenTrieuChung(),
     staleTime: 60 * 1000,
+  });
+};
+// Thêm đoạn này vào cuối file hooks/useStaff.ts
+export const useDanhSachLichHen = (filters?: LichHenFilterDTO) => {
+  return useQuery({
+    queryKey: ["lich-hen", filters],
+    queryFn: () => staffApi.getDanhSachLichHen(filters), // Đảm bảo staffApi đã có hàm này
+    refetchInterval: 30 * 1000,
+  });
+};
+
+export const useSlotTrong = (ngay?: string) => {
+  return useQuery({
+    queryKey: ["slot-trong", ngay],
+    queryFn: () => staffApi.getSlotTrong(ngay), // Đảm bảo staffApi đã có hàm này
+    enabled: !!ngay, 
+    staleTime: 2 * 60 * 1000,
   });
 };

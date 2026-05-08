@@ -59,12 +59,11 @@ export default function RegisterPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          // Chỗ này map dữ liệu từ Form gửi sang Backend (TaiKhoanRequestDTO)
           username: values.username,
           password: values.password,
-          // Nếu Backend của ông cần thêm thông tin như Họ tên, SĐT thì truyền thêm vào đây:
-          // hoTen: values.hoTen,
-          // sdt: values.sdt,
+          hoTen: values.hoTen,
+          sdt: values.sdt,
+          loaiTk: "EXTERNAL"
         }),
       });
 
