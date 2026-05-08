@@ -1122,22 +1122,32 @@ CREATE OR REPLACE PROCEDURE SP_DAT_LICH_HEN (
 ) AS
     v_ca_lam NUMBER;
     v_trung  NUMBER;
+    v_new_malh VARCHAR2(20);
 BEGIN
+    -- Check lịch trực
     SELECT COUNT(*) INTO v_ca_lam FROM LICH_LAM_VIEC
     WHERE MANS = p_mans AND NGAY_LAM = TRUNC(p_ngayhen) AND IS_NGHI = 0;
+    
     IF v_ca_lam = 0 THEN
         RAISE_APPLICATION_ERROR(-20035, 'Bác sĩ không làm việc ngày này!');
     END IF;
 
+    -- Check trùng lịch
     SELECT COUNT(*) INTO v_trung FROM LICH_HEN
-    WHERE MANS = p_mans AND GIO_HEN = p_giohen AND TRANGTHAI != N'Đã hủy';
+    WHERE MANS = p_mans AND GIO_HEN = p_giohen AND TRANGTHAI != 'DA_HUY';
+    
     IF v_trung > 0 THEN
         RAISE_APPLICATION_ERROR(-20036, 'Slot đã được đặt!');
     END IF;
 
+    -- Tự sinh mã ID mới (Fix lỗi NULL ID)
+    v_new_malh := 'LH' || TO_CHAR(SEQ_LICH_HEN.NEXTVAL, 'FM000000');
+
+    -- Insert trạng thái Enum chuẩn (Fix lỗi Sốc Ngôn Ngữ)
     INSERT INTO LICH_HEN(MALH, MAKH, MANS, MAGOI, NGAYHEN, GIO_HEN, LOAI_LICH, TRANGTHAI)
-    VALUES (NULL, p_makh, p_mans, p_magoi, p_ngayhen, p_giohen, N'Online', N'Mới')
-    RETURNING MALH INTO p_malh_out;
+    VALUES (v_new_malh, p_makh, p_mans, p_magoi, p_ngayhen, p_giohen, 'ONLINE', 'CHO_XAC_NHAN');
+    
+    p_malh_out := v_new_malh;
 EXCEPTION
     WHEN OTHERS THEN
         RAISE;

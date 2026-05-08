@@ -1,13 +1,14 @@
 package com.kada.da.modules.booking.repository;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+import org.springframework.stereotype.Repository;
+
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.ParameterMode;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.StoredProcedureQuery;
-import org.springframework.stereotype.Repository;
-
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @Repository
 public class LichHenRepositoryCustomImpl implements LichHenRepositoryCustom {
@@ -17,20 +18,32 @@ public class LichHenRepositoryCustomImpl implements LichHenRepositoryCustom {
 
     @Override
     public String datLichHen(String maKh, String maNs, String maGoi, LocalDate ngayHen, LocalDateTime gioHen) {
+
+        // DEBUG: In ra Console để xem Frontend gửi xuống đúng ngày không!
+        System.out.println("=== [DEBUG] DỮ LIỆU JAVA NHẬN ĐƯỢC ===");
+        System.out.println("Mã BS: " + maNs);
+        System.out.println("Ngày Hẹn: " + ngayHen);
+        System.out.println("Giờ Hẹn: " + gioHen);
+        System.out.println("======================================");
+
         StoredProcedureQuery query = entityManager.createStoredProcedureQuery("SP_DAT_LICH_HEN");
 
-        query.registerStoredProcedureParameter(1, String.class, ParameterMode.IN); // p_makh
-        query.registerStoredProcedureParameter(2, String.class, ParameterMode.IN); // p_mans
-        query.registerStoredProcedureParameter(3, String.class, ParameterMode.IN); // p_magoi
-        query.registerStoredProcedureParameter(4, java.sql.Date.class, ParameterMode.IN); // p_ngayhen
-        query.registerStoredProcedureParameter(5, java.sql.Timestamp.class, ParameterMode.IN); // p_giohen
-        query.registerStoredProcedureParameter(6, String.class, ParameterMode.OUT); // p_malh_out
+        query.registerStoredProcedureParameter(1, String.class, ParameterMode.IN);
+        query.registerStoredProcedureParameter(2, String.class, ParameterMode.IN);
+        query.registerStoredProcedureParameter(3, String.class, ParameterMode.IN);
+
+        // SỬA ROOT CAUSE: Dùng trực tiếp class của java.time, KHÔNG ép sang java.sql
+        query.registerStoredProcedureParameter(4, LocalDate.class, ParameterMode.IN);
+        query.registerStoredProcedureParameter(5, LocalDateTime.class, ParameterMode.IN);
+        query.registerStoredProcedureParameter(6, String.class, ParameterMode.OUT);
 
         query.setParameter(1, maKh);
         query.setParameter(2, maNs);
         query.setParameter(3, maGoi);
-        query.setParameter(4, ngayHen != null ? java.sql.Date.valueOf(ngayHen) : null);
-        query.setParameter(5, gioHen != null ? java.sql.Timestamp.valueOf(gioHen) : null);
+
+        // Truyền thẳng object, Hibernate 6 sẽ tự lo liệu vụ Múi giờ
+        query.setParameter(4, ngayHen);
+        query.setParameter(5, gioHen);
 
         query.execute();
 

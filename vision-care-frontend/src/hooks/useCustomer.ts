@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { AxiosError } from "axios";
+import { format } from "date-fns";
 import { customerApi } from "@/lib/api/customer.api";
 import {
   KhachHangRequestDTO,
@@ -31,7 +32,15 @@ export const useCreateKhachHang = () => {
 export const useDatLichKham = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: DatLichRequestDTO) => customerApi.datLichKham(data),
+    mutationFn: (data: DatLichRequestDTO) => {
+      const payload = {
+        ...data,
+        // Ép Object Date thành chuỗi "yyyy-MM-dd" và "yyyy-MM-dd'T'HH:mm:ss"
+        ngayHen: format(new Date(data.ngayHen), "yyyy-MM-dd"),
+        gioHen: format(new Date(data.gioHen), "yyyy-MM-dd'T'HH:mm:ss"),
+      };
+      return customerApi.datLichKham(payload);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["lich-hen"] });
     },

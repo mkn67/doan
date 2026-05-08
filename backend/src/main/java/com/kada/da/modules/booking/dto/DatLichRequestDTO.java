@@ -1,14 +1,16 @@
 package com.kada.da.modules.booking.dto;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor
@@ -26,8 +28,10 @@ public class DatLichRequestDTO {
 
     @NotNull(message = "Ngày hẹn không được để trống")
     @FutureOrPresent(message = "Ngày hẹn phải từ hôm nay trở đi")
+    @JsonFormat(pattern = "yyyy-MM-dd") // Khóa chết format ngày
     private LocalDate ngayHen;
 
     @NotNull(message = "Giờ hẹn không được để trống")
+    // Tùy theo Frontend gửi, thường là ISO nên không cần ép, nhưng an toàn thì để nguyên
     private LocalDateTime gioHen;
 }
