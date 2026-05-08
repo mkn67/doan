@@ -28,6 +28,15 @@ export const useThemVaoHangCho = () => {
   });
 };
 
+export const useDanhSachNhanSu = (page = 0, size = 10, keyword = "") => {
+  return useQuery({
+    queryKey: ["danh-sach-nhan-su", page, size, keyword],
+    queryFn: async () => {
+      return staffApi.getDanhSachNhanSu(page, size, keyword);
+    },
+  });
+};
+
 export const useCreateNhanSu = () => {
   const queryClient = useQueryClient();
   return useMutation({

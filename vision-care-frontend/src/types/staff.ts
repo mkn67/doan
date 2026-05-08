@@ -160,3 +160,12 @@ export interface SlotTrongDTO {
   gioKetThuc: number;
   trangThaiSlot: "Đã đặt" | "Còn trống";
 }
+
+export interface PageResponseDTO<T> {
+  content: T[];
+  pageNo: number;
+  pageSize: number;
+  totalElements: number;
+  totalPages: number;
+  last: boolean;
+}

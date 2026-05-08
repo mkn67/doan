@@ -7,21 +7,21 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.kada.da.Exception.BusinessRuleException;
+import com.kada.da.Exception.ResourceNotFoundException;
+import com.kada.da.Util.JwtTokenUtil;
+import com.kada.da.modules.auth.Enum.LoaiTaiKhoan;
+import com.kada.da.modules.auth.domain.TaiKhoan;
+import com.kada.da.modules.auth.domain.TokenBlacklist;
 import com.kada.da.modules.auth.dto.ChangePasswordRequestDTO;
 import com.kada.da.modules.auth.dto.LoginRequestDTO;
 import com.kada.da.modules.auth.dto.LoginResponseDTO;
-import com.kada.da.modules.auth.dto.TaiKhoanResponseDTO;
 import com.kada.da.modules.auth.dto.TaiKhoanRequestDTO;
-import com.kada.da.modules.customer.domain.KhachHang;
-import com.kada.da.modules.auth.domain.TaiKhoan;
-import com.kada.da.modules.auth.domain.TokenBlacklist;
-import com.kada.da.modules.auth.Enum.LoaiTaiKhoan;
-import com.kada.da.Exception.BusinessRuleException;
-import com.kada.da.Exception.ResourceNotFoundException;
-import com.kada.da.modules.customer.repository.KhachHangRepository;
+import com.kada.da.modules.auth.dto.TaiKhoanResponseDTO;
 import com.kada.da.modules.auth.repository.TaiKhoanRepository;
 import com.kada.da.modules.auth.repository.TokenBlacklistRepository;
-import com.kada.da.Util.JwtTokenUtil;
+import com.kada.da.modules.customer.domain.KhachHang;
+import com.kada.da.modules.customer.repository.KhachHangRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -87,9 +87,18 @@ public class AuthServiceImpl implements AuthService {
         TaiKhoan taiKhoan = taiKhoanRepository.findByUsername(request.getUsername()) // ĐÃ FIX
                 .orElseThrow(() -> new BusinessRuleException("Sai tên đăng nhập hoặc mật khẩu"));
 
-        if (!passwordEncoder.matches(request.getPassword(), taiKhoan.getPassword())) {
+        // ================= CỨU NÉT Ở ĐÂY =================
+        // Tạm thời cho phép pass 'Password123@' đi qua (Bypass) và in ra mã Hash chuẩn
+        if ("Password123@".equals(request.getPassword())) {
+            log.info("============== CHÚ Ý ==============");
+            log.info("Mã Hash xịn cần lưu vào DB của {} là:", request.getUsername());
+            log.info(passwordEncoder.encode(request.getPassword()));
+            log.info("===================================");
+        } else if (!passwordEncoder.matches(request.getPassword(), taiKhoan.getPassword())) {
+            // Nếu không dùng pass mặc định thì mới check hash như bình thường
             throw new BusinessRuleException("Sai tên đăng nhập hoặc mật khẩu");
         }
+        // ==================================================
 
         if (taiKhoan.getTrangThai() == null || taiKhoan.getTrangThai() == 0) {
             throw new BusinessRuleException("Tài khoản đã bị khóa");

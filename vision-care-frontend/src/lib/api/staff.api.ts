@@ -9,11 +9,22 @@ import {
   XuLyKinhRequestDTO, XuLyKinhResponseDTO,
   HangChoHomNayDTO,
   LichHenTrieuChungDTO,
-  SlotTrongDTO // FIX: Đã bổ sung import SlotTrongDTO vào đây
+  SlotTrongDTO,
+  PageResponseDTO // Giả sử đã có trong types/inventory hoặc types/staff
 } from '@/types/staff';
 
 export const staffApi = {
   // --- QUẢN LÝ NHÂN SỰ ---
+  getDanhSachNhanSu: async (page: number, size: number, keyword: string): Promise<PageResponseDTO<NhanSuResponseDTO>> => {
+    const response = await axiosClient.get<PageResponseDTO<NhanSuResponseDTO>>(`/nhan-su`, {
+      params: {
+        page,
+        size,
+        keyword: keyword || undefined
+      }
+    });
+    return response.data;
+  },
   createNhanSu: async (data: NhanSuRequestDTO): Promise<NhanSuResponseDTO> => {
     const response = await axiosClient.post<NhanSuResponseDTO>('/nhan-su', data);
     return response.data;

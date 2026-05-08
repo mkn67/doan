@@ -6,6 +6,7 @@ import { Plus, Search, MoreHorizontal, Pencil, Trash2, Shield } from "lucide-rea
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
+import { useCreateNhanSu } from "@/hooks/useStaff"
 
 // Các UI component của Shadcn (Giữ nguyên của ông giáo)
 import { Button } from "@/components/ui/button"
@@ -49,8 +50,8 @@ const mockEmployees = [
 function AddEmployeeDialog() {
   const [open, setOpen] = useState(false)
 
-  // CHÚ Ý: Mốt ông giáo import cái custom hook gọi API của ông giáo vào đây.
-  // const createNhanSuMutation = useCreateNhanSu();
+  // ĐÃ MỞ KHÓA: Gọi Hook API
+  const createNhanSuMutation = useCreateNhanSu();
 
   const form = useForm<z.infer<typeof employeeSchema>>({
     resolver: zodResolver(employeeSchema),
@@ -65,19 +66,15 @@ function AddEmployeeDialog() {
   })
 
   function onSubmit(values: z.infer<typeof employeeSchema>) {
-    console.log("Dữ liệu chuẩn bị bắn lên API:", values)
+    console.log("Dữ liệu đang bắn lên Backend:", values)
     
-    // GỌI API Ở ĐÂY:
-    // createNhanSuMutation.mutate(values, {
-    //   onSuccess: () => {
-    //     setOpen(false);
-    //     form.reset();
-    //   }
-    // });
-    
-    alert("Test: Dữ liệu đã chuẩn form Java, bật F12 console lên xem nhé!");
-    setOpen(false)
-    form.reset() 
+    // ĐÃ MỞ KHÓA: Gọi hàm mutate để đẩy data lên API
+    createNhanSuMutation.mutate(values, {
+      onSuccess: () => {
+        setOpen(false); // Đóng cửa sổ modal
+        form.reset();   // Xóa trắng form để lần sau nhập tiếp
+      }
+    });
   }
 
   return (
@@ -173,8 +170,12 @@ function AddEmployeeDialog() {
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                 Hủy bỏ
               </Button>
-              <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white">
-                Xác nhận lưu
+              <Button 
+                type="submit" 
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+                disabled={createNhanSuMutation.isPending} // Khóa nút khi đang load API
+              >
+                {createNhanSuMutation.isPending ? "Đang lưu..." : "Xác nhận lưu"}
               </Button>
             </div>
           </form>
