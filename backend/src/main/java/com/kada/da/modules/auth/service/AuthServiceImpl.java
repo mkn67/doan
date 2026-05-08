@@ -115,6 +115,7 @@ public class AuthServiceImpl implements AuthService {
                 .token(token)
                 .username(taiKhoan.getUsername())
                 .loaiTk(taiKhoan.getLoaiTk())
+                .roles(roles)
                 .build();
     }
 

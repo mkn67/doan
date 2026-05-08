@@ -1,128 +1,131 @@
-"use client"
+"use client";
 
-import React, { useState, useEffect } from "react"
-import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
-import Cookies from "js-cookie"
+import "@/app/globals.css";
+import React, { useEffect, useState } from "react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { 
-  LayoutDashboard, 
-  Users, 
-  Calendar, 
-  Package, 
-  ClipboardList, 
-  Settings,
-  LogOut,
-} from "lucide-react" 
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
+  LayoutDashboard, Calendar, Users, Package, Activity, 
+  Settings, LogOut, Glasses 
+} from "lucide-react"; // ĐÃ XÓA FileText dư thừa ở đây
+import Cookies from "js-cookie";
 
-const menuItems = [
-  { icon: LayoutDashboard, label: "Dashboard", href: "/staff/dashboard" },
-  { icon: Calendar, label: "Lịch hẹn", href: "/staff/reception/appointments" },
-  { icon: Users, label: "Khách hàng", href: "/staff/reception/customers" },
-  { icon: Package, label: "Kho hàng", href: "/staff/inventory/products" },
-  { icon: ClipboardList, label: "Khám bệnh", href: "/staff/clinic/examinations" },
-  { icon: Settings, label: "Quản trị", href: "/staff/admin/employees" },
-]
+// ĐÃ XÓA Metadata (vì Metadata không được dùng trong file "use client")
+
+const ALL_MENUS = [
+  { title: "Dashboard", href: "/staff/dashboard", icon: LayoutDashboard, roles: ["NH04"] },
+  { title: "Lịch hẹn", href: "/staff/reception/appointments", icon: Calendar, roles: ["NH04", "NH06", "NH01"] },
+  { title: "Khách hàng", href: "/staff/reception/customers", icon: Users, roles: ["NH04", "NH06"] },
+  { title: "Kho hàng", href: "/staff/inventory/products", icon: Package, roles: ["NH04", "NH03"] },
+  // 🏥 KHÁM BỆNH: Chỉ Bác sĩ (NH01) mới được vào, Quản lý (NH04) không cần thấy
+  { title: "Khám bệnh", href: "/staff/clinic/examinations", icon: Activity, roles: ["NH01"] },
+  // 👓 ĐƠN KÍNH: Dành cho Bác sĩ (NH01) hoặc Kỹ thuật viên (NH05)
+  { title: "Đơn kính", href: "/staff/workshop/glasses", icon: Glasses, roles: ["NH01", "NH05"] },
+  { title: "Quản trị", href: "/staff/admin/employees", icon: Settings, roles: ["NH04"] },
+];
 
 export default function StaffLayout({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname()
-  const router = useRouter()
+  const pathname = usePathname();
+  const router = useRouter();
+  
+  const [userInfo, setUserInfo] = useState({ username: "Khách", roleCode: "", roleName: "Đang tải..." });
+  const [isMounted, setIsMounted] = useState(false);
 
-  // 1. Khởi tạo State lấy tên
-  const [userName, setUserName] = useState<string | null>(null)
-
-  // 2. Chạy useEffect để lôi tên "HaiAnh" từ bộ nhớ ra
   useEffect(() => {
-    const loadUserFromStorage = () => {
-      try {
-        const userData = localStorage.getItem("user")
-        if (userData) {
-          const user = JSON.parse(userData)
-          if (user?.username) {
-             setUserName(user.username)
-          }
-        }
-      } catch (e) {
-        console.error("Failed to parse user data", e)
-      }
+    const userStr = localStorage.getItem("user");
+    
+    if (userStr) {
+      const user = JSON.parse(userStr);
+      
+      // 🛠️ THAY ĐỔI Ở ĐÂY: Lấy mã nhóm thật (NH04, NH01...) từ mảng roles
+      const actualRoleCode = (user.roles && user.roles.length > 0) ? user.roles[0] : user.loaiTk;
+
+      // 🛠️ CẬP NHẬT TÊN HIỂN THỊ DỰA TRÊN MÃ NHÓM CHUẨN
+      let displayRole = "NHÂN VIÊN";
+      if (actualRoleCode === "NH04") displayRole = "QUẢN TRỊ VIÊN";
+      if (actualRoleCode === "NH01") displayRole = "BÁC SĨ CHUYÊN KHOA";
+      if (actualRoleCode === "NH06") displayRole = "LỄ TÂN";
+      if (actualRoleCode === "NH03") displayRole = "THỦ KHO";
+      if (actualRoleCode === "NH02") displayRole = "THU NGÂN";
+
+      const timer = setTimeout(() => {
+        setUserInfo({
+          username: user.username,
+          roleCode: actualRoleCode, // Gán mã NHxx vào đây để lọc Sidebar
+          roleName: displayRole,
+        });
+        setIsMounted(true);
+      }, 0);
+
+      return () => clearTimeout(timer);
+    } else {
+      router.push("/auth/login");
     }
-    loadUserFromStorage()
-  }, [])
+  }, [router]);
 
-  const displayName = userName || "Admin" // Trong lúc chờ thì hiện chữ Admin
+  const allowedMenus = ALL_MENUS.filter(menu => menu.roles.includes(userInfo.roleCode));
 
-  // 3. Xử lý sự kiện Đăng xuất
   const handleLogout = () => {
-    Cookies.remove('token')
-    localStorage.clear()
-    router.push('/auth/login')
-  }
+    localStorage.removeItem("user");
+    localStorage.removeItem("token");
+    Cookies.remove("token");
+    router.push("/auth/login");
+  };
+
+  // Tránh lỗi Hydration
+  if (!isMounted) return null;
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      {/* --- SIDEBAR --- */}
+    <div className="flex h-screen bg-slate-50">
       <aside className="w-64 bg-white border-r flex flex-col">
         <div className="p-6">
-          <h1 className="text-2xl font-bold text-blue-700">Vision Care</h1>
+          <h2 className="text-2xl font-bold text-blue-600">Vision Care</h2>
         </div>
-
-        <nav className="flex-1 px-4 space-y-1">
-          {menuItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                pathname.startsWith(item.href)
-                  ? "bg-primary text-primary-foreground"
-                  : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-              )}
-            >
-              <item.icon className="size-5" />
-              {item.label}
-            </Link>
-          ))}
+        <nav className="flex-1 space-y-1 px-3 overflow-y-auto">
+          {allowedMenus.map((menu) => {
+            const Icon = menu.icon;
+            const isActive = pathname.includes(menu.href);
+            return (
+              <Link
+                key={menu.href}
+                href={menu.href}
+                className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  isActive 
+                    ? "bg-blue-50 text-blue-700" 
+                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                }`}
+              >
+                <Icon className={`w-5 h-5 mr-3 ${isActive ? "text-blue-700" : "text-slate-400"}`} />
+                {menu.title}
+              </Link>
+            );
+          })}
         </nav>
-
         <div className="p-4 border-t">
-          {/* Nối hàm handleLogout vào nút Đăng xuất */}
-          <Button 
-            variant="ghost" 
-            onClick={handleLogout}
-            className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-50"
-          >
-            <LogOut className="mr-2 size-5" />
-            Đăng xuất
-          </Button>
+          <button onClick={handleLogout} className="flex items-center w-full px-3 py-2 text-sm font-medium text-red-600 rounded-md hover:bg-red-50 transition-colors">
+            <LogOut className="w-5 h-5 mr-3" /> Đăng xuất
+          </button>
         </div>
       </aside>
 
-      {/* --- MAIN CONTENT --- */}
-      <main className="flex-1 flex flex-col overflow-hidden">
-        {/* Topbar */}
-        <header className="h-16 bg-white border-b flex items-center justify-between px-8">
-          <div className="font-semibold text-gray-700">
-             Hệ thống quản lý nội bộ
-          </div>
-          <div className="flex items-center gap-4">
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <header className="flex justify-between items-center px-6 py-3 border-b bg-white shadow-sm z-10">
+          <div className="text-sm font-medium text-slate-500">Hệ thống quản lý nội bộ</div>
+          <div className="flex items-center gap-3">
             <div className="text-right">
-              {/* ĐÃ THAY CHU THỊ MINH ANH BẰNG BIẾN ĐỘNG */}
-              <p className="text-sm font-bold text-blue-600">{displayName}</p>
-              <p className="text-xs text-gray-500 uppercase">Quản trị viên</p>
+              <div className="text-sm font-bold text-blue-600">{userInfo.username}</div>
+              <div className="text-[10px] font-bold text-slate-500 tracking-wider uppercase">{userInfo.roleName}</div>
             </div>
-            {/* Hiển thị chữ cái đầu của tên làm Avatar */}
-            <div className="size-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold border border-blue-200">
-                {displayName.charAt(0).toUpperCase()}
+            <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-lg">
+              {userInfo.username.charAt(0).toUpperCase()}
             </div>
           </div>
         </header>
 
-        {/* Nội dung trang cụ thể */}
-        <section className="flex-1 overflow-y-auto p-8">
+        <main className="flex-1 overflow-y-auto bg-slate-50">
           {children}
-        </section>
-      </main>
+        </main>
+      </div>
     </div>
-  )
+  );
 }

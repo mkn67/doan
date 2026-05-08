@@ -2,7 +2,9 @@ package com.kada.da.Util;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 import javax.crypto.SecretKey;
@@ -34,10 +36,13 @@ public class JwtTokenUtil {
         // Lấy role đầu tiên làm maNhom chính để tương thích với logic hiện tại
         String primaryRole = (roles != null && !roles.isEmpty()) ? roles.get(0) : "USER";
 
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("maNhom", primaryRole);
+        claims.put("roles", roles);
+
         return Jwts.builder()
+                .claims(claims)
                 .subject(username)
-                .claim("maNhom", primaryRole)
-                .claim("roles", roles)
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(getSigningKey())

@@ -1,6 +1,8 @@
-
+"use client";
+import React, { useEffect } from "react";
 import Link from "next/link"
-import { Users, ShieldAlert, CalendarDays, ClipboardList } from "lucide-react"
+import { useRouter } from "next/navigation";
+import { Users, ShieldAlert, CalendarDays, ClipboardList } from "lucide-react";
 
 const adminModules = [
   {
@@ -34,6 +36,17 @@ const adminModules = [
 ]
 
 export default function AdminDashboard() {
+  const router = useRouter();
+
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    const actualRoleCode = (user.roles && user.roles.length > 0) ? user.roles[0] : user.loaiTk;
+    if (actualRoleCode !== "NH04") {
+      alert("Bạn không có quyền truy cập khu vực này!");
+      router.push("/staff"); // Sút về trang chủ nhân viên
+    }
+  }, [router]);
+
   return (
     <div className="p-6">
       <div className="mb-8">
