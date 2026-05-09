@@ -20,6 +20,12 @@ export const customerApi = {
     return response.data;
   },
 
+  // Cập nhật thông tin khách hàng
+  updateKhachHang: async (maKh: string, data: Partial<KhachHangRequestDTO>): Promise<KhachHangResponseDTO> => {
+    const response = await axiosClient.put<KhachHangResponseDTO>(`/khach-hang/${maKh}`, data);
+    return response.data;
+  },
+
   // Khách hàng đặt lịch khám
   datLichKham: async (data: DatLichRequestDTO): Promise<DatLichResponseDTO> => {
     const response = await axiosClient.post<DatLichResponseDTO>('/dat-lich', data);

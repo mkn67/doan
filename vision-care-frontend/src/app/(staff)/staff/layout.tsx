@@ -1,127 +1,77 @@
 "use client";
 
-import "@/app/globals.css";
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { 
-  LayoutDashboard, Calendar, Users, Package, Activity, 
-  Settings, LogOut, Glasses 
-} from "lucide-react"; 
-import Cookies from "js-cookie";
+  User, Calendar, History, Receipt, Star, LogOut 
+} from "lucide-react";
+import { useAuth } from "@/hooks/useAuth"; // Import hook useAuth
 
-
-const ALL_MENUS = [
-  { title: "Dashboard", href: "/staff/dashboard", icon: LayoutDashboard, roles: ["NH04"] },
-  { title: "Lịch hẹn", href: "/staff/reception/appointments", icon: Calendar, roles: ["NH04", "NH06", "NH01"] },
-  { title: "Khách hàng", href: "/staff/reception/customers", icon: Users, roles: ["NH04", "NH06"] },
-  { title: "Kho hàng", href: "/staff/inventory/products", icon: Package, roles: ["NH04", "NH03"] },
-  // Dành riêng cho Bác sĩ (Kê đơn xong là hết việc)
-  { title: "Khám & Kê đơn", href: "/staff/clinic/examinations", icon: Activity, roles: ["NH01"] },
-  // Dành Riêng cho Kỹ thuật viên (Chỉ vào xưởng nhận đơn và mài kính)
-  { title: "Xưởng gia công", href: "/staff/workshop/glasses", icon: Glasses, roles: ["NH05"] },
-  { title: "Quản trị", href: "/staff/admin/employees", icon: Settings, roles: ["NH04"] },
+const sidebarItems = [
+  { name: "Thông tin cá nhân", href: "/profile", icon: User },
+  { name: "Lịch hẹn của tôi", href: "/profile/appointments", icon: Calendar },
+  { name: "Lịch sử khám", href: "/profile/history", icon: History },
+  { name: "Hóa đơn & Thanh toán", href: "/profile/billing", icon: Receipt },
+  { name: "Đánh giá bác sĩ", href: "/profile/reviews", icon: Star },
 ];
 
-export default function StaffLayout({ children }: { children: React.ReactNode }) {
+export default function ProfileLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  
-  const [userInfo, setUserInfo] = useState({ username: "Khách", roleCode: "", roleName: "Đang tải..." });
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    const userStr = localStorage.getItem("user");
-    
-    if (userStr) {
-      const user = JSON.parse(userStr);
-      
-      // 🛠️ THAY ĐỔI Ở ĐÂY: Lấy mã nhóm thật (NH04, NH01...) từ mảng roles
-      const actualRoleCode = (user.roles && user.roles.length > 0) ? user.roles[0] : user.loaiTk;
-
-      // 🛠️ CẬP NHẬT TÊN HIỂN THỊ DỰA TRÊN MÃ NHÓM CHUẨN
-      let displayRole = "NHÂN VIÊN";
-      if (actualRoleCode === "NH04") displayRole = "QUẢN TRỊ VIÊN";
-      if (actualRoleCode === "NH01") displayRole = "BÁC SĨ CHUYÊN KHOA";
-      if (actualRoleCode === "NH06") displayRole = "LỄ TÂN";
-      if (actualRoleCode === "NH03") displayRole = "THỦ KHO";
-      if (actualRoleCode === "NH02") displayRole = "THU NGÂN";
-
-      const timer = setTimeout(() => {
-        setUserInfo({
-          username: user.username,
-          roleCode: actualRoleCode, // Gán mã NHxx vào đây để lọc Sidebar
-          roleName: displayRole,
-        });
-        setIsMounted(true);
-      }, 0);
-
-      return () => clearTimeout(timer);
-    } else {
-      router.push("/auth/login");
-    }
-  }, [router]);
-
-  const allowedMenus = ALL_MENUS.filter(menu => menu.roles.includes(userInfo.roleCode));
+  const { user, loading } = useAuth(); // Sử dụng useAuth
 
   const handleLogout = () => {
     localStorage.removeItem("user");
     localStorage.removeItem("token");
-    Cookies.remove("token");
-    router.push("/auth/login");
+    router.push("/login");
   };
 
-  // Tránh lỗi Hydration
-  if (!isMounted) return null;
+  if (loading) return <div className="flex justify-center p-8">Đang tải...</div>;
 
   return (
-    <div className="flex h-screen bg-slate-50 font-sans">
-      <aside className="w-64 bg-white border-r flex flex-col">
-        <div className="p-6">
-          <h2 className="text-2xl font-bold text-blue-600">Vision Care</h2>
-        </div>
-        <nav className="flex-1 space-y-1 px-3 overflow-y-auto">
-          {allowedMenus.map((menu) => {
-            const Icon = menu.icon;
-            const isActive = pathname.includes(menu.href);
-            return (
-              <Link
-                key={menu.href}
-                href={menu.href}
-                className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  isActive 
-                    ? "bg-blue-50 text-blue-700" 
-                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                }`}
-              >
-                <Icon className={`w-5 h-5 mr-3 ${isActive ? "text-blue-700" : "text-slate-400"}`} />
-                {menu.title}
-              </Link>
-            );
-          })}
-        </nav>
-        <div className="p-4 border-t">
-          <button onClick={handleLogout} className="flex items-center w-full px-3 py-2 text-sm font-medium text-red-600 rounded-md hover:bg-red-50 transition-colors">
-            <LogOut className="w-5 h-5 mr-3" /> Đăng xuất
-          </button>
-        </div>
-      </aside>
-
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="flex justify-between items-center px-6 py-3 border-b bg-white shadow-sm z-10">
-          <div className="text-sm font-medium text-slate-500">Hệ thống quản lý nội bộ</div>
-          <div className="flex items-center gap-3">
-            <div className="text-right">
-              <div className="text-sm font-bold text-blue-600">{userInfo.username}</div>
-              <div className="text-[10px] font-bold text-slate-500 tracking-wider uppercase">{userInfo.roleName}</div>
-            </div>
-            <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-lg">
-              {userInfo.username.charAt(0).toUpperCase()}
-            </div>
+    <div className="max-w-7xl mx-auto px-4 py-10 animate-in fade-in duration-500">
+      <div className="flex flex-col md:flex-row gap-8">
+        <aside className="w-full md:w-64 space-y-2">
+          <div className="p-5 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl text-white mb-6 shadow-lg shadow-blue-200">
+            <p className="text-xs opacity-80 font-medium uppercase tracking-wider">Xin chào,</p>
+            <p className="text-xl font-bold truncate">
+              {user?.hoTen || "Khách hàng"}
+            </p>
           </div>
-        </header>
+          
+          <nav className="space-y-1">
+            {sidebarItems.map((item) => {
+              const isActive = pathname === item.href || (item.href !== "/profile" && pathname.startsWith(item.href));
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
+                    isActive 
+                      ? "bg-blue-50 text-blue-600 border-r-4 border-blue-600 shadow-sm" 
+                      : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+                  }`}
+                >
+                  <item.icon className={`w-5 h-5 ${isActive ? "text-blue-600" : "text-slate-400"}`} />
+                  {item.name}
+                </Link>
+              );
+            })}
+            
+            <div className="pt-10">
+              <button 
+                onClick={handleLogout}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-red-500 hover:bg-red-50 transition-colors border border-transparent hover:border-red-100"
+              >
+                <LogOut className="w-5 h-5" />
+                Đăng xuất
+              </button>
+            </div>
+          </nav>
+        </aside>
 
-        <main className="flex-1 overflow-y-auto bg-slate-50">
+        <main className="flex-1 bg-white rounded-3xl border border-slate-100 shadow-xl shadow-slate-100/50 p-8 min-h-[600px]">
           {children}
         </main>
       </div>

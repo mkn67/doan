@@ -53,6 +53,16 @@ export const staffApi = {
     return response.data;
   },
 
+  confirmLichHen: async (maLh: string | number): Promise<void> => {
+    const response = await axiosClient.put(`/bookings/${maLh}/confirm`);
+    return response.data;
+  },
+
+  huyLichHen: async (maLh: string | number): Promise<void> => {
+    const response = await axiosClient.post(`/bookings/huy-lich/${maLh}`);
+    return response.data;
+  },
+
   // --- HÀNG CHỜ (MÀN HÌNH LỄ TÂN) ---
   themVaoHangCho: async (data: HangChoRequestDTO): Promise<HangChoResponseDTO> => {
     const response = await axiosClient.post<HangChoResponseDTO>('/hang-cho', data);

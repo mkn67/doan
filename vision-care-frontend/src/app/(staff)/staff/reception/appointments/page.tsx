@@ -4,16 +4,18 @@ import * as React from "react";
 import { useState, useEffect } from "react";
 import { 
   Calendar as CalendarIcon, Plus, Search, 
-  MoreHorizontal, CheckCircle2, XCircle, Timer, Loader2 
+  MoreHorizontal, CheckCircle2, XCircle, Timer, Loader2,
+  Check, X
 } from "lucide-react";
 import { useForm, SubmitHandler, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useQueryClient } from "@tanstack/react-query";
 import { AxiosError } from "axios";
+import { useRouter } from "next/navigation"; // 1. IMPORT useRouter
 
 import { useDatLich, useDanhSachDichVu } from "@/hooks/useClinic"; 
-import { useDanhSachLichHen, useSlotTrong } from "@/hooks/useStaff"; 
+import { useDanhSachLichHen, useSlotTrong, useUpdateTrangThaiLichHen } from "@/hooks/useStaff"; 
 import { LichHenFilterDTO, SlotTrongDTO, LichHenResponseDTO } from "@/types/staff";
 import { DatLichRequest, DichVuKhamResponse } from "@/types/clinic";
 
@@ -23,7 +25,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Form, FormControl, FormField, FormItem, FormLabel, FormMessage,
@@ -31,16 +33,23 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
+// --- INTERFACES ---
 interface PageResponseDTO<T> {
   content?: T[];
   data?: T[];
-  page?: number;
-  size?: number;
-  totalElements?: number;
 }
 
-// BỎ loaiLich KHỎI SCHEMA
+type UI_LichHen = LichHenResponseDTO & {
+  maKh?: string;
+  tenKhachHang?: string;
+  tenGoiKham?: string;
+  tenDv?: string;
+};
+
 const bookingSchema = z.object({
   maKh: z.string().min(1, "Vui lòng nhập mã khách hàng"),
   maGoi: z.string().min(1, "Vui lòng chọn gói khám"),
@@ -53,6 +62,7 @@ type BookingFormValues = z.infer<typeof bookingSchema>;
 
 export default function AppointmentsPage() {
   const queryClient = useQueryClient();
+  const router = useRouter(); // 2. KHỞI TẠO router ĐỂ HẾT LỖI 'Cannot find name router'
   const [isMounted, setIsMounted] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   
@@ -70,17 +80,14 @@ export default function AppointmentsPage() {
   const { data: listLichHen, isLoading: loadingLich } = useDanhSachLichHen(filters);
   const { data: listGoiKham } = useDanhSachDichVu();
   const datLichMutation = useDatLich();
+  const updateStatusMutation = useUpdateTrangThaiLichHen();
 
   const form = useForm<BookingFormValues>({
     resolver: zodResolver(bookingSchema),
     defaultValues: { maKh: "", maGoi: "", maNs: "", ngayHen: "", gioHen: "" }
   });
 
-  const selectedDate = useWatch({
-    control: form.control,
-    name: "ngayHen",
-  });
-
+  const selectedDate = useWatch({ control: form.control, name: "ngayHen" });
   const { data: slotsTrong } = useSlotTrong(selectedDate);
 
   useEffect(() => {
@@ -88,29 +95,23 @@ export default function AppointmentsPage() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Bóc vỏ an toàn 100% Type-safe
   const arrGoiKham: DichVuKhamResponse[] = 
     (listGoiKham as PageResponseDTO<DichVuKhamResponse>)?.content || 
     (listGoiKham as PageResponseDTO<DichVuKhamResponse>)?.data || 
     (Array.isArray(listGoiKham) ? listGoiKham : []);
 
-  const arrLichHen: LichHenResponseDTO[] = 
-    (listLichHen as PageResponseDTO<LichHenResponseDTO>)?.content || 
-    (listLichHen as PageResponseDTO<LichHenResponseDTO>)?.data || 
+  const arrLichHen: UI_LichHen[] = 
+    (listLichHen as PageResponseDTO<UI_LichHen>)?.content || 
+    (listLichHen as PageResponseDTO<UI_LichHen>)?.data || 
     (Array.isArray(listLichHen) ? listLichHen : []);
 
   if (!isMounted) return null;
 
-  // 4. XỬ LÝ SUBMIT
   const onSubmit: SubmitHandler<BookingFormValues> = (values) => {
     const payload: DatLichRequest = {
-      maKh: values.maKh,
-      maNs: values.maNs,
-      maGoi: values.maGoi,
-      ngayHen: values.ngayHen,
-      gioHen: `${values.ngayHen}T${values.gioHen}:00`,
+      maKh: values.maKh, maNs: values.maNs, maGoi: values.maGoi,
+      ngayHen: values.ngayHen, gioHen: `${values.ngayHen}T${values.gioHen}:00`,
     };
-
     datLichMutation.mutate(payload, {
       onSuccess: () => {
         alert("🎯 Đặt lịch thành công!");
@@ -118,11 +119,18 @@ export default function AppointmentsPage() {
         setIsDialogOpen(false);
         form.reset();
       },
-      // GIẢI PHÁP CHO LỖI TS2322: Dùng kiểu dữ liệu mặc định và cast bên trong
       onError: (err) => {
         const axiosError = err as AxiosError<{message?: string}>;
-        const errorMsg = axiosError.response?.data?.message || "Không thể đặt lịch";
-        alert("Lỗi: " + errorMsg);
+        alert("Lỗi: " + (axiosError.response?.data?.message || "Không thể đặt lịch"));
+      }
+    });
+  };
+
+  const handleUpdateStatus = (maLh: string | number, status: string) => {
+    updateStatusMutation.mutate({ maLh, trangThai: status }, {
+      onSuccess: () => {
+        alert("✅ Đã cập nhật trạng thái!");
+        queryClient.invalidateQueries({ queryKey: ["lich-hen"] });
       }
     });
   };
@@ -132,7 +140,7 @@ export default function AppointmentsPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Quản lý Lịch hẹn</h1>
-          <p className="text-sm text-slate-500">Dữ liệu đồng bộ với hệ thống Java.</p>
+          <p className="text-sm text-slate-500">Tiếp nhận và duyệt lịch khám bệnh.</p>
         </div>
 
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -142,8 +150,12 @@ export default function AppointmentsPage() {
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[500px] bg-white">
+            {/* 3. SỬ DỤNG DialogHeader, Title, Description ĐỂ HẾT LỖI LINT */}
             <DialogHeader>
               <DialogTitle>Tạo lịch hẹn mới</DialogTitle>
+              <DialogDescription>
+                Nhập mã khách hàng và chọn khung giờ bác sĩ còn trống.
+              </DialogDescription>
             </DialogHeader>
 
             <Form {...form}>
@@ -155,7 +167,6 @@ export default function AppointmentsPage() {
                     <FormMessage />
                   </FormItem>
                 )} />
-
                 <div className="grid grid-cols-2 gap-4">
                   <FormField control={form.control} name="maGoi" render={({ field }) => (
                     <FormItem>
@@ -164,16 +175,13 @@ export default function AppointmentsPage() {
                         <FormControl><SelectTrigger><SelectValue placeholder="Chọn gói" /></SelectTrigger></FormControl>
                         <SelectContent className="bg-white">
                           {arrGoiKham.map((goi) => (
-                            <SelectItem key={goi.maDv} value={String(goi.maDv)}>
-                              {goi.tenDv}
-                            </SelectItem>
+                            <SelectItem key={goi.maDv} value={String(goi.maDv)}>{goi.tenDv}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                       <FormMessage />
                     </FormItem>
                   )} />
-
                   <FormField control={form.control} name="maNs" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Bác sĩ</FormLabel>
@@ -188,7 +196,6 @@ export default function AppointmentsPage() {
                     </FormItem>
                   )} />
                 </div>
-
                 <div className="grid grid-cols-2 gap-4">
                   <FormField control={form.control} name="ngayHen" render={({ field }) => (
                     <FormItem>
@@ -204,9 +211,7 @@ export default function AppointmentsPage() {
                         <FormControl><SelectTrigger><SelectValue placeholder="Chọn giờ" /></SelectTrigger></FormControl>
                         <SelectContent className="bg-white">
                           {(slotsTrong as unknown as SlotTrongDTO[])?.map((slot, index) => (
-                            <SelectItem key={index} value={String(slot.gioBatDau)}>
-                              {slot.gioBatDau}
-                            </SelectItem>
+                            <SelectItem key={index} value={String(slot.gioBatDau)}>{slot.gioBatDau}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -214,10 +219,8 @@ export default function AppointmentsPage() {
                     </FormItem>
                   )} />
                 </div>
-
                 <Button type="submit" className="w-full bg-blue-600" disabled={datLichMutation.isPending}>
-                  {datLichMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Xác nhận đặt lịch
+                  {datLichMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Xác nhận đặt lịch
                 </Button>
               </form>
             </Form>
@@ -228,21 +231,11 @@ export default function AppointmentsPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-white p-4 rounded-lg border shadow-sm">
         <div className="relative">
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-          <Input 
-            placeholder="Tìm Tên hoặc SĐT..." 
-            className="pl-9" 
-            value={searchKeyword}
-            onChange={(e) => setSearchKeyword(e.target.value)}
-          />
+          <Input placeholder="Tìm Tên hoặc SĐT..." className="pl-9" value={searchKeyword} onChange={(e) => setSearchKeyword(e.target.value)} />
         </div>
         <div className="flex items-center gap-2">
           <CalendarIcon className="text-slate-400 w-4 h-4" />
-          <Input 
-            type="date" 
-            className="text-sm" 
-            value={filterDate}
-            onChange={(e) => setFilterDate(e.target.value)}
-          />
+          <Input type="date" className="text-sm" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} />
         </div>
         <Button variant="outline" onClick={() => { setSearchKeyword(""); setFilterDate(""); }}>Làm mới bộ lọc</Button>
       </div>
@@ -265,15 +258,39 @@ export default function AppointmentsPage() {
               arrLichHen.map((item) => (
                 <TableRow key={item.maLh}>
                   <TableCell>
-                    <div className="text-sm">
-                      <p className="font-bold">{item.gioHen}</p>
-                      <p className="text-slate-500">{item.ngayHen}</p>
-                    </div>
+                    <div className="text-sm"><p className="font-bold">{item.gioHen}</p><p className="text-slate-500">{item.ngayHen}</p></div>
                   </TableCell>
-                  <TableCell className="font-medium">{item.tenKhachHang }</TableCell>
+                  <TableCell className="font-medium">{item.tenKhachHang || item.maKh}</TableCell>
+                  <TableCell className="text-sm">{item.tenGoiKham || item.tenDv}</TableCell>
                   <TableCell><StatusBadge status={item.trangThai} /></TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="sm"><MoreHorizontal className="h-4 w-4" /></Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" disabled={updateStatusMutation.isPending}>
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="bg-white">
+                        <DropdownMenuLabel>Hành động</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        
+                        {item.trangThai === "CHUA_XAC_NHAN" && (
+                          <DropdownMenuItem onClick={() => handleUpdateStatus(item.maLh, "DA_XAC_NHAN")} className="text-emerald-600">
+                            <Check className="mr-2 h-4 w-4" /> Xác nhận lịch
+                          </DropdownMenuItem>
+                        )}
+                        
+                        {item.trangThai !== "DA_HUY" && item.trangThai !== "DA_DEN" && (
+                          <DropdownMenuItem onClick={() => handleUpdateStatus(item.maLh, "DA_HUY")} className="text-red-600">
+                            <X className="mr-2 h-4 w-4" /> Hủy lịch hẹn
+                          </DropdownMenuItem>
+                        )}
+
+                        <DropdownMenuItem onClick={() => router.push(`/staff/clinic/examinations?makh=${item.maKh}`)}>
+                           Ghi hồ sơ khám
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
               ))

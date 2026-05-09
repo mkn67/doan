@@ -105,3 +105,25 @@ export const useSlotTrong = (ngay?: string) => {
     staleTime: 2 * 60 * 1000,
   });
 };
+
+export const useUpdateTrangThaiLichHen = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: { maLh: string | number; trangThai: string }) => {
+      // Nếu trạng thái truyền vào là xác nhận thì gọi confirm, ngược lại gọi hủy
+      if (data.trangThai === "DA_XAC_NHAN") {
+        return staffApi.confirmLichHen(data.maLh);
+      } else {
+        return staffApi.huyLichHen(data.maLh);
+      }
+    },
+    onSuccess: () => {
+      // Bấm xong cái là cái bảng tự fetch lại dữ liệu mới ngay
+      queryClient.invalidateQueries({ queryKey: ["lich-hen"] });
+    },
+    onError: (error: AxiosError) => {
+      console.error("Lỗi cập nhật lịch hẹn:", error.response?.data || error.message);
+    }, 
+  });
+};

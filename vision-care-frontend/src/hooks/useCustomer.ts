@@ -6,6 +6,7 @@ import {
   KhachHangRequestDTO,
   KhachHangFilterDTO,
   DatLichRequestDTO,
+  KhachHangResponseDTO,
 } from "@/types/customer";
 
 export const useDanhSachKhachHang = (filters?: KhachHangFilterDTO) => {
@@ -16,6 +17,22 @@ export const useDanhSachKhachHang = (filters?: KhachHangFilterDTO) => {
   });
 };
 
+// ========== THÊM HOOK CẬP NHẬT KHÁCH HÀNG ==========
+export const useUpdateKhachHang = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ maKh, data }: { maKh: string; data: Partial<KhachHangRequestDTO> }) =>
+      customerApi.updateKhachHang(maKh, data),
+    onSuccess: (updatedData, variables) => {
+      // Invalidate các query liên quan
+      queryClient.invalidateQueries({ queryKey: ["danh-sach-khach-hang"] });
+      queryClient.invalidateQueries({ queryKey: ["khach-hang", variables.maKh] });
+    },
+    onError: (error: AxiosError) => {
+      console.error("Update customer error:", error.response?.data || error.message);
+    },
+  });
+};
 export const useCreateKhachHang = () => {
   const queryClient = useQueryClient();
   return useMutation({

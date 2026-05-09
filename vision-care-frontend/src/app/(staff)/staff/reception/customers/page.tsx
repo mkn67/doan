@@ -181,7 +181,7 @@ export default function CustomersPage() {
                 <TableHead className="font-semibold text-slate-600">Thông tin Khách hàng</TableHead>
                 <TableHead className="font-semibold text-slate-600">Giới tính</TableHead>
                 <TableHead className="font-semibold text-slate-600">Điểm tích lũy</TableHead>
-                <TableHead className="text-right font-semibold text-slate-600">Thao tác</TableHead>
+                <TableHead className="text-right font-semibold text-slate-600">Mã KH</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -210,7 +210,7 @@ export default function CustomersPage() {
                       </span>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="sm">Xem chi tiết</Button>
+                      <span className="text-sm font-mono text-slate-500">{customer.maKh}</span>
                     </TableCell>
                   </TableRow>
                 ))

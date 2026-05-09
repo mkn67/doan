@@ -2,13 +2,28 @@ package com.kada.da.modules.booking.repository;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
+
+import com.kada.da.modules.booking.Enum.TrangThaiLichHen;
+import com.kada.da.modules.booking.domain.LichHen;
+import com.kada.da.modules.booking.dto.LichHenFilterDTO;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.ParameterMode;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.StoredProcedureQuery;
+import jakarta.persistence.TypedQuery;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
 
 @Repository
 public class LichHenRepositoryCustomImpl implements LichHenRepositoryCustom {
@@ -56,5 +71,66 @@ public class LichHenRepositoryCustomImpl implements LichHenRepositoryCustom {
         query.registerStoredProcedureParameter(1, String.class, ParameterMode.IN);
         query.setParameter(1, maLh);
         query.execute();
+    }
+
+    @Override
+    public Page<LichHen> findAllWithFilter(LichHenFilterDTO filter) {
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<LichHen> query = cb.createQuery(LichHen.class);
+        Root<LichHen> root = query.from(LichHen.class);
+        List<Predicate> predicates = new ArrayList<>();
+
+        // 1. Lọc theo Keyword (Tên hoặc SĐT khách hàng) - Join với bảng KhachHang
+        if (filter.getKeyword() != null && !filter.getKeyword().isEmpty()) {
+            Join<Object, Object> khachHangJoin = root.join("khachHang"); // "khachHang" là tên field trong Entity LichHen
+            String pattern = "%" + filter.getKeyword().toLowerCase() + "%";
+            predicates.add(cb.or(
+                    cb.like(cb.lower(khachHangJoin.get("hoTen")), pattern),
+                    cb.like(khachHangJoin.get("sdt"), pattern)));
+        }
+
+        // 2. Lọc theo Bác sĩ
+        if (filter.getMaNs() != null && !filter.getMaNs().isEmpty()) {
+            predicates.add(cb.equal(root.get("nhanSu").get("maNs"), filter.getMaNs()));
+        }
+
+        // 3. Lọc theo Ngày (Từ ngày - Đến ngày)
+        if (filter.getTuNgay() != null && !filter.getTuNgay().isEmpty()) {
+            LocalDate start = LocalDate.parse(filter.getTuNgay());
+            predicates.add(cb.greaterThanOrEqualTo(root.get("ngayHen"), start));
+        }
+        if (filter.getDenNgay() != null && !filter.getDenNgay().isEmpty()) {
+            LocalDate end = LocalDate.parse(filter.getDenNgay());
+            predicates.add(cb.lessThanOrEqualTo(root.get("ngayHen"), end));
+        }
+
+        // 4. Lọc theo Trạng thái
+        if (filter.getTrangThai() != null && !filter.getTrangThai().isEmpty()) {
+            predicates.add(cb.equal(root.get("trangThai"), TrangThaiLichHen.valueOf(filter.getTrangThai())));
+        }
+
+        // Thực thi Query
+        query.where(predicates.toArray(new Predicate[0]));
+
+        // Sắp xếp
+        if (filter.getSortDir().equalsIgnoreCase("desc")) {
+            query.orderBy(cb.desc(root.get(filter.getSortBy())));
+        } else {
+            query.orderBy(cb.asc(root.get(filter.getSortBy())));
+        }
+
+        TypedQuery<LichHen> typedQuery = entityManager.createQuery(query);
+        typedQuery.setFirstResult(filter.getPage() * filter.getSize());
+        typedQuery.setMaxResults(filter.getSize());
+
+        List<LichHen> resultList = typedQuery.getResultList();
+
+        // Tính tổng để phân trang
+        CriteriaQuery<Long> countQuery = cb.createQuery(Long.class);
+        countQuery.select(cb.count(countQuery.from(LichHen.class)));
+        countQuery.where(predicates.toArray(new Predicate[0]));
+        Long total = entityManager.createQuery(countQuery).getSingleResult();
+
+        return new PageImpl<>(resultList, PageRequest.of(filter.getPage(), filter.getSize()), total);
     }
 }
