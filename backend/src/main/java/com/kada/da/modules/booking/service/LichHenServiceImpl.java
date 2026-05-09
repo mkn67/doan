@@ -5,22 +5,24 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.kada.da.modules.booking.dto.LichHenTrieuChungDto;
-import com.kada.da.modules.booking.dto.DatLichResponseDTO;
-import com.kada.da.modules.booking.dto.HangChoResponseDTO;
-import com.kada.da.modules.booking.dto.LichHenResponseDTO;
+import com.kada.da.Exception.BusinessRuleException;
+import com.kada.da.Exception.ResourceNotFoundException;
+import com.kada.da.modules.booking.Enum.TrangThaiHangCho;
+import com.kada.da.modules.booking.Enum.TrangThaiLichHen;
 import com.kada.da.modules.booking.domain.HangCho;
 import com.kada.da.modules.booking.domain.LichHen;
 import com.kada.da.modules.booking.domain.LichHenTrieuChung;
-import com.kada.da.modules.booking.Enum.TrangThaiHangCho;
-import com.kada.da.modules.booking.Enum.TrangThaiLichHen;
-import com.kada.da.Exception.BusinessRuleException;
-import com.kada.da.Exception.ResourceNotFoundException;
+import com.kada.da.modules.booking.dto.DatLichResponseDTO;
+import com.kada.da.modules.booking.dto.HangChoResponseDTO;
+import com.kada.da.modules.booking.dto.LichHenResponseDTO;
+import com.kada.da.modules.booking.dto.LichHenTrieuChungDto;
 import com.kada.da.modules.booking.repository.HangChoRepository;
 import com.kada.da.modules.booking.repository.LichHenRepository;
+import com.kada.da.modules.staff.dto.PageResponseDTO;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -108,6 +110,23 @@ public class LichHenServiceImpl implements LichHenService {
         HangCho savedHangCho = hangChoRepository.save(hangCho);
 
         return convertToHangChoResponse(savedHangCho);
+    }
+
+    @Override
+    public PageResponseDTO<LichHenResponseDTO> getAllLichHen(int page, int size) {
+        var pageResult = lichHenRepository.findAll(PageRequest.of(page, size));
+        List<LichHenResponseDTO> content = pageResult.getContent().stream()
+                .map(this::convertToLichHenResponse)
+                .collect(Collectors.toList());
+
+        return PageResponseDTO.<LichHenResponseDTO>builder()
+                .content(content)
+                .pageNo(page)
+                .pageSize(size)
+                .totalElements(pageResult.getTotalElements())
+                .totalPages(pageResult.getTotalPages())
+                .last(pageResult.isLast())
+                .build();
     }
 
     // ==================== PRIVATE MAPPER METHODS ====================

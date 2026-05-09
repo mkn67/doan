@@ -48,7 +48,8 @@ export const staffApi = {
 
   // --- QUẢN LÝ LỊCH HẸN (TỪ KHÁCH HÀNG) ---
   getDanhSachLichHen: async (filters?: LichHenFilterDTO): Promise<LichHenResponseDTO[]> => {
-    const response = await axiosClient.get<LichHenResponseDTO[]>('/lich-hen', { params: filters });
+    // Đổi chữ '/lich-hen' thành '/bookings' cho khớp với Backend
+    const response = await axiosClient.get<LichHenResponseDTO[]>('/bookings', { params: filters });
     return response.data;
   },
 

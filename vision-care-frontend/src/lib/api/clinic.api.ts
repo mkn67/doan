@@ -32,12 +32,12 @@ export const clinicApi = {
 
   // --- DỊCH VỤ ---
   getDichVu: async (): Promise<DichVuKhamResponse[]> => {
-    const response = await axiosClient.get(`${BASE_URL}/dichvu`);
+    const response = await axiosClient.get(`/dich-vu-kham`);
     return response.data;
   },
 
   createDichVu: async (data: DichVuKhamRequest): Promise<DichVuKhamResponse> => {
-    const response = await axiosClient.post(`${BASE_URL}/dichvu`, data);
+    const response = await axiosClient.post(`/dich-vu-kham`, data);
     return response.data;
   },
 

@@ -2,11 +2,13 @@ package com.kada.da.modules.booking.controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.kada.da.modules.booking.dto.DatLichRequestDTO;
@@ -14,6 +16,7 @@ import com.kada.da.modules.booking.dto.DatLichResponseDTO;
 import com.kada.da.modules.booking.dto.HangChoResponseDTO;
 import com.kada.da.modules.booking.dto.LichHenResponseDTO;
 import com.kada.da.modules.booking.service.LichHenService;
+import com.kada.da.modules.staff.dto.PageResponseDTO;
 
 import lombok.RequiredArgsConstructor;
 
@@ -48,5 +51,12 @@ public class BookingController {
     public ResponseEntity<HangChoResponseDTO> checkIn(@PathVariable("maLichHen") String maLichHen) {
         HangChoResponseDTO response = lichHenService.checkIn(maLichHen);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping
+    public ResponseEntity<PageResponseDTO<LichHenResponseDTO>> getAllLichHen(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size) {
+        return ResponseEntity.ok(lichHenService.getAllLichHen(page, size));
     }
 }

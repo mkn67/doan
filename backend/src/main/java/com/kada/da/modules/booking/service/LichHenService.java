@@ -1,12 +1,14 @@
 package com.kada.da.modules.booking.service;
 
-import com.kada.da.modules.booking.dto.HangChoResponseDTO;
-import com.kada.da.modules.booking.dto.LichHenResponseDTO;
-import com.kada.da.modules.booking.dto.DatLichResponseDTO;
-import com.kada.da.modules.booking.dto.LichHenTrieuChungDto;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+
+import com.kada.da.modules.booking.dto.DatLichResponseDTO;
+import com.kada.da.modules.booking.dto.HangChoResponseDTO;
+import com.kada.da.modules.booking.dto.LichHenResponseDTO;
+import com.kada.da.modules.booking.dto.LichHenTrieuChungDto;
+import com.kada.da.modules.staff.dto.PageResponseDTO;
 
 public interface LichHenService {
 
@@ -21,4 +23,6 @@ public interface LichHenService {
     HangChoResponseDTO checkIn(String maLichHen);
 
     List<LichHenTrieuChungDto> getLichHenKemTrieuChung();
+
+    PageResponseDTO<LichHenResponseDTO> getAllLichHen(int page, int size);
 }

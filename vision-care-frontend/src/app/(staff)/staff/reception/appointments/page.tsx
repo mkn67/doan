@@ -14,8 +14,8 @@ import { AxiosError } from "axios";
 
 import { useDatLich, useDanhSachDichVu } from "@/hooks/useClinic"; 
 import { useDanhSachLichHen, useSlotTrong } from "@/hooks/useStaff"; 
-import { LichHenFilterDTO, SlotTrongDTO } from "@/types/staff";
-import { DatLichRequest } from "@/types/clinic";
+import { LichHenFilterDTO, SlotTrongDTO, LichHenResponseDTO } from "@/types/staff";
+import { DatLichRequest, DichVuKhamResponse } from "@/types/clinic";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,27 +32,12 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 
-// =========================================================
-// 1. ĐỊNH NGHĨA INTERFACES
-// =========================================================
-interface LichHenItem {
-  maLichHen: string | number;
-  gioHen: string;
-  ngayHen: string;
-  tenKhachHang?: string;
-  maKh: string;
-  tenGoiKham?: string;
-  tenBacSi?: string;
-  trangThai: string;
-}
-
-interface DichVuKhamResponse {
-  maGoi: string | number;
-  tenGoi: string;
-}
-
-interface JavaErrorResponse {
-  message?: string;
+interface PageResponseDTO<T> {
+  content?: T[];
+  data?: T[];
+  page?: number;
+  size?: number;
+  totalElements?: number;
 }
 
 // BỎ loaiLich KHỎI SCHEMA
@@ -103,6 +88,17 @@ export default function AppointmentsPage() {
     return () => clearTimeout(timer);
   }, []);
 
+  // Bóc vỏ an toàn 100% Type-safe
+  const arrGoiKham: DichVuKhamResponse[] = 
+    (listGoiKham as PageResponseDTO<DichVuKhamResponse>)?.content || 
+    (listGoiKham as PageResponseDTO<DichVuKhamResponse>)?.data || 
+    (Array.isArray(listGoiKham) ? listGoiKham : []);
+
+  const arrLichHen: LichHenResponseDTO[] = 
+    (listLichHen as PageResponseDTO<LichHenResponseDTO>)?.content || 
+    (listLichHen as PageResponseDTO<LichHenResponseDTO>)?.data || 
+    (Array.isArray(listLichHen) ? listLichHen : []);
+
   if (!isMounted) return null;
 
   // 4. XỬ LÝ SUBMIT
@@ -124,7 +120,7 @@ export default function AppointmentsPage() {
       },
       // GIẢI PHÁP CHO LỖI TS2322: Dùng kiểu dữ liệu mặc định và cast bên trong
       onError: (err) => {
-        const axiosError = err as AxiosError<JavaErrorResponse>;
+        const axiosError = err as AxiosError<{message?: string}>;
         const errorMsg = axiosError.response?.data?.message || "Không thể đặt lịch";
         alert("Lỗi: " + errorMsg);
       }
@@ -167,9 +163,9 @@ export default function AppointmentsPage() {
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl><SelectTrigger><SelectValue placeholder="Chọn gói" /></SelectTrigger></FormControl>
                         <SelectContent className="bg-white">
-                          {(listGoiKham as unknown as DichVuKhamResponse[])?.map((goi) => (
-                            <SelectItem key={goi.maGoi} value={String(goi.maGoi)}>
-                              {goi.tenGoi}
+                          {arrGoiKham.map((goi) => (
+                            <SelectItem key={goi.maDv} value={String(goi.maDv)}>
+                              {goi.tenDv}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -265,17 +261,16 @@ export default function AppointmentsPage() {
           <TableBody>
             {loadingLich ? (
               <TableRow><TableCell colSpan={5} className="text-center py-10"><Loader2 className="animate-spin mx-auto" /></TableCell></TableRow>
-            ) : (listLichHen as unknown as LichHenItem[])?.length > 0 ? (
-              (listLichHen as unknown as LichHenItem[]).map((item) => (
-                <TableRow key={item.maLichHen}>
+            ) : arrLichHen.length > 0 ? (
+              arrLichHen.map((item) => (
+                <TableRow key={item.maLh}>
                   <TableCell>
                     <div className="text-sm">
                       <p className="font-bold">{item.gioHen}</p>
                       <p className="text-slate-500">{item.ngayHen}</p>
                     </div>
                   </TableCell>
-                  <TableCell className="font-medium">{item.tenKhachHang || item.maKh}</TableCell>
-                  <TableCell className="text-sm">{item.tenGoiKham}</TableCell>
+                  <TableCell className="font-medium">{item.tenKhachHang }</TableCell>
                   <TableCell><StatusBadge status={item.trangThai} /></TableCell>
                   <TableCell className="text-right">
                     <Button variant="ghost" size="sm"><MoreHorizontal className="h-4 w-4" /></Button>
