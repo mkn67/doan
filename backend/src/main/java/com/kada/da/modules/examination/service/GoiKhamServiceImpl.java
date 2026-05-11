@@ -1,5 +1,6 @@
 package com.kada.da.modules.examination.service;
 
+import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -9,12 +10,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.kada.da.Exception.ResourceNotFoundException;
+import com.kada.da.modules.examination.domain.GoiKham;
 import com.kada.da.modules.examination.dto.GoiKhamRequestDTO;
 import com.kada.da.modules.examination.dto.GoiKhamResponseDTO;
-import com.kada.da.modules.staff.dto.PageResponseDTO;
-import com.kada.da.modules.examination.domain.GoiKham;
-import com.kada.da.Exception.ResourceNotFoundException;
 import com.kada.da.modules.examination.repository.GoiKhamRepository;
+import com.kada.da.modules.staff.dto.PageResponseDTO;
 
 import lombok.RequiredArgsConstructor;
 
@@ -62,6 +63,14 @@ public class GoiKhamServiceImpl implements GoiKhamService {
                 .totalPages(goiKhamPage.getTotalPages())
                 .last(goiKhamPage.isLast())
                 .build();
+    }
+
+    @Override
+    public List<GoiKhamResponseDTO> getActiveGoiKham() {
+        // Truyền số 1 vào để chỉ lấy các gói khám đang hoạt động
+        return goiKhamRepository.findByIsActive(1).stream()
+                .map(this::mapToResponse) // Giả định m đã có sẵn hàm mapToResponse trong file này rồi
+                .collect(Collectors.toList());
     }
 
     private GoiKhamResponseDTO mapToResponse(GoiKham entity) {

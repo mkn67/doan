@@ -1,11 +1,12 @@
-import { useMutation } from "@tanstack/react-query";
+ import { useMutation } from "@tanstack/react-query";
 import { authApi } from "@/lib/api/auth.api";
 import { useRouter } from "next/navigation";
 import { AxiosError } from "axios";
 import { useEffect, useState } from "react";
 
 export interface AuthUser {
-  maKh?: string;
+  // ---- THÔNG TIN CHUNG ----
+  username?: string;
   hoTen?: string;
   sdt?: string;
   email?: string;
@@ -13,8 +14,15 @@ export interface AuthUser {
   gioiTinh?: string;
   ngaySinh?: string;
   diaChi?: string;
+
+  // ---- DÀNH CHO KHÁCH HÀNG ----
+  maKh?: string;
   diemTichLuy?: number;
-  // ... các trường khác
+
+  // ---- 🔥 DÀNH CHO STAFF / PHÂN QUYỀN (THÊM VÀO ĐÂY) 🔥 ----
+  loaiTk?: string;   // "INTERNAL" (Nhân viên) hoặc "EXTERNAL" (Khách)
+  maNhom?: string;   // VD: "NH04"
+  roles?: string[];  // VD: ["ROLE_NH04"]
 }
 
 export const useAuth = () => {
@@ -52,4 +60,4 @@ export const useLogin = () => {
       alert(error.response?.data?.message || "Sai tên đăng nhập hoặc mật khẩu");
     }
   });
-};
+}; 

@@ -11,18 +11,18 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.kada.da.modules.booking.dto.LichLamViecRequestDTO;
-import com.kada.da.modules.booking.dto.LichLamViecResponseDTO;
-import com.kada.da.modules.staff.dto.PageResponseDTO;
-import com.kada.da.modules.booking.dto.SlotTrongDto;
-import com.kada.da.modules.booking.domain.LichHen;
-import com.kada.da.modules.booking.domain.LichLamViec;
-import com.kada.da.modules.staff.domain.NhanSu;
-import com.kada.da.modules.booking.Enum.TrangThaiLichHen;
 import com.kada.da.Exception.BusinessRuleException;
 import com.kada.da.Exception.ResourceNotFoundException;
+import com.kada.da.modules.booking.Enum.TrangThaiLichHen;
+import com.kada.da.modules.booking.domain.LichHen;
+import com.kada.da.modules.booking.domain.LichLamViec;
+import com.kada.da.modules.booking.dto.LichLamViecRequestDTO;
+import com.kada.da.modules.booking.dto.LichLamViecResponseDTO;
+import com.kada.da.modules.booking.dto.SlotTrongDto;
 import com.kada.da.modules.booking.repository.LichHenRepository;
 import com.kada.da.modules.booking.repository.LichLamViecRepository;
+import com.kada.da.modules.staff.domain.NhanSu;
+import com.kada.da.modules.staff.dto.PageResponseDTO;
 import com.kada.da.modules.staff.repository.NhanSuRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -35,6 +35,7 @@ public class LichLamViecServiceImpl implements LichLamViecService {
 
     private final LichLamViecRepository lichLamViecRepository;
     private final NhanSuRepository nhanSuRepository;
+    private final LichHenRepository lichHenRepository;
 
     // =========================================================
     // 1. TẠO LỊCH BẰNG STORED PROCEDURE (MỚI)
@@ -206,9 +207,6 @@ public class LichLamViecServiceImpl implements LichLamViecService {
                 .isNghi(entity.getIsNghi())
                 .build();
     }
-
-    // Thêm dependency trong constructor (hoặc dùng @RequiredArgsConstructor)
-    private final LichHenRepository lichHenRepository; // thêm vào field
 
     @Override
     public List<SlotTrongDto> getDanhSachSlotTrong() {

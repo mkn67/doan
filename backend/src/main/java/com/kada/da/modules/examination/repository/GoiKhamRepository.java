@@ -1,11 +1,14 @@
 package com.kada.da.modules.examination.repository;
 
-import com.kada.da.modules.examination.domain.GoiKham;
+import java.util.List;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import com.kada.da.modules.examination.domain.GoiKham;
+
 @Repository
 public interface GoiKhamRepository extends JpaRepository<GoiKham, String> {
-    // Tìm gói khám theo tên nếu cần hiển thị lên combo box ở Frontend
-    // List<GoiKham> findByTenGoiContaining(String tenGoi);
+
+    List<GoiKham> findByIsActive(Integer isActive);
 }

@@ -21,7 +21,10 @@ export const inventoryApi = {
     const response = await axiosClient.post<SanPhamResponse>('/san-pham', data);
     return response.data;
   },
-
+  deleteSanPham: async (maSp: string) => {
+    const response = await axiosClient.delete(`/san-pham/${maSp}`);
+    return response.data;
+  },
   // --- LÔ HÀNG & PHIẾU NHẬP ---
   createLoHang: async (data: LoHangRequest): Promise<LoHangResponse> => {
     const response = await axiosClient.post<LoHangResponse>('/lo-hang', data);

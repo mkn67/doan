@@ -1,80 +1,158 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { 
-  User, Calendar, History, Receipt, Star, LogOut 
+  LayoutDashboard, Package, CalendarDays, 
+  Stethoscope, LogOut, Settings, ShieldAlert
 } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth"; // Import hook useAuth
+import { useAuth } from "@/hooks/useAuth"; 
 
-const sidebarItems = [
-  { name: "Thông tin cá nhân", href: "/profile", icon: User },
-  { name: "Lịch hẹn của tôi", href: "/profile/appointments", icon: Calendar },
-  { name: "Lịch sử khám", href: "/profile/history", icon: History },
-  { name: "Hóa đơn & Thanh toán", href: "/profile/billing", icon: Receipt },
-  { name: "Đánh giá bác sĩ", href: "/profile/reviews", icon: Star },
+// 1. ĐỊNH NGHĨA MENU VÀ GẮN QUYỀN TRUY CẬP CHO TỪNG MỤC
+const staffMenuItems = [
+  { 
+    name: "Tổng quan (Dashboard)", 
+    href: "/staff/dashboard", 
+    icon: LayoutDashboard, 
+    roles: ["NH04"] // Chỉ Quản lý
+  },
+  { 
+    name: "Lễ tân & Khách hàng", 
+    href: "/staff/reception", 
+    icon: CalendarDays, 
+    roles: ["NH06", "NH04"] // Lễ tân, Quản lý
+  },
+  { 
+    name: "Khám bệnh & Kê đơn", 
+    href: "/staff/clinic", 
+    icon: Stethoscope, 
+    roles: ["NH01", "NH04"] // Bác sĩ, Quản lý
+  },
+  { 
+    name: "Kho hàng & Vật tư", 
+    href: "/staff/inventory", 
+    icon: Package, 
+    roles: ["NH03", "NH04"] // Thủ kho, Quản lý
+  },
+  { 
+    name: "Quản trị hệ thống", 
+    href: "/staff/admin", 
+    icon: Settings, 
+    roles: ["NH04"] // Chỉ Quản lý
+  },
 ];
 
-export default function ProfileLayout({ children }: { children: React.ReactNode }) {
+export default function StaffLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, loading } = useAuth(); // Sử dụng useAuth
+  const { user, loading } = useAuth(); 
+  
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsMounted(true);
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem("user");
     localStorage.removeItem("token");
-    router.push("/login");
+    router.push("/auth/login");
   };
 
-  if (loading) return <div className="flex justify-center p-8">Đang tải...</div>;
+  // 2. HÀM KIỂM TRA QUYỀN (RBAC - Role Based Access Control)
+  const hasAccess = (allowedRoles: string[]) => {
+    if (!user) return false;
+
+    // Kiểm tra theo roles (mảng) hoặc maNhom (chuỗi đơn lẻ) từ LoginResponseDTO
+    const userRoles = user?.roles || [];
+    const userGroup = user?.maNhom ? user.maNhom : null;
+
+    return allowedRoles.some(role => userRoles.includes(role) || role === userGroup);
+  };
+
+  // Lọc menu: Chỉ giữ lại những mục mà User hiện tại có quyền xem
+  const filteredMenu = staffMenuItems.filter(item => hasAccess(item.roles));
+
+  // 🔥 CHỐT CHẶN HYDRATION ERROR (Phải có !isMounted ở đây) 🔥
+  if (!isMounted || loading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-slate-50 text-blue-600 font-medium">
+        Đang tải hệ thống...
+      </div>
+    );
+  }
+
+  // Nếu không có user hoặc không có quyền gì cả
+  if (!user || filteredMenu.length === 0) {
+    return (
+      <div className="flex h-screen flex-col items-center justify-center bg-slate-50">
+        <ShieldAlert className="w-16 h-16 text-red-500 mb-4" />
+        <h2 className="text-xl font-bold text-slate-800">Truy cập bị từ chối</h2>
+        <p className="text-slate-500 mb-6">Bạn không có quyền truy cập khu vực quản trị.</p>
+        <button onClick={handleLogout} className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+          Quay lại đăng nhập
+        </button>
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-10 animate-in fade-in duration-500">
-      <div className="flex flex-col md:flex-row gap-8">
-        <aside className="w-full md:w-64 space-y-2">
-          <div className="p-5 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl text-white mb-6 shadow-lg shadow-blue-200">
-            <p className="text-xs opacity-80 font-medium uppercase tracking-wider">Xin chào,</p>
-            <p className="text-xl font-bold truncate">
-              {user?.hoTen || "Khách hàng"}
-            </p>
+    <div className="flex h-screen bg-slate-50 overflow-hidden">
+      
+      {/* SIDEBAR TỐI MÀU DÀNH CHO STAFF */}
+      <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col shadow-2xl z-20 flex-shrink-0">
+        
+        {/* Header Sidebar */}
+        <div className="p-6 bg-slate-950/50">
+          <h1 className="text-2xl font-black text-white tracking-tight">VISION <span className="text-blue-500">CARE</span></h1>
+          <div className="mt-4 p-3 bg-slate-800/50 rounded-xl border border-slate-700/50">
+            <p className="text-xs uppercase text-slate-400 font-semibold">Tài khoản</p>
+            <p className="text-sm font-bold text-white truncate mt-0.5">{user?.hoTen || "Nhân viên"}</p>
           </div>
-          
-          <nav className="space-y-1">
-            {sidebarItems.map((item) => {
-              const isActive = pathname === item.href || (item.href !== "/profile" && pathname.startsWith(item.href));
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
-                    isActive 
-                      ? "bg-blue-50 text-blue-600 border-r-4 border-blue-600 shadow-sm" 
-                      : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
-                  }`}
-                >
-                  <item.icon className={`w-5 h-5 ${isActive ? "text-blue-600" : "text-slate-400"}`} />
-                  {item.name}
-                </Link>
-              );
-            })}
-            
-            <div className="pt-10">
-              <button 
-                onClick={handleLogout}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-red-500 hover:bg-red-50 transition-colors border border-transparent hover:border-red-100"
+        </div>
+        
+        {/* Menu Navigation */}
+        <nav className="flex-1 py-6 px-3 space-y-1.5 overflow-y-auto custom-scrollbar">
+          {filteredMenu.map((item) => {
+            const isActive = pathname.startsWith(item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+                  isActive 
+                    ? "bg-blue-600 text-white shadow-md shadow-blue-900/20" 
+                    : "text-slate-400 hover:bg-slate-800 hover:text-slate-100"
+                }`}
               >
-                <LogOut className="w-5 h-5" />
-                Đăng xuất
-              </button>
-            </div>
-          </nav>
-        </aside>
+                <item.icon className={`w-5 h-5 ${isActive ? "text-white" : "text-slate-500"}`} />
+                {item.name}
+              </Link>
+            );
+          })}
+        </nav>
 
-        <main className="flex-1 bg-white rounded-3xl border border-slate-100 shadow-xl shadow-slate-100/50 p-8 min-h-[600px]">
+        {/* Footer Sidebar */}
+        <div className="p-4 border-t border-slate-800">
+          <button 
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-rose-400 hover:bg-rose-500/10 transition-colors"
+          >
+            <LogOut className="w-5 h-5" />
+            Đăng xuất
+          </button>
+        </div>
+      </aside>
+
+      {/* KHU VỰC HIỂN THỊ NỘI DUNG (MAIN CONTENT) */}
+      <main className="flex-1 overflow-y-auto relative bg-slate-50/50">
+        <div className="p-8 min-h-full">
           {children}
-        </main>
-      </div>
+        </div>
+      </main>
+      
     </div>
   );
 }

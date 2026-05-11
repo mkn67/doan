@@ -2,16 +2,28 @@
 
 import "@/app/globals.css";
 import { useState } from "react";
-import { useDanhSachSanPham, useCreateSanPham } from "@/hooks/useInventory";
+// Giả định m đã viết hook useDeleteSanPham, tớ import luôn vào đây nhé!
+import { useDanhSachSanPham, useCreateSanPham, useDeleteSanPham } from "@/hooks/useInventory";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Package, Plus, Box, DollarSign, Layers, Tag, AlertTriangle, Pill, CheckCircle2 } from "lucide-react";
+import { Package, Plus, Box, DollarSign, Layers, Tag, AlertTriangle, Pill, CheckCircle2, Trash2 } from "lucide-react";
+
+interface SanPham {
+  maSp: string;
+  tenSp: string;
+  laThuoc: number | boolean;
+  tenLoai?: string;
+  tenNhaCungCap?: string;
+  giaBan: number;
+  tongTonKho: number;
+  trangThai?: string;
+}
 
 export default function ProductsPage() {
   const { data } = useDanhSachSanPham();
   const createMutation = useCreateSanPham();
+  const deleteMutation = useDeleteSanPham(); // Thêm hook Xóa
 
-  // Đã cập nhật Form State chuẩn 100% theo SanPhamRequest
   const [form, setForm] = useState({
     tenSp: "",
     maLoai: "",
@@ -21,18 +33,43 @@ export default function ProductsPage() {
   });
 
   const handleSubmit = () => {
-    // 1. Ép kiểu dữ liệu: Nếu tích checkbox (true) thì gửi 1, không tích (false) thì gửi 0
+    // 🔥 1. CHẶN ĐỨNG HÀNH VI GỬI DỮ LIỆU RỖNG BẰNG VALIDATION
+    if (!form.tenSp.trim()) {
+      alert("Ê này! Phải nhập tên sản phẩm chứ!");
+      return;
+    }
+    if (!form.maLoai.trim()) {
+      alert("Chưa nhập Mã loại kìa ông giáo!");
+      return;
+    }
+    if (form.giaBan <= 0) {
+      alert("Giá bán phải lớn hơn 0 đồng!");
+      return;
+    }
+
+    // 2. Ép kiểu dữ liệu
     const dataToSubmit = {
       ...form,
       laThuoc: form.laThuoc ? 1 : 0
     };
 
-    // 2. Gửi dữ liệu đi
-    createMutation.mutate(dataToSubmit);
-
-    // 3. Reset form về trạng thái ban đầu
-    setForm({ tenSp: "", maLoai: "", giaBan: 0, tonKhoToiThieu: 10, laThuoc: false });
+    // 3. Gửi dữ liệu đi
+    createMutation.mutate(dataToSubmit, {
+      onSuccess: () => {
+        // Chỉ khi nào BE báo thành công thì mới reset form
+        setForm({ tenSp: "", maLoai: "", giaBan: 0, tonKhoToiThieu: 10, laThuoc: false });
+      }
+    });
   };
+
+  // 🔥 HÀM XỬ LÝ XÓA SẢN PHẨM
+  const handleDelete = (maSp: string) => {
+    if (window.confirm("Bạn có chắc chắn muốn xóa sản phẩm này không? Xóa xong không lấy lại được đâu nhé!")) {
+      deleteMutation.mutate(maSp);
+    }
+  };
+
+  const sanPhamList = data || [];
 
   return (
     <div className="p-6 md:p-8 space-y-8 bg-slate-50 min-h-[calc(100vh-4rem)]">
@@ -49,7 +86,7 @@ export default function ProductsPage() {
         </div>
       </div>
 
-      {/* FORM THÊM MỚI (Chuẩn theo SanPhamRequest) */}
+      {/* FORM THÊM MỚI */}
       <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
         <h2 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2 uppercase tracking-wide">
           <Plus className="w-4 h-4 text-blue-600" /> Thêm sản phẩm mới
@@ -58,7 +95,7 @@ export default function ProductsPage() {
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
           {/* Tên Sản Phẩm */}
           <div className="space-y-1.5 md:col-span-2">
-            <label className="text-xs font-medium text-slate-600">Tên sản phẩm</label>
+            <label className="text-xs font-medium text-slate-600">Tên sản phẩm <span className="text-red-500">*</span></label>
             <div className="relative">
               <Box className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
               <Input 
@@ -72,7 +109,7 @@ export default function ProductsPage() {
 
           {/* Mã Loại */}
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-slate-600">Mã loại (ID)</label>
+            <label className="text-xs font-medium text-slate-600">Mã loại (ID) <span className="text-red-500">*</span></label>
             <div className="relative">
               <Tag className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
               <Input 
@@ -86,7 +123,7 @@ export default function ProductsPage() {
 
           {/* Giá Bán */}
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-slate-600">Giá bán (VNĐ)</label>
+            <label className="text-xs font-medium text-slate-600">Giá bán (VNĐ) <span className="text-red-500">*</span></label>
             <div className="relative">
               <DollarSign className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
               <Input 
@@ -99,7 +136,7 @@ export default function ProductsPage() {
             </div>
           </div>
 
-          {/* Tồn Tối Thiểu (Phục vụ Cảnh Báo) */}
+          {/* Tồn Tối Thiểu */}
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-slate-600">Tồn tối thiểu</label>
             <div className="relative">
@@ -140,7 +177,7 @@ export default function ProductsPage() {
         </div>
       </div>
 
-      {/* BẢNG HIỂN THỊ (Chuẩn theo SanPhamResponse) */}
+      {/* BẢNG HIỂN THỊ */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
@@ -153,14 +190,16 @@ export default function ProductsPage() {
                 <th className="py-4 px-6 font-semibold text-right">Giá bán</th>
                 <th className="py-4 px-6 font-semibold text-center">Tồn kho</th>
                 <th className="py-4 px-6 font-semibold text-center">Trạng thái</th>
+                {/* THÊM CỘT HÀNH ĐỘNG Ở ĐÂY */}
+                <th className="py-4 px-6 font-semibold text-center">Hành động</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {data && data.length > 0 ? (
-                data.map((sp) => (
+              {sanPhamList.length > 0 ? (
+                sanPhamList.map((sp: SanPham) => (
                   <tr key={sp.maSp} className="hover:bg-slate-50/80 transition-colors group">
                     <td className="py-4 px-6 font-medium text-slate-800">
-                      {sp.tenSp}
+                      {sp.tenSp || "Chưa có tên"}
                     </td>
                     <td className="py-4 px-6 text-center">
                       {sp.laThuoc ? (
@@ -175,14 +214,14 @@ export default function ProductsPage() {
                     </td>
                     <td className="py-4 px-6 text-slate-600">
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
-                        {sp.tenLoai}
+                        {sp.tenLoai || "Trống"}
                       </span>
                     </td>
                     <td className="py-4 px-6 text-slate-500 text-sm">
                       {sp.tenNhaCungCap || "Chưa cập nhật"}
                     </td>
                     <td className="py-4 px-6 text-slate-700 text-right font-medium">
-                      {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(sp.giaBan)}
+                      {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(sp.giaBan || 0)}
                     </td>
                     <td className="py-4 px-6 text-center">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${
@@ -192,20 +231,31 @@ export default function ProductsPage() {
                             ? 'bg-orange-50 text-orange-700 border-orange-200'
                             : 'bg-red-50 text-red-700 border-red-200'
                       }`}>
-                        {sp.tongTonKho} <Layers className="w-3 h-3 ml-1"/>
+                        {sp.tongTonKho || 0} <Layers className="w-3 h-3 ml-1"/>
                       </span>
                     </td>
                     <td className="py-4 px-6 text-center">
                       <span className="inline-flex items-center text-xs font-medium text-slate-500">
                         <CheckCircle2 className="w-3 h-3 mr-1 text-emerald-500" />
-                        {sp.trangThai}
+                        {sp.trangThai || "Active"}
                       </span>
+                    </td>
+                    
+                    {/* THÊM NÚT XÓA Ở ĐÂY */}
+                    <td className="py-4 px-6 text-center">
+                      <button 
+                        onClick={() => handleDelete(sp.maSp)}
+                        className="text-slate-400 hover:text-red-500 transition-colors p-2 rounded-full hover:bg-red-50"
+                        title="Xóa sản phẩm"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={7} className="py-16 text-center text-slate-500">
+                  <td colSpan={8} className="py-16 text-center text-slate-500">
                     <div className="flex flex-col items-center justify-center">
                       <Package className="w-12 h-12 text-slate-300 mb-3" />
                       <p className="text-base font-medium text-slate-600">Chưa có sản phẩm nào trong kho</p>

@@ -58,4 +58,9 @@ public class NhanSuController {
         // Viết ngắn gọn thế này thôi, Spring Boot nó đủ thông minh để tự hiểu!
         return ResponseEntity.ok(nhanSuService.getTopBacSiRating());
     }
+
+    @GetMapping("/chuc-vu/{macv}")
+    public ResponseEntity<List<NhanSuResponseDTO>> getByChucVu(@PathVariable String macv) {
+        return ResponseEntity.ok(nhanSuService.getNhanSuByChucVuActive(macv));
+    }
 }

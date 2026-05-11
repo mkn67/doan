@@ -7,8 +7,6 @@ import {
   PhieuNhapRequest,
   NhaCungCapRequest,
   LoHangRequest,
-  PhieuNhapResponse,
-  PageResponseDTO,
 } from "@/types/inventory";
 
 export const useDanhSachSanPham = () => {
@@ -29,6 +27,21 @@ export const useCreateSanPham = () => {
     onError: (error: AxiosError) => {
       console.error("Create product error:", error.response?.data || error.message);
     },
+  });
+};
+
+export const useDeleteSanPham = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: inventoryApi.deleteSanPham,
+    onSuccess: () => {
+      alert("Đã tiễn sản phẩm đi bụi thành công! 🚀");
+      queryClient.invalidateQueries({ queryKey: ["san-pham"] });
+    },
+    onError: (error: AxiosError<{ message?: string }>) => {
+      alert(error.response?.data?.message || "Xóa thất bại! Có thể sản phẩm đang nằm trong hóa đơn.");
+    }
   });
 };
 

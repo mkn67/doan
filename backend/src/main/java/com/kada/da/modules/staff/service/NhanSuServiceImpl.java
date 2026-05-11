@@ -41,7 +41,6 @@ public class NhanSuServiceImpl implements NhanSuService {
     private final NhomRepository nhomRepository;
     private final PasswordEncoder passwordEncoder;
 
-    // FIX LỖI 2: QUÊN INJECT REPOSITORY VÀO ĐÂY
     private final VRatingBacSiRepository vRatingBacSiRepository;
 
     @Override
@@ -85,7 +84,7 @@ public class NhanSuServiceImpl implements NhanSuService {
     }
 
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public NhanSuResponseDTO updateNhanSu(String maNs, NhanSuRequestDTO request) {
         NhanSu nhanSu = nhanSuRepository.findById(maNs)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy nhân sự: " + maNs));
@@ -114,9 +113,10 @@ public class NhanSuServiceImpl implements NhanSuService {
     @Override
     public PageResponseDTO<NhanSuResponseDTO> getAllNhanSu(int page, int size, String keyword) {
         Pageable pageable = PageRequest.of(page, size);
+        // Chỉ lấy nhân sự có isDeleted = 0 (Đang làm việc)
         Page<NhanSu> nhanSuPage = (keyword == null || keyword.isEmpty())
-                ? nhanSuRepository.findAll(pageable)
-                : nhanSuRepository.findByHoTenContainingIgnoreCase(keyword, pageable);
+                ? nhanSuRepository.findByIsDeleted(0, pageable)
+                : nhanSuRepository.findByHoTenContainingIgnoreCaseAndIsDeleted(keyword, 0, pageable);
 
         return PageResponseDTO.<NhanSuResponseDTO>builder()
                 .content(nhanSuPage.getContent().stream().map(this::mapToResponse)
@@ -153,5 +153,12 @@ public class NhanSuServiceImpl implements NhanSuService {
                 .tongSoCaKham(view.getTongLuotDanhGia())
                 .diemDanhGiaTrungBinh(view.getRatingTrungBinh())
                 .build()).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<NhanSuResponseDTO> getNhanSuByChucVuActive(String maCv) {
+        return nhanSuRepository.findByChucVu_MaCvAndIsDeleted(maCv, 0).stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
     }
 }

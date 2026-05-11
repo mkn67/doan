@@ -58,14 +58,17 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                 // Cấp kim bài miễn tử cho các request thăm dò từ Frontend
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                // Thả cửa cho Đăng nhập, Đăng ký và Swagger API Docs
+                // Thả cửa cho Đăng nhập, Đăng ký, Swagger API Docs VÀ CÁC API PUBLIC
                 .requestMatchers(
                         "/v3/api-docs",
                         "/v3/api-docs/**",
                         "/swagger-ui/**",
                         "/swagger-ui.html",
                         "/webjars/**",
-                        "/api/v1/auth/**"
+                        "/api/v1/auth/**",
+                        // 🔥 2 DÒNG NÀY LÀ CHÌA KHÓA MỞ DROPDOWN CHO KHÁCH ĐẶT LỊCH NÀY 🔥
+                        "/api/v1/nhan-su/chuc-vu/**",
+                        "/api/v1/goi-kham/active"
                 ).permitAll()
                 // --- BẮT ĐẦU PHÂN QUYỀN CHUẨN THEO DB ---
 

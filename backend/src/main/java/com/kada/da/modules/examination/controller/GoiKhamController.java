@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/goi-kham")
@@ -32,5 +33,10 @@ public class GoiKhamController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         return ResponseEntity.ok(goiKhamService.getAllGoiKham(page, size));
+    }
+
+    @GetMapping("/active")
+    public ResponseEntity<List<GoiKhamResponseDTO>> getActiveGoiKham() {
+        return ResponseEntity.ok(goiKhamService.getActiveGoiKham());
     }
 }
