@@ -37,5 +37,5 @@ public interface LichLamViecRepository extends JpaRepository<LichLamViec, String
 
         List<LichLamViec> findByGioBatDauAndGioKetThuc(Double gioBatDau, Double gioKetThuc);
 
-        List<LichLamViec> findByIsNghiFalseAndNgayLamGreaterThanEqual(LocalDate ngayLam);
+        List<LichLamViec> findByIsNghiAndNgayLamGreaterThanEqual(Integer isNghi, LocalDate ngayLam);
 }
