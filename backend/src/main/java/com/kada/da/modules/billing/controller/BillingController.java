@@ -34,10 +34,18 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/v1/billing")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = "http://localhost:3000")
 public class BillingController {
 
     private final HoaDonService hoaDonService;
+
+    // 🔥 THÊM HÀM NÀY VÀO ĐỂ FRONTEND LẤY ĐƯỢC DANH SÁCH HÓA ĐƠN
+    @GetMapping
+    public ResponseEntity<?> getDanhSachHoaDon() {
+        // Tớ giả định trong HoaDonService m có hàm getAll() hoặc findAll()
+        // Nhớ đổi tên hàm bên trong service cho đúng với code thực tế của m nhé!
+        return ResponseEntity.ok(hoaDonService.getAllHoaDon());
+    }
 
     // 1. Lễ tân tạo hóa đơn & Thanh toán (Hệ thống sẽ tự động trừ kho)
     @PostMapping("/pay")

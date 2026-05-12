@@ -156,4 +156,9 @@ public class HoaDonServiceImpl implements HoaDonService {
 
         return response;
     }
+
+    @Override
+    public List<HoaDon> getAllHoaDon() {
+        return hoaDonRepository.findAll();
+    }
 }

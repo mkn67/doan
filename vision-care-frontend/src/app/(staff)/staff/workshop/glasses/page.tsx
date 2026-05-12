@@ -12,32 +12,35 @@ import * as z from "zod";
 import { useSearchParams, useRouter } from "next/navigation"; 
 import { AxiosError } from "axios";
 
+// Đảm bảo m có hook này trong useWorkshop.ts
 import { useCreateXuLyKinh } from "@/hooks/useWorkshop"; 
-import { XuLyKinhRequestDTO } from "@/types/staff";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Form, FormControl, FormField, FormItem, FormLabel, FormMessage
 } from "@/components/ui/form";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 
 // =========================================================
-// 1. SCHEMA & TYPES
+// 1. SCHEMA & TYPES (Đã sửa chuẩn theo DB XU_LY_KINH)
 // =========================================================
 interface JavaErrorResponse {
   message?: string;
 }
 
 const workshopSchema = z.object({
-  maDon: z.string().min(1, "Vui lòng nhập mã đơn hàng"),
-  maHoSo: z.string().optional(),
+  maDon: z.string().min(1, "Vui lòng nhập mã đơn hàng (Mã Phiếu Kê Đơn)"),
   maNsKyThuat: z.string().min(1, "Vui lòng nhập mã kỹ thuật viên"),
+  trangThai: z.string().min(1, "Vui lòng chọn trạng thái"),
   ghiChu: z.string().optional(),
-  ngayHenTra: z.string().min(1, "Vui lòng chọn ngày hẹn trả"),
+  ngayHoanThanh: z.string().min(1, "Vui lòng chọn ngày hoàn thành"),
 });
 
 type WorkshopFormValues = z.infer<typeof workshopSchema>;
@@ -51,29 +54,27 @@ function WorkshopContent() {
   const searchParams = useSearchParams();
   
   const user = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("user") || "{}") : {};
-  const isTechnician = user.roles?.[0] === "NH05" || user.maNhom === "NH05";
-  const isAdmin = user.roles?.[0] === "NH04" || user.maNhom === "NH04";
+  // Kỹ thuật viên mắt kính (CV07) thuộc NH05
+  const isTechnician = user.roles?.includes("NH05") || user.maNhom === "NH05";
+  const isAdmin = user.roles?.includes("NH04") || user.maNhom === "NH04";
 
   const [isMounted, setIsMounted] = useState(false);
 
-  // Lấy mã hồ sơ từ URL (VD: ?maHoSo=HS001)
+  // Lấy mã đơn từ URL (VD: ?maDon=KD_S01)
   const maDonFromUrl = searchParams.get("maDon") || "";
-  const maHoSoFromUrl = searchParams.get("maHoSo") || "";
 
   const form = useForm<WorkshopFormValues>({
     resolver: zodResolver(workshopSchema),
     defaultValues: {
       maDon: maDonFromUrl,
-      maHoSo: maHoSoFromUrl,
       maNsKyThuat: "", 
-      ngayHenTra: new Date().toISOString().split('T')[0],
+      trangThai: "Đang xử lý", // Default
+      ngayHoanThanh: new Date().toISOString().split('T')[0], // Mặc định hôm nay
       ghiChu: "",
     },
   });
 
-  // Tự động lấy mã nhân sự từ localStorage
   useEffect(() => {
-    // Dùng setTimeout để tránh lỗi setState đồng bộ trong Effect (cascading renders)
     const timer = setTimeout(() => setIsMounted(true), 0);
     
     if (typeof window !== "undefined") {
@@ -92,16 +93,20 @@ function WorkshopContent() {
   }, [form]);
 
   const onSubmit: SubmitHandler<WorkshopFormValues> = (values) => {
-    const payload: XuLyKinhRequestDTO = {
-      ...values,
-      ngayHenTra: `${values.ngayHenTra}T17:00:00`, // Format LocalDateTime
-      thongSoKinh: {}, // Có thể mở rộng thêm object thông số nếu cần
+    // Ép kiểu chuẩn DTO (Sửa lại type XuLyKinhRequestDTO bên types/staff.ts cho khớp nhé)
+    const payload = {
+      maDon: values.maDon,
+      maNsKyThuat: values.maNsKyThuat,
+      trangThai: values.trangThai,
+      ghiChu: values.ghiChu,
+      ngayHoanThanh: `${values.ngayHoanThanh}T17:00:00`, // Format DateTime cho BE
+      thongSoKinh: {}, // Gửi object rỗng hoặc nối API lấy từ Kê Đơn
     };
 
     mutation.mutate(payload, {
       onSuccess: () => {
-        alert("✅ Đã cập nhật trạng thái xử lý kính!");
-        router.push("/staff/dashboard"); // Xong thì về dashboard hoặc danh sách chờ
+        alert("Đã cập nhật trạng thái xử lý kính thành công!");
+        router.push("/staff/dashboard");
       },
       onError: (err) => {
         const axiosError = err as AxiosError<JavaErrorResponse>;
@@ -126,12 +131,8 @@ function WorkshopContent() {
 
       <Card className="border-slate-200 shadow-lg">
         <CardHeader className="bg-slate-50/50 border-b">
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-lg text-slate-800">Thông tin gia công</CardTitle>
-              <CardDescription>Cập nhật kết quả sau khi hoàn thiện sản phẩm</CardDescription>
-            </div> 
-          </div>
+          <CardTitle className="text-lg text-slate-800">Thông tin gia công</CardTitle>
+          <CardDescription>Nhập Mã Phiếu Kê Đơn (MADON) để bắt đầu xử lý</CardDescription>
         </CardHeader>
         <CardContent className="pt-6">
           <Form {...form}>
@@ -140,20 +141,25 @@ function WorkshopContent() {
               <div className="grid grid-cols-2 gap-6">
                 <FormField control={form.control} name="maDon" render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="font-semibold">Mã đơn hàng</FormLabel>
+                    <FormLabel className="font-semibold">Mã Phiếu Kê Đơn <span className="text-red-500">*</span></FormLabel>
                     <FormControl>
-                      <Input placeholder="DH..." {...field} className="bg-slate-50 focus:bg-white" />
+                      <Input placeholder="VD: KD_S01" {...field} className="bg-slate-50 focus:bg-white" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
 
-                <FormField control={form.control} name="maHoSo" render={({ field }) => (
+                <FormField control={form.control} name="trangThai" render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="font-semibold">Mã hồ sơ (Tùy chọn)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="HS..." {...field} className="bg-slate-50" />
-                    </FormControl>
+                    <FormLabel className="font-semibold">Trạng thái <span className="text-red-500">*</span></FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl><SelectTrigger><SelectValue placeholder="Chọn trạng thái" /></SelectTrigger></FormControl>
+                      <SelectContent>
+                        <SelectItem value="Đang xử lý">Đang xử lý</SelectItem>
+                        <SelectItem value="Hoàn thành">Hoàn thành</SelectItem>
+                        <SelectItem value="Lỗi gia công">Lỗi gia công (Cần làm lại)</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )} />
@@ -170,9 +176,9 @@ function WorkshopContent() {
                   </FormItem>
                 )} />
 
-                <FormField control={form.control} name="ngayHenTra" render={({ field }) => (
+                <FormField control={form.control} name="ngayHoanThanh" render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="font-semibold">Ngày hẹn trả</FormLabel>
+                    <FormLabel className="font-semibold">Ngày hoàn thành (Dự kiến/Thực tế)</FormLabel>
                     <FormControl>
                       <Input type="date" {...field} />
                     </FormControl>
@@ -187,7 +193,7 @@ function WorkshopContent() {
                   <FormControl>
                     <Textarea 
                       placeholder="VD: Tròng kính chống ánh sáng xanh, lắp gọng khoan..." 
-                      className="min-h-[120px] resize-none"
+                      className="min-h-[100px] resize-none"
                       {...field} 
                     />
                   </FormControl>
@@ -200,21 +206,21 @@ function WorkshopContent() {
                   <Button 
                     type="submit" 
                     disabled={mutation.isPending} 
-                    className="w-full bg-blue-600 hover:bg-blue-700 h-12 text-md font-bold shadow-md transition-all active:scale-95"
+                    className="w-full bg-amber-600 hover:bg-amber-700 h-12 text-md font-bold shadow-md transition-all active:scale-95 text-white"
                   >
                     {mutation.isPending ? (
                       <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Đang cập nhật...</>
                     ) : (
-                      <><ClipboardCheck className="mr-2 h-5 w-5" /> Xác nhận hoàn tất gia công</>
+                      <><ClipboardCheck className="mr-2 h-5 w-5" /> Lưu kết quả gia công</>
                     )}
                   </Button>
                 ) : (
-                  <Button disabled variant="outline" className="w-full h-12 text-md font-bold">
-                    Chỉ xem (Không có quyền gia công)
+                  <Button disabled variant="outline" className="w-full h-12 text-md font-bold bg-slate-100">
+                    Chỉ xem (Tài khoản không có quyền gia công)
                   </Button>
                 )}
                 <p className="text-[11px] text-center text-slate-400 flex items-center justify-center">
-                  <Info className="w-3 h-3 mr-1" /> Hệ thống sẽ tự động thông báo cho khách hàng qua Zalo/SMS (nếu có)
+                  <Info className="w-3 h-3 mr-1" /> Kỹ thuật viên cập nhật trạng thái &quot;Hoàn thành&quot; để Lễ tân bàn giao kính.
                 </p>
               </div>
             </form>

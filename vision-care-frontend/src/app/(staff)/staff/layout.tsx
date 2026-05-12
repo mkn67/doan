@@ -5,7 +5,8 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { 
   LayoutDashboard, Package, CalendarDays, 
-  Stethoscope, LogOut, Settings, ShieldAlert
+  Stethoscope, LogOut, Settings, ShieldAlert,
+  Hammer, Wallet
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth"; 
 
@@ -30,10 +31,22 @@ const staffMenuItems = [
     roles: ["NH01", "NH04"] // Bác sĩ, Quản lý
   },
   { 
+    name: "Quầy Thu Ngân", 
+    href: "/staff/cashier", 
+    icon: Wallet, 
+    roles: ["NH02", "NH04"] // Thu ngân, Quản lý
+  },
+  { 
     name: "Kho hàng & Vật tư", 
     href: "/staff/inventory", 
     icon: Package, 
     roles: ["NH03", "NH04"] // Thủ kho, Quản lý
+  },
+  { 
+    name: "Xưởng mài lắp kính", 
+    href: "/staff/workshop/glasses", 
+    icon: Hammer, 
+    roles: ["NH05", "NH03", "NH04"] // Kỹ thuật viên, Thủ kho, Quản lý
   },
   { 
     name: "Quản trị hệ thống", 

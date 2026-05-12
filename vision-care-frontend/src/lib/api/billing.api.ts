@@ -15,22 +15,21 @@ export const billingApi = {
   // PHÂN HỆ THU NGÂN (CASHIER)
   // ==========================================
 
-  // 1. Tạo hóa đơn (Cách 1: Gửi Object mảng chuẩn)
+  // 1. Tạo hóa đơn (Chỉ thẳng vào /billing/pay)
   createHoaDon: async (data: HoaDonRequestDTO): Promise<HoaDonResponseDTO> => {
-    const response = await axiosClient.post<HoaDonResponseDTO>('/hoa-don', data);
+    const response = await axiosClient.post<HoaDonResponseDTO>('/billing/pay', data);
     return response.data;
   },
 
-  // 2. Tạo hóa đơn (Cách 2: Đẩy JSON String - Dùng khi Controller Java yêu cầu String)
+  // 2. Tạo hóa đơn từ JSON
   createHoaDonJson: async (data: TaoHoaDonJsonRequest): Promise<HoaDonResponseDTO> => {
-    const response = await axiosClient.post<HoaDonResponseDTO>('/hoa-don/json', data);
+    const response = await axiosClient.post<HoaDonResponseDTO>('/billing/tao-tu-json', data);
     return response.data;
   },
 
-  // 3. Lấy danh sách hóa đơn (Để thu ngân chọn và thanh toán)
+  // 3. Lấy danh sách hóa đơn (Sửa thành /billing)
   getDanhSachHoaDon: async (): Promise<HoaDonResponseDTO[]> => {
-    // Ông giáo có thể thêm params phân trang nếu Backend có hỗ trợ nhé
-    const response = await axiosClient.get<HoaDonResponseDTO[]>('/hoa-don');
+    const response = await axiosClient.get<HoaDonResponseDTO[]>('/billing');
     return response.data;
   },
 

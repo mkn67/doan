@@ -1,10 +1,11 @@
 package com.kada.da.modules.billing.service;
 
+import java.util.List;
+import java.util.Map;
+
 import com.kada.da.modules.billing.domain.HoaDon;
 import com.kada.da.modules.billing.dto.HoaDonRequestDTO;
 import com.kada.da.modules.billing.dto.HoaDonResponseDTO;
-
-import java.util.Map;
 
 public interface HoaDonService {
 
@@ -18,4 +19,6 @@ public interface HoaDonService {
     void huyHoaDon(String maHd);
 
     HoaDonResponseDTO taoHoaDon(HoaDonRequestDTO request);
+
+    List<HoaDon> getAllHoaDon();
 }

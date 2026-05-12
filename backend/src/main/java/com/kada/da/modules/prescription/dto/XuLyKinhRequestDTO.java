@@ -1,24 +1,24 @@
 package com.kada.da.modules.prescription.dto;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import lombok.Data;
-
 import java.time.LocalDateTime;
+
+import jakarta.validation.constraints.NotBlank;
+import lombok.Data;
 
 @Data
 public class XuLyKinhRequestDTO {
 
-    @NotBlank(message = "Mã hóa đơn không được để trống")
+    @NotBlank(message = "Mã hóa đơn/Mã đơn không được để trống")
     private String maDon;
 
-    private String maHoso; // Hồ sơ thị lực (có thể null nếu không có)
+    private String maNsKyThuat;
 
-    private String maNsKyThuat; // Kỹ thuật viên (có thể null nếu chưa phân công)
+    @NotBlank(message = "Trạng thái không được để trống")
+    private String trangThai;
 
-    @NotNull(message = "Ngày hẹn trả không được để trống")
-    private LocalDateTime ngayHenTra;
+    private LocalDateTime ngayHoanThanh;
 
     private String ghiChu;
+
     private Object thongSoKinh;
 }

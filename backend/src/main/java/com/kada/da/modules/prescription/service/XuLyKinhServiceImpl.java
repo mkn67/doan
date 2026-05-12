@@ -10,12 +10,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.kada.da.modules.staff.dto.PageResponseDTO;
-import com.kada.da.modules.prescription.dto.XuLyKinhResponseDTO;
-import com.kada.da.modules.prescription.dto.XuLyKinhRequestDTO;
-import com.kada.da.modules.prescription.domain.XuLyKinh;
 import com.kada.da.Exception.BusinessRuleException;
+import com.kada.da.modules.prescription.domain.XuLyKinh;
+import com.kada.da.modules.prescription.dto.XuLyKinhRequestDTO;
+import com.kada.da.modules.prescription.dto.XuLyKinhResponseDTO;
 import com.kada.da.modules.prescription.repository.XuLyKinhRepository;
+import com.kada.da.modules.staff.dto.PageResponseDTO;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -147,13 +147,10 @@ public class XuLyKinhServiceImpl implements XuLyKinhService {
     }
 
     private XuLyKinhResponseDTO toDTO(XuLyKinh entity) {
-        String maHoSo = null;
         String tenKhachHang = null;
 
-        // Trích xuất an toàn Mã hồ sơ và Tên khách hàng từ PhieuKeDon
+        // Trích xuất an toàn Tên khách hàng từ PhieuKeDon
         if (entity.getPhieuKeDon() != null && entity.getPhieuKeDon().getHoSoThiLuc() != null) {
-            maHoSo = entity.getPhieuKeDon().getHoSoThiLuc().getMaHoSo();
-
             // Giả sử HoSoThiLuc của ông có nối với KhachHang để lấy tên
             if (entity.getPhieuKeDon().getHoSoThiLuc().getKhachHang() != null) {
                 tenKhachHang = entity.getPhieuKeDon().getHoSoThiLuc().getKhachHang().getHoTen();
@@ -173,12 +170,11 @@ public class XuLyKinhServiceImpl implements XuLyKinhService {
         return XuLyKinhResponseDTO.builder()
                 .maXl(entity.getMaXl())
                 .maDon(entity.getPhieuKeDon() != null ? entity.getPhieuKeDon().getMaDon() : null)
-                .maHoso(maHoSo)
                 .tenKhachHang(tenKhachHang) // Lấy từ Hồ Sơ (thay vì Hóa Đơn vì xử lý kính nối với Đơn Thuốc)
                 .tenKyThuatVien(entity.getNhanSuKyThuat() != null ? entity.getNhanSuKyThuat().getHoTen() : null)
-                .tinhTrang(entity.getTrangThai()) // Đổi trangThai -> tinhTrang
-                .ngayNhan(entity.getNgayBatDau()) // Đổi ngayBatDau -> ngayNhan
-                .ngayHenTra(entity.getNgayHoanThanh()) // Đổi ngayHoanThanh -> ngayHenTra
+                .trangThai(entity.getTrangThai())
+                .ngayBatDau(entity.getNgayBatDau())
+                .ngayHoanThanh(entity.getNgayHoanThanh())
                 .ghiChu(entity.getGhiChu())
                 .thongSoKinh(thongSoObj) // Đã chuyển thành Object siêu xịn
                 .build();

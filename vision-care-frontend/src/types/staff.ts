@@ -59,9 +59,9 @@ export interface HangChoRequestDTO {
 
 export interface XuLyKinhRequestDTO {
   maDon: string
-  maHoso?: string
   maNsKyThuat?: string
-  ngayHenTra: string      // LocalDateTime → 'YYYY-MM-DDTHH:mm:ss'
+  trangThai: string
+  ngayHoanThanh: string      // LocalDateTime → 'YYYY-MM-DDTHH:mm:ss'
   ghiChu?: string
   thongSoKinh?: object
 }
@@ -122,12 +122,11 @@ export interface HangChoResponseDTO {
 export interface XuLyKinhResponseDTO {
   maXl: string
   maDon: string
-  maHoso?: string
   tenKhachHang: string
   tenKyThuatVien?: string
-  tinhTrang: string
-  ngayNhan: string
-  ngayHenTra: string
+  trangThai: string
+  ngayBatDau: string
+  ngayHoanThanh: string
   ghiChu?: string
   thongSoKinh?: object
 }

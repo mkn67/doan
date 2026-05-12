@@ -82,6 +82,9 @@ export default function LoginPage() {
           case 'NH05': // Kỹ thuật viên kính -> Vào xưởng
             router.push('/staff/workshop/glasses');
             break;
+          case 'NH02':
+            router.push('/staff/cashier');
+            break;
           default: // Nếu nhân viên chưa gán quyền cụ thể
             router.push('/staff/dashboard');
             break;
