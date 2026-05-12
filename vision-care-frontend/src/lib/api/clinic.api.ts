@@ -6,7 +6,6 @@ import {
   GoiKhamRequest, GoiKhamResponse,
   DanhGiaRequest, DanhGiaResponse,
   ChiTietKyThuatRequest, ChiTietKyThuatResponse,
-  ThongKeBenhNhan, TopBacSi,
   DatLichRequest, DatLichResponse
 } from '@/types/clinic';
 
@@ -57,27 +56,29 @@ export const clinicApi = {
     return response.data;
   },
 
-  // --- THỐNG KÊ ---
-  getThongKeBenhNhan: async (tuNgay?: string, denNgay?: string): Promise<ThongKeBenhNhan[]> => {
-    const response = await axiosClient.get(`${BASE_URL}/thongke/benh-nhan`, {
-      params: { tuNgay, denNgay }
-    });
-    return response.data;
-  },
-
-  getTopBacSi: async (thang?: number, nam?: number): Promise<TopBacSi[]> => {
-    const response = await axiosClient.get(`${BASE_URL}/thongke/top-bac-si`, {
-      params: { thang, nam }
-    });
-    return response.data;
-  },
-
   // --- BOOKING ---
   datLich: async (data: DatLichRequest): Promise<DatLichResponse> => {
     const response = await axiosClient.post(
       "/bookings/dat-lich",
       data
     );
+    return response.data;
+  },
+
+  // --- HÀNG CHỜ (DÀNH CHO BÁC SĨ) ---
+  goiVaoKham: async (maHc: string): Promise<string> => {
+    const response = await axiosClient.put(`/hang-cho/${maHc}/goi-kham`);
+    return response.data;
+  },
+
+  ketThucKham: async (maHc: string, trangThai: 'Hoàn thành' | 'Bỏ về'): Promise<string> => {
+    const response = await axiosClient.put(`/hang-cho/${maHc}/ket-thuc`, null, { params: { trangThai } });
+    return response.data;
+  },
+  getHangChoHomNay: async (maNs?: string) => {
+    const response = await axiosClient.get(`/hang-cho/hom-nay`, {
+      params: { maNs } // Truyền mã bác sĩ lên để lọc (nếu có)
+    });
     return response.data;
   },
 };

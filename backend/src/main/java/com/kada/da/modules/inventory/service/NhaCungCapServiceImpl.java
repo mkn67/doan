@@ -9,13 +9,13 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.kada.da.modules.inventory.dto.NhaCungCapRequestDTO;
-import com.kada.da.modules.inventory.dto.NhaCungCapResponseDTO;
-import com.kada.da.modules.staff.dto.PageResponseDTO;
-import com.kada.da.modules.inventory.domain.NhaCungCap;
 import com.kada.da.Exception.BusinessRuleException;
 import com.kada.da.Exception.ResourceNotFoundException;
+import com.kada.da.modules.inventory.domain.NhaCungCap;
+import com.kada.da.modules.inventory.dto.NhaCungCapRequestDTO;
+import com.kada.da.modules.inventory.dto.NhaCungCapResponseDTO;
 import com.kada.da.modules.inventory.repository.NhaCungCapRepository;
+import com.kada.da.modules.staff.dto.PageResponseDTO;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -115,6 +115,14 @@ public class NhaCungCapServiceImpl implements NhaCungCapService {
 
         NhaCungCap updated = nhaCungCapRepository.save(nhaCungCap);
         return convertToResponseDTO(updated);
+    }
+
+    @Override
+    @Transactional
+    public void deleteNhaCungCap(String maNcc) {
+        log.info("Xóa nhà cung cấp: {}", maNcc);
+        NhaCungCap nhaCungCap = findById(maNcc);
+        nhaCungCapRepository.delete(nhaCungCap);
     }
 
     // ==================== PRIVATE METHODS ====================

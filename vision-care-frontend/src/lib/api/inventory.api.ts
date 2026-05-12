@@ -52,6 +52,10 @@ export const inventoryApi = {
     const response = await axiosClient.post<GiaoDichNccResponse>('/giao-dich', data);
     return response.data;
   },
+  deleteNhaCungCap: async (maNcc: string) => {
+    const response = await axiosClient.delete(`/nha-cung-cap/${maNcc}`);
+    return response.data;
+  },
 
   // --- THỐNG KÊ & CẢNH BÁO ---
   getThongKeSanPham: async (): Promise<ThongKeSanPham[]> => {

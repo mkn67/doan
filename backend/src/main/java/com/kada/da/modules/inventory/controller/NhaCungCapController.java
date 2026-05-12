@@ -2,6 +2,7 @@ package com.kada.da.modules.inventory.controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -64,5 +65,13 @@ public class NhaCungCapController {
         log.info("API: Lấy danh sách nhà cung cấp - Page: {}, Size: {}, Keyword: {}", page, size, keyword);
         PageResponseDTO<NhaCungCapResponseDTO> response = nhaCungCapService.getAllNhaCungCap(page, size, keyword);
         return ResponseEntity.ok(response);
+    }
+
+    // 5. Xóa NCC
+    @DeleteMapping("/{maNcc}")
+    public ResponseEntity<Void> deleteNhaCungCap(@PathVariable String maNcc) {
+        log.info("API: Xóa nhà cung cấp - Mã: {}", maNcc);
+        nhaCungCapService.deleteNhaCungCap(maNcc);
+        return ResponseEntity.noContent().build();
     }
 }

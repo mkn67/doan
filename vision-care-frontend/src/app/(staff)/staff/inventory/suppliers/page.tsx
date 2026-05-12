@@ -2,12 +2,14 @@
 
 import "@/app/globals.css";
 // Hook giả định để lấy danh sách phiếu nhập
-import { useDanhSachPhieuNhap } from "@/hooks/useInventory"; 
+import { useDanhSachPhieuNhap } from "@/hooks/useInventory";
+import { PhieuNhapResponse } from "@/types/inventory";
 import { Button } from "@/components/ui/button";
 import { ClipboardList, Plus, Calendar, FileText, User, Truck } from "lucide-react";
 
 export default function ImportsPage() {
-  const { data: importList = [] } = useDanhSachPhieuNhap();
+  const { data } = useDanhSachPhieuNhap();
+  const importList = Array.isArray(data) ? data : data?.content || [];
 
   // Format ngày tháng chuẩn Việt Nam
   const formatDate = (dateStr: string) => {
@@ -47,18 +49,18 @@ export default function ImportsPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {importList.length > 0 ? importList.map((pn: any) => (
+            {importList.length > 0 ? importList.map((pn: PhieuNhapResponse) => (
               <tr key={pn.maPn} className="hover:bg-slate-50/80 transition-colors cursor-pointer group">
                 <td className="py-4 px-6 font-bold text-indigo-600">{pn.maPn}</td>
                 <td className="py-4 px-6 text-slate-600 font-medium">{formatDate(pn.ngayNhap)}</td>
-                <td className="py-4 px-6 text-slate-700">{pn.tenNcc || pn.maNcc}</td>
+                <td className="py-4 px-6 text-slate-700">{pn.tenNcc}</td>
                 <td className="py-4 px-6 text-slate-600">
                   <span className="bg-slate-100 px-2 py-1 rounded text-xs font-medium border border-slate-200">
-                    {pn.tenNs || pn.maNs}
+                    {pn.tenNhanVien}
                   </span>
                 </td>
                 <td className="py-4 px-6 text-right font-semibold text-slate-800">
-                  {pn.soLuongLo || "Chưa có"} lô
+                  {pn.tongTien?.toLocaleString("vi-VN")} đ
                 </td>
               </tr>
             )) : (

@@ -75,7 +75,23 @@ export interface ChiTietKyThuatRequest {
   donViCap?: string;
   moTaThanhTich?: string;
 }
+export interface HangChoRequestDTO {
+  maKh: string;
+  maLh?: string;
+  maNs?: string;
+  loaiKham?: string;
+  ghiChu?: string;
+}
 
+export interface HangChoResponseDTO {
+  maHangCho: string;
+  soThuTu: number;
+  tenKhachHang: string;
+  tenBacSi: string;
+  trangThai: string;
+  thoiGianBatDauCho: string; 
+  thoiGianChoDoiPhut: number;
+}
 /* =======================
    TYPES - RESPONSE
 ======================= */

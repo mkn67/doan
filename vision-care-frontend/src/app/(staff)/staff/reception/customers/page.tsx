@@ -79,7 +79,7 @@ export default function CustomersPage() {
   function onSubmit(values: CustomerFormValues) {
     createCustomerMutation.mutate(values as Parameters<typeof createCustomerMutation.mutate>[0], {
       onSuccess: () => {
-        alert("🎉 Thêm khách hàng thành công!");
+        alert("Thêm khách hàng thành công!");
         form.reset();
         setIsDialogOpen(false);
       }

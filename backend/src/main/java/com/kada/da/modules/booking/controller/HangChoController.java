@@ -3,6 +3,7 @@ package com.kada.da.modules.booking.controller;
 import java.time.LocalDateTime;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,6 +20,11 @@ import lombok.RequiredArgsConstructor;
 public class HangChoController {
 
     private final HangChoService hangChoService;
+
+    @GetMapping("/hom-nay")
+    public ResponseEntity<?> getDanhSachHangChoHomNay() {
+        return ResponseEntity.ok(hangChoService.getHangChoHomNay());
+    }
 
     // 1. Bác sĩ gọi bệnh nhân vào khám
     @PutMapping("/{maHc}/goi-kham")

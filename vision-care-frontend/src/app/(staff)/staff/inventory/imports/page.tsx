@@ -8,6 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Truck, Plus, Phone, MapPin, Building2, Trash2 } from "lucide-react";
 
+interface NhaCungCap {
+  maNcc: string;
+  tenNcc: string;
+  sdt?: string;
+  diaChi?: string;
+}
+
 export default function SuppliersPage() {
   const { data: nccList = [] } = useDanhSachNhaCungCap(); // Lấy danh sách
   const createMutation = useCreateNhaCungCap();
@@ -84,13 +91,19 @@ export default function SuppliersPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {nccList.length > 0 ? nccList.map((ncc: any) => (
+            {nccList.length > 0 ? nccList.map((ncc: NhaCungCap) => (
               <tr key={ncc.maNcc} className="hover:bg-slate-50/80 group">
                 <td className="py-4 px-6 font-medium text-slate-800">{ncc.tenNcc}</td>
                 <td className="py-4 px-6 text-slate-600">{ncc.sdt || "Trống"}</td>
                 <td className="py-4 px-6 text-slate-600">{ncc.diaChi || "Trống"}</td>
                 <td className="py-4 px-6 text-center">
-                  <button onClick={() => handleDelete(ncc.maNcc)} className="text-slate-400 hover:text-red-500 p-2 rounded-full hover:bg-red-50"><Trash2 className="w-4 h-4" /></button>
+                  <button 
+                    onClick={() => handleDelete(ncc.maNcc)} 
+                    title="Xóa nhà cung cấp"
+                    className="text-slate-400 hover:text-red-500 p-2 rounded-full hover:bg-red-50"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </td>
               </tr>
             )) : (

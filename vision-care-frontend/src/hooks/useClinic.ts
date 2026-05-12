@@ -105,3 +105,38 @@ export const useDatLich = () => {
     },
   });
 };
+export const useGoiVaoKham = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (maHc: string) => clinicApi.goiVaoKham(maHc),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["hang-cho"] });
+      queryClient.invalidateQueries({ queryKey: ["hang-cho-hom-nay"] });
+    },
+    onError: (error: AxiosError) => {
+      console.error("Goi vao kham error:", error.response?.data || error.message);
+    },
+  });
+};
+
+export const useKetThucKham = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ maHc, trangThai }: { maHc: string; trangThai: 'Hoàn thành' | 'Bỏ về' }) => 
+      clinicApi.ketThucKham(maHc, trangThai),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["hang-cho"] });
+      queryClient.invalidateQueries({ queryKey: ["hang-cho-hom-nay"] });
+    },
+    onError: (error: AxiosError) => {
+      console.error("Ket thuc kham error:", error.response?.data || error.message);
+    },
+  });
+};
+export const useHangChoHomNay = (maNs?: string) => {
+  return useQuery({
+    queryKey: ["hang-cho-hom-nay", maNs],
+    queryFn: () => clinicApi.getHangChoHomNay(maNs),
+    refetchInterval: 30000, // Tự động load lại sau 30s
+  });
+};

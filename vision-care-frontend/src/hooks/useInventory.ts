@@ -100,6 +100,19 @@ export const useCreateNhaCungCap = () => {
     },
   });
 };
+export const useDeleteNhaCungCap = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: inventoryApi.deleteNhaCungCap,
+    onSuccess: () => {
+      alert("Đã xóa nhà cung cấp thành công! 🗑️")
+        queryClient.invalidateQueries({ queryKey: ["nha-cung-cap"] })
+        },
+    onError: (error: AxiosError<{ message?: string }>) => {
+      alert(error.response?.data?.message || "Xóa thất bại! Có thể nhà cung cấp đang nằm trong phiếu nhập.");
+    }
+  });
+};
 
 export const useCanhBaoHetHan = () => {
   return useQuery({
