@@ -1,67 +1,50 @@
-VISION CARE - Hệ thống quản lý phòng khám chuyên khoa mắt
-1. Giới thiệu chung (Project Overview)
-Mô tả ngắn gọn về dự án.
+# 👁️ VISION CARE - Hệ Thống Quản Lý Phòng Khám Chuyên Khoa Mắt
 
-Mục tiêu: Quản lý toàn diện quy trình từ tiếp nhận bệnh nhân, đo mắt, kê đơn kính đến gia công tròng kính và thanh toán.
+## 📖 1. Giới Thiệu Chung (Project Overview)
 
-Đối tượng sử dụng: Lễ tân, Bác sĩ, Kỹ thuật viên mài kính, Thu ngân, Admin và Khách hàng.
+**Vision Care** là giải pháp phần mềm quản lý toàn diện dành riêng cho phòng khám và bệnh viện chuyên khoa mắt. Hệ thống được thiết kế để số hóa và tối ưu hóa toàn bộ quy trình vận hành: từ khâu tiếp nhận bệnh nhân, đo khám khúc xạ, soi đáy mắt, kê đơn thuốc/kính, cho đến quy trình mài lắp tròng kính tại xưởng và thanh toán viện phí.
 
-2. Công nghệ sử dụng (Tech Stack)
+**👥 Đối tượng người dùng:**
+* **Lễ tân:** Quản lý lịch hẹn, tiếp đón và phân luồng hàng chờ.
+* **Bác sĩ:** Thăm khám, cập nhật hồ sơ thị lực và kê đơn.
+* **Kỹ thuật viên mài kính:** Nhận lệnh gia công và cập nhật trạng thái xuất xưởng.
+* **Thu ngân:** Lập hóa đơn và xử lý thanh toán (Tiền mặt/Chuyển khoản).
+* **Quản lý / Admin:** Theo dõi báo cáo thống kê, quản lý nhân sự và kho vật tư.
+* **Khách hàng:** Đặt lịch khám trực tuyến, xem lịch sử khám và hóa đơn cá nhân.
 
-Backend: Java 21, Spring Boot 3.x, Spring Security (JWT), JPA/Hibernate.
+---
 
-Frontend: Next.js 16 (App Router), Tailwind CSS, Shadcn UI, TanStack Query (React Query), Lucide Icons.
+## 💻 2. Công Nghệ Sử Dụng (Tech Stack)
 
-Database: Oracle Database (Hệ quản trị dữ liệu quy mô doanh nghiệp).
+Hệ thống được phát triển dựa trên kiến trúc Microservices cơ bản, tách biệt hoàn toàn Frontend và Backend.
 
-Tools: Podman, Docker, Figma, Git.
+* **Backend:** Java 21, Spring Boot 3.x, Spring Security (JWT), Spring Data JPA / Hibernate.
+* **Frontend:** Next.js 16 (App Router), Tailwind CSS, Shadcn UI, TanStack Query (React Query), Lucide Icons.
+* **Database:** Oracle Database (Hệ quản trị CSDL quy mô doanh nghiệp, đảm bảo ACID và bảo mật cao).
+* **DevOps & Tools:** Podman / Docker, Git, Figma.
 
-3. Cấu trúc thư mục (Project Structure)
-Phần này cực kỳ ăn điểm vì nó thể hiện m quản lý code khoa học.
+---
 
-Plaintext
+## 📂 3. Cấu Trúc Thư Mục (Project Structure)
+
+Dự án được phân chia module rõ ràng theo nghiệp vụ (Domain-Driven Design):
+
+```text
 VisionCare/
 ├── vision-care-backend/      # Spring Boot Project
 │   ├── src/main/java/com/kada/da/modules/
-│   │   ├── auth/             # Xử lý Security & JWT
-│   │   ├── customer/         # Module khách hàng
-│   │   └── clinic/           # Module chuyên môn (Khám, Đơn thuốc)
-│   └── src/main/resources/   # Config Oracle & Liquibase/Flyway
+│   │   ├── auth/             # Xử lý xác thực, phân quyền & JWT
+│   │   ├── customer/         # Quản lý thông tin & lịch sử khách hàng
+│   │   ├── clinic/           # Nghiệp vụ y tế (Lịch hẹn, Khám bệnh, Kê đơn)
+│   │   ├── inventory/        # Quản lý kho (Vật tư, Kính, Thuốc)
+│   │   ├── workshop/         # Quản lý xưởng mài lắp kính
+│   │   └── billing/          # Thu ngân, Hóa đơn & Báo cáo doanh thu
+│   └── src/main/resources/   # Cấu hình application.yml & Database Scripts
+│
 └── vision-care-frontend/     # Next.js Project
-    ├── src/app/              # App Router (Staff & Customer)
-    ├── src/hooks/            # Custom Hooks (React Query)
-    └── src/components/ui/    # Shadcn UI Components
-4. Hướng dẫn cài đặt (Installation & Setup)
-Đây là phần quan trọng nhất để giảng viên có thể chạy thử project của m.
-
-Bước 1: Cấu hình Database (Oracle)
-Tạo User và phân quyền trong Oracle.
-
-Chạy script SQL (đính kèm trong thư mục /docs/sql) để tạo bảng và dữ liệu mẫu.
-
-Bước 2: Chạy Backend
-Mở file application.yml hoặc application.properties.
-
-Cập nhật url, username, password của Oracle.
-
-Chạy lệnh: ./mvnw spring-boot:run
-
-Bước 3: Chạy Frontend
-Tạo file .env.local với nội dung: NEXT_PUBLIC_API_URL=http://localhost:8080.
-
-Cài đặt thư viện: npm install hoặc pnpm install.
-
-Chạy dev: npm run dev.
-
-5. Các tính năng chính (Core Features)
-Liệt kê theo luồng nghiệp vụ (Workflow):
-
-Hệ thống Auth: Phân quyền đa tầng (RBAC) bằng JWT.
-
-Tiếp nhận & Đặt lịch: Quản lý hàng chờ thông minh.
-
-Khám khúc xạ: Ghi nhận chỉ số SPH, PD theo thời gian thực.
-
-Kê đơn & Xưởng kính: Quy trình mài lắp kính chuyên nghiệp.
-
-Báo cáo: Thống kê doanh thu và lượt khám qua Dashboard.
+    ├── src/app/              
+    │   ├── (customer)/       # Giao diện dành cho Khách hàng vãng lai
+    │   └── (staff)/          # Dashboard quản trị dành cho Nhân viên
+    ├── src/hooks/            # Custom Hooks call API (React Query)
+    ├── src/lib/api/          # Axios instances & API routes
+    └── src/components/ui/    # Tái sử dụng Component từ Shadcn UI

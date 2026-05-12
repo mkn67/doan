@@ -9,7 +9,7 @@ export default function HomePage() {
         <p>Khám mắt - Cắt kính - Tư vấn tận tâm</p>
       </section>
 
-      {/* SERVICES */}
+      {/* SERVICES */} 
       <section className="max-w-7xl mx-auto px-6 py-12 grid md:grid-cols-3 gap-6">
         <div className="border p-6 rounded-xl text-center">
           👁 Khám mắt
