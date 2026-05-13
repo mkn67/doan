@@ -29,18 +29,16 @@ interface APIResponse {
 
 export default function CustomerAppointmentsPage() {
   const router = useRouter();
-  const [maKh, setMaKh] = useState<string>("");
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
+  const [maKh, setMaKh] = useState<string>(() => {
+    if (typeof window !== "undefined") {
       const userStr = localStorage.getItem("user");
       if (userStr) {
         const user = JSON.parse(userStr);
-        setMaKh(user.maKh || ""); 
+        return user.maKh || "";
       }
-    }, 0);
-    return () => clearTimeout(timer);
-  }, []);
+    }
+    return "";
+  });
 
   const { data, isLoading } = useDanhSachLichHen({
     keyword: maKh,
@@ -51,11 +49,11 @@ export default function CustomerAppointmentsPage() {
   const appointments = (data as unknown as APIResponse)?.content || [];
 
   const upcoming = appointments.filter((item) => 
-    item.trangThai === "CHUA_XAC_NHAN" || item.trangThai === "DA_XAC_NHAN"
+    item.trangThai === "CHO_XAC_NHAN" || item.trangThai === "DA_XAC_NHAN"
   );
   
   const history = appointments.filter((item) => 
-    item.trangThai === "DA_DEN" || item.trangThai === "DA_HUY" || item.trangThai === "HOAN_THANH"
+    item.trangThai === "DA_CHECK_IN" || item.trangThai === "DA_HUY" || item.trangThai === "HOAN_THANH"
   );
 
   return (
@@ -146,12 +144,13 @@ function AppointmentCard({ item, isHistory }: { item: Appointment, isHistory: bo
 
 function StatusBadge({ status }: { status: string }) {
   const configs: Record<string, { label: string, color: string }> = {
-    "CHUA_XAC_NHAN": { label: "Chờ duyệt", color: "bg-amber-100 text-amber-700 border-amber-200" },
+    "CHO_XAC_NHAN": { label: "Chờ xác nhận", color: "bg-amber-100 text-amber-700 border-amber-200" },
     "DA_XAC_NHAN": { label: "Đã xác nhận", color: "bg-blue-100 text-blue-700 border-blue-200" },
-    "DA_DEN": { label: "Đã đến khám", color: "bg-emerald-100 text-emerald-700 border-emerald-200" },
+    "DA_CHECK_IN": { label: "Đã check-in", color: "bg-indigo-100 text-indigo-700 border-indigo-200" },
+    "HOAN_THANH": { label: "Đã khám", color: "bg-emerald-100 text-emerald-700 border-emerald-200" },
     "DA_HUY": { label: "Đã hủy", color: "bg-red-100 text-red-700 border-red-200" },
   };
-  const config = configs[status] || configs["CHUA_XAC_NHAN"];
+  const config = configs[status] || configs["CHO_XAC_NHAN"];
   return (
     <span className={`px-3 py-1 rounded-full text-xs font-bold border ${config.color}`}>
       {config.label}

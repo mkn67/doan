@@ -9,17 +9,17 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional; // 1. NHỚ IMPORT ENUM
 
-import com.kada.da.modules.billing.dto.HoaDonRequestDTO;
-import com.kada.da.modules.billing.dto.HoaDonResponseDTO;
+import com.kada.da.Exception.BusinessRuleException;
+import com.kada.da.Exception.ResourceNotFoundException;
+import com.kada.da.modules.billing.Enum.TrangThaiHoaDon;
 import com.kada.da.modules.billing.domain.CtHoaDon;
 import com.kada.da.modules.billing.domain.CtHoaDonId;
 import com.kada.da.modules.billing.domain.HoaDon;
-import com.kada.da.modules.inventory.domain.LoHang;
-import com.kada.da.modules.billing.Enum.TrangThaiHoaDon;
-import com.kada.da.Exception.BusinessRuleException;
-import com.kada.da.Exception.ResourceNotFoundException;
+import com.kada.da.modules.billing.dto.HoaDonRequestDTO;
+import com.kada.da.modules.billing.dto.HoaDonResponseDTO;
 import com.kada.da.modules.billing.repository.CtHoaDonRepository;
 import com.kada.da.modules.billing.repository.HoaDonRepository;
+import com.kada.da.modules.inventory.domain.LoHang;
 import com.kada.da.modules.inventory.repository.LoHangRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -158,7 +158,40 @@ public class HoaDonServiceImpl implements HoaDonService {
     }
 
     @Override
-    public List<HoaDon> getAllHoaDon() {
-        return hoaDonRepository.findAll();
+    @Transactional(readOnly = true)
+    public List<HoaDonResponseDTO> getAllHoaDon() {
+        List<HoaDon> hoaDons = hoaDonRepository.findAll();
+
+        return hoaDons.stream().map(hd -> {
+            HoaDonResponseDTO dto = new HoaDonResponseDTO();
+            dto.setMaHd(hd.getMaHd());
+            dto.setNgayLap(hd.getNgayLap());
+            dto.setTongTien(hd.getTongTien());
+            dto.setTrangThai(hd.getTrangThai() != null ? hd.getTrangThai().getValue() : null);
+
+            if (hd.getKhachHang() != null) {
+                dto.setTenKhachHang(hd.getKhachHang().getHoTen());
+                dto.setSdtKhachHang(hd.getKhachHang().getSdt());
+            }
+            if (hd.getNhanSu() != null) {
+                dto.setTenNhanVienLap(hd.getNhanSu().getHoTen());
+            }
+
+            if (hd.getCtHoaDons() != null) {
+                List<HoaDonResponseDTO.ChiTietSanPhamResponse> listSp = hd.getCtHoaDons().stream().map(ct -> {
+                    HoaDonResponseDTO.ChiTietSanPhamResponse sp = new HoaDonResponseDTO.ChiTietSanPhamResponse();
+                    if (ct.getLoHang() != null && ct.getLoHang().getSanPham() != null) {
+                        sp.setTenSanPham(ct.getLoHang().getSanPham().getTenSp());
+                        sp.setMaLo(ct.getLoHang().getMaLo());
+                    }
+                    sp.setSoLuong(ct.getSoLuong());
+                    sp.setDonGia(ct.getDonGia());
+                    sp.setThanhTien(ct.getDonGia().multiply(BigDecimal.valueOf(ct.getSoLuong())));
+                    return sp;
+                }).toList();
+                dto.setDanhSachSanPham(listSp);
+            }
+            return dto;
+        }).toList();
     }
 }

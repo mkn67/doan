@@ -1,16 +1,13 @@
- -- ============================================================
--- FILE   : V1_Initial_Setup_Fixed.sql
+-- ============================================================
+-- FILE   : V1_Initial_Setup_Fixed_v2.sql
 -- PROJECT: Hệ Thống Quản Lý Dịch Vụ Thị Lực & Thiết Bị Y Tế
 -- STACK  : Oracle SQL 21c + Spring Boot + React.js
--- FIX:
---   [FIX-1] VAITRO: Bỏ dấu phẩy thừa sau cột cuối (syntax error)
---   [FIX-2] Thêm đầy đủ SEQUENCES (thiếu hoàn toàn trong file gốc)
---   [FIX-3] THANH_TOAN: Thêm cột MANS + FK_TT_NS, thêm GHICHU
---   [FIX-4] SP_DAT_LICH_HEN: bỏ TRIEU_CHUNG IN JSON (không dùng nữa vì tách bảng)
---   [FIX-5] TRG_AUDIT_HOSO_THILUC: thêm dấu / kết thúc block
---   [FIX-6] Trùng trigger TRG_GEN_MAHC (định nghĩa 2 lần) — giữ bản Compound
---   [FIX-7] Bỏ dấu / thừa cuối file
---   [FIX-8] Thêm SEQUENCE còn thiếu: SEQ_HANG_CHO, SEQ_AUDIT
+-- FIX v2:
+--   - Sửa SP_DAT_LICH_HEN: enum sai (DA_HUY → N'Đã hủy'), bỏ tự sinh mã (dùng trigger)
+--   - SP_CHOT_THANH_TOAN_HOA_DON: thêm kiểm tra trạng thái hóa đơn
+--   - Thống nhất trạng thái THANH_TOAN: dùng N'Hoàn thành'
+--   - Thêm NO_DATA_FOUND handler cho các trigger VALIDATE
+--   - Cải thiện TRG_GEN_MAHC: SELECT FOR UPDATE tránh trùng STT đa session
 -- ============================================================
 
 -- ============================================================
@@ -29,7 +26,6 @@ CREATE TABLE VAITRO (
     MAVAITRO  VARCHAR2(50)  PRIMARY KEY,
     TENVAITRO NVARCHAR2(100),
     MOTA      NVARCHAR2(500)
-    -- [FIX-1] Bỏ dấu phẩy thừa sau cột cuối
 );
 
 CREATE TABLE NHOM_VAITRO (
@@ -373,7 +369,6 @@ CREATE TABLE CT_HOA_DON_DV (
     CONSTRAINT FK_CTHD_DV_DV FOREIGN KEY (MADV) REFERENCES DICH_VU_KHAM(MADV)
 );
 
--- [FIX-3] THANH_TOAN: thêm MANS (người thu tiền) + GHICHU, đổi constraint đúng
 CREATE TABLE THANH_TOAN (
     MATT          VARCHAR2(10)  PRIMARY KEY,
     MAHD          VARCHAR2(10)  NOT NULL,
@@ -445,9 +440,9 @@ CREATE TABLE token_blacklist (
     token VARCHAR2(512) NOT NULL,
     expiry_date TIMESTAMP NOT NULL
 );
+
 -- ============================================================
 -- PHẦN II: SEQUENCES
--- [FIX-2] File gốc thiếu hoàn toàn phần này
 -- ============================================================
 
 CREATE SEQUENCE SEQ_HOA_DON        START WITH 1 INCREMENT BY 1 NOCACHE  NOCYCLE;
@@ -542,7 +537,7 @@ BEGIN
 END;
 /
 
--- [FIX-6] Chỉ giữ 1 trigger TRG_GEN_MAHC — bản Compound đúng chuẩn
+-- [FIX-v2] TRG_GEN_MAHC: thêm SELECT FOR UPDATE để tránh trùng STT khi nhiều session cùng insert
 CREATE OR REPLACE TRIGGER TRG_GEN_MAHC
 FOR INSERT ON HANG_CHO
 COMPOUND TRIGGER
@@ -550,9 +545,11 @@ COMPOUND TRIGGER
 
     BEFORE STATEMENT IS
     BEGIN
+        -- Khóa các hàng trong ngày hiện tại để đảm bảo tuần tự
         SELECT NVL(MAX(SO_THU_TU), 0) INTO v_max_stt
         FROM HANG_CHO
-        WHERE TRUNC(GIO_DANG_KY) = TRUNC(SYSDATE);
+        WHERE TRUNC(GIO_DANG_KY) = TRUNC(SYSDATE)
+        FOR UPDATE;
     END BEFORE STATEMENT;
 
     BEFORE EACH ROW IS
@@ -650,8 +647,7 @@ BEGIN
 END;
 /
 
--- 3. Lịch Hẹn (giữ nguyên logic, chỉ thay COUNT bằng EXISTS ở mức có thể)
--- Compound trigger vẫn giữ, không thay đổi nhiều vì phức tạp
+-- 3. Lịch Hẹn
 CREATE OR REPLACE TRIGGER TRG_VALIDATE_LICH_HEN
 FOR INSERT OR UPDATE ON LICH_HEN
 COMPOUND TRIGGER
@@ -704,6 +700,7 @@ COMPOUND TRIGGER
 END TRG_VALIDATE_LICH_HEN;
 /
 
+-- [FIX-v2] Thêm EXCEPTION NO_DATA_FOUND
 -- 4. Hồ Sơ Thị Lực
 CREATE OR REPLACE TRIGGER TRG_VALIDATE_HO_SO
 BEFORE INSERT OR UPDATE ON HO_SO_THI_LUC
@@ -711,9 +708,14 @@ FOR EACH ROW
 DECLARE
     v_tencv CHUC_VU.TENCV%TYPE;
 BEGIN
-    SELECT cv.TENCV INTO v_tencv
-    FROM NHAN_SU ns JOIN CHUC_VU cv ON ns.MACV = cv.MACV
-    WHERE ns.MANS = :NEW.MANS;
+    BEGIN
+        SELECT cv.TENCV INTO v_tencv
+        FROM NHAN_SU ns JOIN CHUC_VU cv ON ns.MACV = cv.MACV
+        WHERE ns.MANS = :NEW.MANS;
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            RAISE_APPLICATION_ERROR(-20001, 'LỖI: Không tìm thấy chức vụ của nhân viên!');
+    END;
     IF v_tencv NOT IN (N'Bác sĩ', N'Kỹ thuật viên mắt kính') THEN
         RAISE_APPLICATION_ERROR(-20001, 'LỖI: Chỉ Bác sĩ/KTV mắt kính được lập Hồ Sơ!');
     END IF;
@@ -728,9 +730,14 @@ DECLARE
     v_tencv CHUC_VU.TENCV%TYPE;
 BEGIN
     IF INSERTING OR UPDATING THEN
-        SELECT cv.TENCV INTO v_tencv
-        FROM NHAN_SU ns JOIN CHUC_VU cv ON ns.MACV = cv.MACV
-        WHERE ns.MANS = :NEW.MANS;
+        BEGIN
+            SELECT cv.TENCV INTO v_tencv
+            FROM NHAN_SU ns JOIN CHUC_VU cv ON ns.MACV = cv.MACV
+            WHERE ns.MANS = :NEW.MANS;
+        EXCEPTION
+            WHEN NO_DATA_FOUND THEN
+                RAISE_APPLICATION_ERROR(-20003, 'LỖI: Không tìm thấy chức vụ của nhân viên!');
+        END;
         IF v_tencv NOT IN (N'Thu ngân', N'Quản lý') THEN
             RAISE_APPLICATION_ERROR(-20003, 'LỖI: Chỉ Thu ngân/Quản lý tạo Hóa Đơn!');
         END IF;
@@ -743,7 +750,7 @@ BEGIN
 END;
 /
 
--- 6. CT Hóa Đơn SP (giữ nguyên compound, không cần sửa COUNT vì dùng INTO)
+-- 6. CT Hóa Đơn SP (giữ nguyên, vì đã có kiểm tra NO_DATA_FOUND gián tiếp qua FOR LOOP)
 CREATE OR REPLACE TRIGGER TRG_CT_HOA_DON_SP
 FOR INSERT OR UPDATE OR DELETE ON CT_HOA_DON
 COMPOUND TRIGGER
@@ -802,6 +809,7 @@ COMPOUND TRIGGER
 END TRG_CT_HOA_DON_DV;
 /
 
+-- [FIX-v2] Thêm EXCEPTION NO_DATA_FOUND
 -- 8. Phiếu Nhập
 CREATE OR REPLACE TRIGGER TRG_PHIEU_NHAP
 BEFORE INSERT OR UPDATE ON PHIEU_NHAP
@@ -810,9 +818,14 @@ DECLARE
     v_tencv    CHUC_VU.TENCV%TYPE;
     v_lo_daban NUMBER;
 BEGIN
-    SELECT cv.TENCV INTO v_tencv
-    FROM NHAN_SU ns JOIN CHUC_VU cv ON ns.MACV = cv.MACV
-    WHERE ns.MANS = :NEW.MANS;
+    BEGIN
+        SELECT cv.TENCV INTO v_tencv
+        FROM NHAN_SU ns JOIN CHUC_VU cv ON ns.MACV = cv.MACV
+        WHERE ns.MANS = :NEW.MANS;
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            RAISE_APPLICATION_ERROR(-20004, 'LỖI: Không tìm thấy chức vụ của nhân viên!');
+    END;
     IF v_tencv NOT IN (N'Thủ kho', N'Quản lý') THEN
         RAISE_APPLICATION_ERROR(-20004, 'LỖI: Chỉ Thủ kho/Quản lý lập phiếu nhập!');
     END IF;
@@ -825,6 +838,7 @@ BEGIN
 END;
 /
 
+-- [FIX-v2] Thống nhất trạng thái THANH_TOAN dùng N'Hoàn thành'
 -- 9. Thanh Toán (compound)
 CREATE OR REPLACE TRIGGER TRG_THANH_TOAN
 FOR INSERT OR UPDATE ON THANH_TOAN
@@ -843,7 +857,7 @@ COMPOUND TRIGGER
 
     AFTER EACH ROW IS
     BEGIN
-        IF :NEW.TRANGTHAI = N'Thành công' THEN
+        IF :NEW.TRANGTHAI = N'Hoàn thành' THEN
             v_mahd_arr.EXTEND;
             v_mahd_arr(v_mahd_arr.LAST) := :NEW.MAHD;
         END IF;
@@ -856,7 +870,7 @@ COMPOUND TRIGGER
     BEGIN
         FOR i IN 1 .. v_mahd_arr.COUNT LOOP
             SELECT NVL(SUM(SOTIEN), 0) INTO v_da_tt
-            FROM THANH_TOAN WHERE MAHD = v_mahd_arr(i) AND TRANGTHAI = N'Thành công';
+            FROM THANH_TOAN WHERE MAHD = v_mahd_arr(i) AND TRANGTHAI = N'Hoàn thành';
             SELECT TONGTIEN, MAKH INTO v_tong_hd, v_makh FROM HOA_DON WHERE MAHD = v_mahd_arr(i);
             IF v_da_tt >= v_tong_hd THEN
                 UPDATE HOA_DON SET TRANGTHAI = N'Đã thanh toán' WHERE MAHD = v_mahd_arr(i);
@@ -904,6 +918,7 @@ COMPOUND TRIGGER
 END TRG_LO_HANG;
 /
 
+-- [FIX-v2] Thêm EXCEPTION NO_DATA_FOUND
 -- 12. Kê Đơn
 CREATE OR REPLACE TRIGGER TRG_VALIDATE_KE_DON
 BEFORE INSERT OR UPDATE ON PHIEU_KE_DON
@@ -911,9 +926,14 @@ FOR EACH ROW
 DECLARE
     v_tencv CHUC_VU.TENCV%TYPE;
 BEGIN
-    SELECT cv.TENCV INTO v_tencv
-    FROM NHAN_SU ns JOIN CHUC_VU cv ON ns.MACV = cv.MACV
-    WHERE ns.MANS = :NEW.MANS;
+    BEGIN
+        SELECT cv.TENCV INTO v_tencv
+        FROM NHAN_SU ns JOIN CHUC_VU cv ON ns.MACV = cv.MACV
+        WHERE ns.MANS = :NEW.MANS;
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            RAISE_APPLICATION_ERROR(-20025, 'LỖI: Không tìm thấy chức vụ của nhân viên!');
+    END;
     IF v_tencv NOT IN (N'Bác sĩ', N'Kỹ thuật viên mắt kính') THEN
         RAISE_APPLICATION_ERROR(-20025, 'LỖI: Chỉ Bác sĩ/KTV được Kê Đơn!');
     END IF;
@@ -944,7 +964,7 @@ END;
 /
 
 -- ============================================================
--- 2. STORED PROCEDURES (bỏ COMMIT, thêm NO_DATA_FOUND)
+-- 2. STORED PROCEDURES (đã sửa lỗi)
 -- ============================================================
 
 -- SP 1: Lưu hồ sơ khám bệnh
@@ -986,6 +1006,7 @@ EXCEPTION
 END SP_LUU_HOSO_KHAM_BENH;
 /
 
+-- [FIX-v2] Thêm kiểm tra trạng thái hóa đơn
 -- SP 2: Chốt thanh toán
 CREATE OR REPLACE PROCEDURE SP_CHOT_THANH_TOAN_HOA_DON (
     p_mahd       IN  VARCHAR2,
@@ -995,16 +1016,24 @@ CREATE OR REPLACE PROCEDURE SP_CHOT_THANH_TOAN_HOA_DON (
 ) AS
     v_tongtien NUMBER;
     v_matt     VARCHAR2(10);
+    v_trangthai NVARCHAR2(50);
 BEGIN
+    -- Lấy tổng tiền và trạng thái hiện tại
     BEGIN
-        SELECT TONGTIEN INTO v_tongtien FROM HOA_DON WHERE MAHD = p_mahd;
+        SELECT TONGTIEN, TRANGTHAI INTO v_tongtien, v_trangthai FROM HOA_DON WHERE MAHD = p_mahd;
     EXCEPTION
         WHEN NO_DATA_FOUND THEN
             RAISE_APPLICATION_ERROR(-20002, 'Hóa đơn không tồn tại');
     END;
 
+    IF v_trangthai = N'Đã thanh toán' THEN
+        RAISE_APPLICATION_ERROR(-20019, 'Hóa đơn đã được thanh toán trước đó!');
+    ELSIF v_trangthai = N'Đã hủy' THEN
+        RAISE_APPLICATION_ERROR(-20019, 'Không thể thanh toán hóa đơn đã hủy!');
+    END IF;
+
     INSERT INTO THANH_TOAN(MATT, MAHD, MANS, NGAYTHANHTOAN, SOTIEN, PHUONGTHUC, TRANGTHAI)
-    VALUES (NULL, p_mahd, p_mans, SYSTIMESTAMP, v_tongtien, p_phuongthuc, N'Thành công')
+    VALUES (NULL, p_mahd, p_mans, SYSTIMESTAMP, v_tongtien, p_phuongthuc, N'Hoàn thành')
     RETURNING MATT INTO v_matt;
     p_matt_out := v_matt;
 EXCEPTION
@@ -1066,7 +1095,7 @@ EXCEPTION
 END SP_NHAP_KHO_LO_HANG;
 /
 
--- SP 4: Cảnh báo hàng hết hạn (giữ nguyên, không cần sửa)
+-- SP 4: Cảnh báo hàng hết hạn
 CREATE OR REPLACE PROCEDURE SP_CANH_BAO_HANG_HET_HAN (
     p_so_ngay IN  NUMBER,
     c_result  OUT SYS_REFCURSOR
@@ -1091,7 +1120,7 @@ BEGIN
 END SP_CANH_BAO_HANG_HET_HAN;
 /
 
--- SP 5: Thống kê doanh thu tháng (giữ nguyên)
+-- SP 5: Thống kê doanh thu tháng
 CREATE OR REPLACE PROCEDURE SP_THONG_KE_DOANH_THU_THANG (
     p_thang IN  NUMBER,
     p_nam   IN  NUMBER,
@@ -1103,7 +1132,7 @@ BEGIN
                COUNT(MATT)  AS SO_LUONG_DON,
                SUM(SOTIEN)  AS DOANH_THU_NGAY
         FROM   THANH_TOAN
-        WHERE  TRANGTHAI = N'Thành công'
+        WHERE  TRANGTHAI = N'Hoàn thành'
           AND  EXTRACT(MONTH FROM NGAYTHANHTOAN) = p_thang
           AND  EXTRACT(YEAR  FROM NGAYTHANHTOAN) = p_nam
         GROUP BY TO_CHAR(NGAYTHANHTOAN, 'DD/MM/YYYY')
@@ -1111,6 +1140,7 @@ BEGIN
 END SP_THONG_KE_DOANH_THU_THANG;
 /
 
+-- [FIX-v2] SP_DAT_LICH_HEN: bỏ tự sinh mã, dùng trigger; sửa enum sai
 -- SP 6: Đặt lịch hẹn
 CREATE OR REPLACE PROCEDURE SP_DAT_LICH_HEN (
     p_makh      IN  VARCHAR2,
@@ -1122,7 +1152,6 @@ CREATE OR REPLACE PROCEDURE SP_DAT_LICH_HEN (
 ) AS
     v_ca_lam NUMBER;
     v_trung  NUMBER;
-    v_new_malh VARCHAR2(20);
 BEGIN
     -- Check lịch trực
     SELECT COUNT(*) INTO v_ca_lam FROM LICH_LAM_VIEC
@@ -1132,22 +1161,19 @@ BEGIN
         RAISE_APPLICATION_ERROR(-20035, 'Bác sĩ không làm việc ngày này!');
     END IF;
 
-    -- Check trùng lịch
+    -- Check trùng lịch, sử dụng đúng enum N'Đã hủy'
     SELECT COUNT(*) INTO v_trung FROM LICH_HEN
-    WHERE MANS = p_mans AND GIO_HEN = p_giohen AND TRANGTHAI != 'DA_HUY';
+    WHERE MANS = p_mans AND GIO_HEN = p_giohen AND TRANGTHAI != N'Đã hủy';
     
     IF v_trung > 0 THEN
         RAISE_APPLICATION_ERROR(-20036, 'Slot đã được đặt!');
     END IF;
 
-    -- Tự sinh mã ID mới (Fix lỗi NULL ID)
-    v_new_malh := 'LH' || TO_CHAR(SEQ_LICH_HEN.NEXTVAL, 'FM000000');
-
-    -- Insert trạng thái Enum chuẩn (Fix lỗi Sốc Ngôn Ngữ)
+    -- Để trigger TRG_GEN_MALH tự sinh mã, chỉ insert MALH = NULL
     INSERT INTO LICH_HEN(MALH, MAKH, MANS, MAGOI, NGAYHEN, GIO_HEN, LOAI_LICH, TRANGTHAI)
-    VALUES (v_new_malh, p_makh, p_mans, p_magoi, p_ngayhen, p_giohen, 'ONLINE', 'CHO_XAC_NHAN');
+    VALUES (NULL, p_makh, p_mans, p_magoi, p_ngayhen, p_giohen, N'Online', N'Mới')
+    RETURNING MALH INTO p_malh_out;
     
-    p_malh_out := v_new_malh;
 EXCEPTION
     WHEN OTHERS THEN
         RAISE;
@@ -1407,7 +1433,7 @@ END SP_CONG_DIEM;
 /
 
 -- ============================================================
--- 3. FUNCTION (không cần sửa, vì không có COMMIT)
+-- 3. FUNCTION
 -- ============================================================
 
 CREATE OR REPLACE FUNCTION FN_GET_MALO_FEFO (
@@ -1463,9 +1489,8 @@ END;
 /
 
 -- ============================================================
--- 4. VIEWS (sửa V_HANG_CHO_HOM_NAY)
+-- 4. VIEWS
 -- ============================================================
-
 
 CREATE OR REPLACE VIEW V_RATING_BAC_SI AS
 SELECT ns.MANS, ns.HOTEN, ns.CHUYENKHOA,
@@ -1489,7 +1514,8 @@ SELECT llv.MANS, ns.HOTEN AS TEN_BAC_SI, llv.NGAY_LAM, llv.GIO_BAT_DAU, llv.GIO_
 FROM   LICH_LAM_VIEC llv
 JOIN   NHAN_SU ns ON llv.MANS = ns.MANS
 WHERE  llv.IS_NGHI = 0 AND llv.NGAY_LAM >= TRUNC(SYSDATE) AND ns.IS_DELETED = 0;
- CREATE OR REPLACE VIEW V_HANG_CHO_HOM_NAY AS
+
+CREATE OR REPLACE VIEW V_HANG_CHO_HOM_NAY AS
 SELECT hc.MAHC, hc.SO_THU_TU, hc.LOAI_KHACH,
        NVL(kh.HOTEN, hc.TEN_KHACH) AS TEN_KHACH, kh.SDT,
        ns.HOTEN AS TEN_BAC_SI, gk.TENGOI AS GOI_KHAM,
@@ -1541,15 +1567,10 @@ ALTER TABLE CT_HOA_DON_DV ADD CONSTRAINT CHK_CTHDDV_DONGIA CHECK (DONGIA >= 0);
 ALTER TABLE LO_HANG ADD CONSTRAINT CHK_LO_NGAY CHECK (NGAYHETHAN > NGAYSANXUAT);
 ALTER TABLE LO_HANG ADD CONSTRAINT CHK_LO_SOLUONG CHECK (SOLUONGNHAP > 0 AND SOLUONGTON >= 0);
 ALTER TABLE KHACH_HANG ADD CONSTRAINT CHK_KH_DIEM CHECK (DIEMTICHLUY >= 0);
-ALTER TABLE LICH_HEN ADD CONSTRAINT CHK_LH_THOIGIAN CHECK (GIO_HEN > SYSTIMESTAMP - INTERVAL '1' YEAR); -- ví dụ
+ALTER TABLE LICH_HEN ADD CONSTRAINT CHK_LH_THOIGIAN CHECK (GIO_HEN > SYSTIMESTAMP - INTERVAL '1' YEAR);
 
 -- ============================================================
--- KẾT THÚC
--- ============================================================
-
-
--- ============================================================
--- PHẦN VII: INDEXES
+-- 7. INDEXES
 -- ============================================================
 
 CREATE INDEX IDX_KH_SDT          ON KHACH_HANG(SDT);
@@ -1572,4 +1593,3 @@ CREATE INDEX IDX_LSD_MAHD        ON LICH_SU_DIEM(MAHD);
 CREATE INDEX idx_token ON token_blacklist(token);
 
 COMMIT;
-

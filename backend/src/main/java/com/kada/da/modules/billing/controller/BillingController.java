@@ -2,6 +2,7 @@ package com.kada.da.modules.billing.controller;
 
 import java.io.IOException;
 import java.text.NumberFormat;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.kada.da.modules.billing.domain.CtHoaDon;
 import com.kada.da.modules.billing.domain.HoaDon;
+import com.kada.da.modules.billing.dto.HoaDonResponseDTO;
 import com.kada.da.modules.billing.dto.TaoHoaDonJsonRequest;
 import com.kada.da.modules.billing.service.HoaDonService;
 import com.lowagie.text.Document;
@@ -41,9 +43,7 @@ public class BillingController {
 
     // 🔥 THÊM HÀM NÀY VÀO ĐỂ FRONTEND LẤY ĐƯỢC DANH SÁCH HÓA ĐƠN
     @GetMapping
-    public ResponseEntity<?> getDanhSachHoaDon() {
-        // Tớ giả định trong HoaDonService m có hàm getAll() hoặc findAll()
-        // Nhớ đổi tên hàm bên trong service cho đúng với code thực tế của m nhé!
+    public ResponseEntity<List<HoaDonResponseDTO>> getDanhSachHoaDon() {
         return ResponseEntity.ok(hoaDonService.getAllHoaDon());
     }
 

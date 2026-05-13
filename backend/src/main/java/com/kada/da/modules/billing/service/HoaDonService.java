@@ -20,5 +20,5 @@ public interface HoaDonService {
 
     HoaDonResponseDTO taoHoaDon(HoaDonRequestDTO request);
 
-    List<HoaDon> getAllHoaDon();
+    List<HoaDonResponseDTO> getAllHoaDon();
 }
