@@ -46,7 +46,7 @@ export default function ProfileLayout({ children }: { children: React.ReactNode 
   const handleLogout = () => {
     localStorage.removeItem("user");
     localStorage.removeItem("token");
-    router.push("/login");
+    router.push("/auth/login");
   };
 
   if (!mounted) return null;
