@@ -6,8 +6,14 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.kada.da.modules.billing.domain.HoaDon;
 import com.kada.da.modules.billing.domain.ThanhToan;
+import com.kada.da.modules.billing.dto.ThanhToanRequestDTO;
+import com.kada.da.modules.billing.dto.ThanhToanResponseDTO;
+import com.kada.da.modules.billing.repository.HoaDonRepository;
 import com.kada.da.modules.billing.repository.ThanhToanRepository;
+import com.kada.da.modules.staff.domain.NhanSu;
+import com.kada.da.modules.staff.repository.NhanSuRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,23 +25,24 @@ import lombok.extern.slf4j.Slf4j;
 public class ThanhToanServiceImpl implements ThanhToanService {
 
     private final ThanhToanRepository thanhToanRepository;
+    private final HoaDonRepository hoaDonRepository;
+    private final NhanSuRepository nhanSuRepository;
 
     @Override
     @Transactional
     public ThanhToan createThanhToan(ThanhToan thanhToan) {
-        // Sinh mã TT001 tự động
+        if (thanhToan.getHoaDon() == null) {
+            throw new RuntimeException("Lỗi logic: Đối tượng Hóa đơn không được để trống");
+        }
         thanhToan.setMaTt(generateMaTt());
-
-        // Nếu client không gửi ngày thì tự động lấy giờ hiện tại
         if (thanhToan.getNgayThanhToan() == null) {
             thanhToan.setNgayThanhToan(LocalDateTime.now());
         }
 
-        // Mặc định trạng thái
-        if (thanhToan.getTrangThai() == null || thanhToan.getTrangThai().isEmpty()) {
-            thanhToan.setTrangThai("Hoàn thành");
-        }
+        // 4. Mặc định trạng thái
+        thanhToan.setTrangThai("Hoàn thành");
 
+        // 5. LƯU XUỐNG
         return thanhToanRepository.save(thanhToan);
     }
 
@@ -56,8 +63,8 @@ public class ThanhToanServiceImpl implements ThanhToanService {
     }
 
     @Override
-    public List<ThanhToan> getThanhToanByMaNs(String maNs) {
-        return thanhToanRepository.findByNhanSu_MaNsOrderByNgayThanhToanDesc(maNs);
+    public List<ThanhToan> getThanhToanByMaNs(String maNs, LocalDateTime start, LocalDateTime end) {
+        return thanhToanRepository.findByNhanSu_MaNsAndNgayThanhToanBetweenOrderByNgayThanhToanDesc(maNs, start, end);
     }
 
     @Override
@@ -69,17 +76,65 @@ public class ThanhToanServiceImpl implements ThanhToanService {
         return maTt;
     }
 
+    @Override
+    @Transactional
+    public ThanhToanResponseDTO xuLyThanhToan(ThanhToanRequestDTO request) {
+        log.info("Bắt đầu xử lý thanh toán cho HĐ: {}, bởi nhân viên: {}", request.getMaHd(), request.getMaNs());
+
+        // 1. Tìm Hóa đơn
+        HoaDon hoaDon = hoaDonRepository.findById(request.getMaHd())
+                .orElseThrow(() -> new RuntimeException("KHÔNG TÌM THẤY HÓA ĐƠN: " + request.getMaHd()));
+
+        // 2. Tìm Nhân sự (Chỗ này hay chết nhất nếu gửi username lên thay vì maNs)
+        NhanSu nhanSu = nhanSuRepository.findById(request.getMaNs())
+                .orElseThrow(() -> new RuntimeException("KHÔNG TÌM THẤY NHÂN VIÊN MÃ: " + request.getMaNs()));
+
+        // 3. Tạo mã TT mới
+        String newMaTt = generateMaTt();
+
+        ThanhToan tt = ThanhToan.builder()
+                .maTt(newMaTt)
+                .hoaDon(hoaDon)
+                .nhanSu(nhanSu)
+                .ngayThanhToan(LocalDateTime.now())
+                .soTien(request.getSoTien())
+                .phuongThuc(request.getHinhThucThanhToan())
+                .trangThai("Hoàn thành")
+                .build();
+
+        thanhToanRepository.save(tt);
+
+        // 4. Cập nhật trạng thái Hóa đơn
+        hoaDon.setTrangThai(com.kada.da.modules.billing.Enum.TrangThaiHoaDon.DA_THANH_TOAN);
+        hoaDonRepository.save(hoaDon);
+
+        log.info("Thanh toán thành công! Mã giao dịch: {}", newMaTt);
+
+        return ThanhToanResponseDTO.builder()
+                .maGiaoDich(newMaTt)
+                .maHd(hoaDon.getMaHd())
+                .tenNhanVienThuNgan(nhanSu.getHoTen())
+                .ngayThanhToan(tt.getNgayThanhToan())
+                .soTien(tt.getSoTien())
+                .hinhThucThanhToan(tt.getPhuongThuc())
+                .thongBao("Thanh toán thành công!")
+                .build();
+    }
+
     // Hàm tự sinh mã TT
     private synchronized String generateMaTt() {
-        String maxCode = thanhToanRepository.findMaxMaTt();
-        if (maxCode == null || maxCode.length() < 3) {
-            return "TT001";
-        }
         try {
-            int nextNumber = Integer.parseInt(maxCode.substring(2)) + 1;
-            return "TT" + String.format("%03d", nextNumber);
-        } catch (NumberFormatException e) {
-            return "TT001";
+            String maxCode = thanhToanRepository.findMaxMaTt();
+            if (maxCode == null || maxCode.trim().isEmpty()) {
+                return "TT001";
+            }
+            // Lấy phần số: TT005 -> 005 -> 5 + 1 = 6 -> TT006
+            String numericPart = maxCode.replaceAll("[^0-9]", "");
+            int nextNumber = numericPart.isEmpty() ? 1 : Integer.parseInt(numericPart) + 1;
+            return String.format("TT%03d", nextNumber);
+        } catch (Exception e) {
+            log.error("Lỗi sinh mã TT: ", e);
+            return "TT" + (System.currentTimeMillis() % 1000);
         }
     }
 }

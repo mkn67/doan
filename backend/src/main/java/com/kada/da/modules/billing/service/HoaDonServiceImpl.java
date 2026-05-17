@@ -166,7 +166,10 @@ public class HoaDonServiceImpl implements HoaDonService {
             HoaDonResponseDTO dto = new HoaDonResponseDTO();
             dto.setMaHd(hd.getMaHd());
             dto.setNgayLap(hd.getNgayLap());
-            dto.setTongTien(hd.getTongTien());
+
+            // Đảm bảo hd.getTongTien() không bị null hoặc bằng 0 trong DB
+            dto.setTongTien(hd.getTongTien() != null ? hd.getTongTien() : BigDecimal.ZERO);
+
             dto.setTrangThai(hd.getTrangThai() != null ? hd.getTrangThai().getValue() : null);
 
             if (hd.getKhachHang() != null) {

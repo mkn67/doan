@@ -22,7 +22,11 @@ import com.kada.da.modules.billing.domain.CtHoaDon;
 import com.kada.da.modules.billing.domain.HoaDon;
 import com.kada.da.modules.billing.dto.HoaDonResponseDTO;
 import com.kada.da.modules.billing.dto.TaoHoaDonJsonRequest;
+import com.kada.da.modules.billing.dto.ThanhToanRequestDTO;
+import com.kada.da.modules.billing.mapper.HoaDonMapper;
+import com.kada.da.modules.billing.repository.HoaDonRepository;
 import com.kada.da.modules.billing.service.HoaDonService;
+import com.kada.da.modules.billing.service.ThanhToanService;
 import com.lowagie.text.Document;
 import com.lowagie.text.Font;
 import com.lowagie.text.FontFactory;
@@ -40,19 +44,36 @@ import lombok.RequiredArgsConstructor;
 public class BillingController {
 
     private final HoaDonService hoaDonService;
+    private final ThanhToanService thanhToanService;
+    private final HoaDonRepository hoaDonRepository;
 
-    // 🔥 THÊM HÀM NÀY VÀO ĐỂ FRONTEND LẤY ĐƯỢC DANH SÁCH HÓA ĐƠN
     @GetMapping
     public ResponseEntity<List<HoaDonResponseDTO>> getDanhSachHoaDon() {
         return ResponseEntity.ok(hoaDonService.getAllHoaDon());
     }
 
-    // 1. Lễ tân tạo hóa đơn & Thanh toán (Hệ thống sẽ tự động trừ kho)
     @PostMapping("/pay")
-    public ResponseEntity<HoaDon> thanhToanHoaDon(@RequestBody HoaDon hoaDon) {
-        // Gọi thẳng vào logic Transactional trừ tiền, trừ kho đã viết
+    public ResponseEntity<HoaDonResponseDTO> thanhToanHoaDon(@RequestBody HoaDon hoaDon) {
+        // Kiểm tra null cho hóa đơn
+        if (hoaDon == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        if (hoaDon.getCtHoaDons() == null || hoaDon.getCtHoaDons().isEmpty()) {
+            throw new RuntimeException("Hóa đơn phải có ít nhất một sản phẩm!");
+        }
         HoaDon savedHoaDon = hoaDonService.thanhToanHoaDon(hoaDon);
-        return ResponseEntity.status(HttpStatus.CREATED).body(savedHoaDon);
+        HoaDonResponseDTO dto = HoaDonMapper.toResponse(savedHoaDon);
+        return ResponseEntity.status(HttpStatus.CREATED).body(dto);
+    }
+
+    @PostMapping("/process-payment")
+    public ResponseEntity<?> taoThanhToan(@RequestBody ThanhToanRequestDTO dto) {
+        try {
+            // Xử lý thanh toán qua service đúng chuẩn DTO, không truyền entity trực tiếp
+            return ResponseEntity.ok(thanhToanService.xuLyThanhToan(dto));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     @PostMapping("/tao-tu-json")
@@ -72,8 +93,6 @@ public class BillingController {
     // 2. Xuất hóa đơn PDF
     @GetMapping("/{maHd}/export-pdf")
     public void exportToPDF(@PathVariable("maHd") String maHd, HttpServletResponse response) throws IOException {
-        // Giả sử ông đã có hàm findById trong HoaDonService
-        // Nếu chưa có, hãy thêm: HoaDon findById(String maHd); vào Service
         HoaDon hoaDon = hoaDonService.findById(maHd);
 
         response.setContentType("application/pdf");
@@ -81,41 +100,40 @@ public class BillingController {
         String headerValue = "attachment; filename=HoaDon_" + maHd + ".pdf";
         response.setHeader(headerKey, headerValue);
 
-        Document document = new Document(PageSize.A4);
-        PdfWriter.getInstance(document, response.getOutputStream());
+        try (Document document = new Document(PageSize.A4)) {
+            PdfWriter.getInstance(document, response.getOutputStream());
 
-        document.open();
-        Font fontTitle = FontFactory.getFont(FontFactory.HELVETICA_BOLD);
-        fontTitle.setSize(18);
+            document.open();
+            Font fontTitle = FontFactory.getFont(FontFactory.HELVETICA_BOLD);
+            fontTitle.setSize(18);
 
-        Paragraph title = new Paragraph("HOA DON BAN HANG", fontTitle);
-        title.setAlignment(Paragraph.ALIGN_CENTER);
-        document.add(title);
+            Paragraph title = new Paragraph("HOA DON BAN HANG", fontTitle);
+            title.setAlignment(Paragraph.ALIGN_CENTER);
+            document.add(title);
 
-        document.add(new Paragraph("Ma hoa don: " + hoaDon.getMaHd()));
-        document.add(new Paragraph("Ngay lap: " + hoaDon.getNgayLap().toString()));
-        document.add(new Paragraph(
-                "Khach hang: " + (hoaDon.getKhachHang() != null ? hoaDon.getKhachHang().getHoTen() : "Khach le")));
-        document.add(new Paragraph("------------------------------------------------------------------"));
+            document.add(new Paragraph("Ma hoa don: " + hoaDon.getMaHd()));
+            document.add(new Paragraph("Ngay lap: " + hoaDon.getNgayLap().toString()));
+            document.add(new Paragraph(
+                    "Khach hang: " + (hoaDon.getKhachHang() != null ? hoaDon.getKhachHang().getHoTen() : "Khach le")));
+            document.add(new Paragraph("------------------------------------------------------------------"));
 
-        // Chi tiết mặt hàng
-        if (hoaDon.getCtHoaDons() != null) {
-            for (CtHoaDon ct : hoaDon.getCtHoaDons()) {
-                String line = String.format("- %s | SL: %d | DG: %s",
-                        ct.getLoHang().getSanPham().getTenSp(),
-                        ct.getSoLuong(),
-                        ct.getDonGia());
-                document.add(new Paragraph(line));
+            // Chi tiết mặt hàng
+            if (hoaDon.getCtHoaDons() != null) {
+                for (CtHoaDon ct : hoaDon.getCtHoaDons()) {
+                    String line = String.format("- %s | SL: %d | DG: %s",
+                            ct.getLoHang().getSanPham().getTenSp(),
+                            ct.getSoLuong(),
+                            ct.getDonGia());
+                    document.add(new Paragraph(line));
+                }
             }
+
+            document.add(new Paragraph("------------------------------------------------------------------"));
+
+            NumberFormat currencyVN = NumberFormat.getCurrencyInstance(Locale.of("vi", "VN"));
+            Paragraph total = new Paragraph("TONG TIEN: " + currencyVN.format(hoaDon.getTongTien()));
+            total.setAlignment(Paragraph.ALIGN_RIGHT);
+            document.add(total);
         }
-
-        document.add(new Paragraph("------------------------------------------------------------------"));
-
-        NumberFormat currencyVN = NumberFormat.getCurrencyInstance(Locale.of("vi", "VN"));
-        Paragraph total = new Paragraph("TONG TIEN: " + currencyVN.format(hoaDon.getTongTien()));
-        total.setAlignment(Paragraph.ALIGN_RIGHT);
-        document.add(total);
-
-        document.close();
     }
 }

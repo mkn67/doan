@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import React, { useState, useEffect } from "react";
-import { Receipt, FilePlus, Loader2, Info } from "lucide-react";
+import { Receipt, FilePlus, Loader2, Info, ArrowLeft } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -36,7 +36,6 @@ export default function BillingPage() {
   });
 
   useEffect(() => {
-    // 🔥 Lùa cả 2 state vào trong setTimeout để không bị ăn chửi "cascading renders"
     const timer = setTimeout(() => {
       setIsMounted(true);
       
@@ -80,8 +79,16 @@ export default function BillingPage() {
   return (
     <div className="p-6 md:p-8 space-y-6 bg-slate-50 min-h-[calc(100vh-4rem)]">
       <div className="flex items-center gap-4">
-        <div className="p-3 bg-blue-100 text-blue-600 rounded-xl shadow-sm">
-          <FilePlus className="w-8 h-8" />
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => router.push("/staff/cashier")}
+          className="rounded-full hover:bg-slate-200"
+        >
+          <ArrowLeft className="w-6 h-6 text-slate-600" />
+        </Button>
+        <div className="p-2 bg-blue-100 text-blue-600 rounded-xl shadow-sm">
+          <FilePlus className="w-6 h-6" />
         </div>
         <div>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Lập Hóa Đơn (Billing)</h1>
