@@ -5,10 +5,11 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { 
   LayoutDashboard, Package, CalendarDays, 
-  Stethoscope, LogOut, Settings, ShieldAlert,
+  Stethoscope, LogOut, ShieldAlert,
   Hammer, Wallet
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth"; 
+import Cookies from 'js-cookie';
 
 // 1. ĐỊNH NGHĨA MENU VÀ GẮN QUYỀN TRUY CẬP CHO TỪNG MỤC
 const staffMenuItems = [
@@ -16,43 +17,37 @@ const staffMenuItems = [
     name: "Tổng quan (Dashboard)", 
     href: "/staff/dashboard", 
     icon: LayoutDashboard, 
-    roles: ["NH04"] // Chỉ Quản lý
+    roles: ["ROLE_ADMIN"] 
   },
   { 
     name: "Lễ tân & Khách hàng", 
     href: "/staff/reception", 
     icon: CalendarDays, 
-    roles: ["NH06", "NH04"] // Lễ tân, Quản lý
+    roles: ["ROLE_LE_TAN", "ROLE_ADMIN"] 
   },
   { 
     name: "Khám bệnh & Kê đơn", 
     href: "/staff/clinic", 
     icon: Stethoscope, 
-    roles: ["NH01", "NH04"] // Bác sĩ, Quản lý
+    roles: ["ROLE_BAC_SI", "ROLE_ADMIN"] 
   },
   { 
     name: "Quầy Thu Ngân", 
     href: "/staff/cashier", 
     icon: Wallet, 
-    roles: ["NH02", "NH04"] // Thu ngân, Quản lý
+    roles: ["ROLE_THU_NGAN", "ROLE_ADMIN"] 
   },
   { 
     name: "Kho hàng & Vật tư", 
     href: "/staff/inventory", 
     icon: Package, 
-    roles: ["NH03", "NH04"] // Thủ kho, Quản lý
+    roles: ["ROLE_THU_KHO", "ROLE_ADMIN"] 
   },
   { 
     name: "Xưởng mài lắp kính", 
     href: "/staff/workshop/glasses", 
     icon: Hammer, 
-    roles: ["NH05", "NH03", "NH04"] // Kỹ thuật viên, Thủ kho, Quản lý
-  },
-  { 
-    name: "Quản trị hệ thống", 
-    href: "/staff/admin", 
-    icon: Settings, 
-    roles: ["NH04"] // Chỉ Quản lý
+    roles: ["ROLE_KY_THUAT", "ROLE_THU_KHO", "ROLE_ADMIN"] 
   },
 ];
 
@@ -71,6 +66,7 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
   const handleLogout = () => {
     localStorage.removeItem("user");
     localStorage.removeItem("token");
+    Cookies.remove("token");
     router.push("/auth/login");
   };
 

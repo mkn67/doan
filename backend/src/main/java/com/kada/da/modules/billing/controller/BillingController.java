@@ -24,7 +24,6 @@ import com.kada.da.modules.billing.dto.HoaDonResponseDTO;
 import com.kada.da.modules.billing.dto.TaoHoaDonJsonRequest;
 import com.kada.da.modules.billing.dto.ThanhToanRequestDTO;
 import com.kada.da.modules.billing.mapper.HoaDonMapper;
-import com.kada.da.modules.billing.repository.HoaDonRepository;
 import com.kada.da.modules.billing.service.HoaDonService;
 import com.kada.da.modules.billing.service.ThanhToanService;
 import com.lowagie.text.Document;
@@ -45,7 +44,6 @@ public class BillingController {
 
     private final HoaDonService hoaDonService;
     private final ThanhToanService thanhToanService;
-    private final HoaDonRepository hoaDonRepository;
 
     @GetMapping
     public ResponseEntity<List<HoaDonResponseDTO>> getDanhSachHoaDon() {

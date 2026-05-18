@@ -57,32 +57,32 @@ export default function LoginPage() {
       // 🛠️ LOGIC ĐIỀU HƯỚNG CHUẨN XÁC: PHÂN TÁCH EXTERNAL & INTERNAL
       // =========================================================
       const loaiTk = data.loaiTk?.toUpperCase().trim();
-      const roles = data.roles || []; // Mảng chứa mã nhóm, VD: ["NH06"]
+      const roles = data.roles || []; 
 
       if (loaiTk === 'EXTERNAL') {
         // 1. NHÁNH KHÁCH HÀNG: Về trang chủ
         router.push('/booking');
       } else {
-        // 2. NHÁNH NHÂN VIÊN: Phải dựa vào mã nhóm (Role) để về đúng phòng ban
+        // 2. NHÁNH NHÂN VIÊN: Phải dựa vào mã nhóm (Role) để về đúng phòng ban 
         const mainRole = roles.length > 0 ? roles[0] : '';
 
         switch (mainRole) {
-          case 'NH04': // Quản trị viên
+          case 'ROLE_ADMIN': 
             router.push('/staff/dashboard');
             break;
-          case 'NH06': // Lễ tân -> Vào thẳng trang lịch hẹn
+          case 'ROLE_LE_TAN': 
             router.push('/staff/reception/appointments');
             break;
-          case 'NH01': // Bác sĩ -> Vào thẳng phòng khám
+          case 'ROLE_BAC_SI': 
             router.push('/staff/clinic/examinations');
             break;
-          case 'NH03': // Thủ kho -> Vào thẳng kho
+          case 'ROLE_THU_KHO': 
             router.push('/staff/inventory/products');
             break;
-          case 'NH05': // Kỹ thuật viên kính -> Vào xưởng
+          case 'ROLE_KY_THUAT': 
             router.push('/staff/workshop/glasses');
             break;
-          case 'NH02':
+          case 'ROLE_THU_NGAN':
             router.push('/staff/cashier');
             break;
           default: // Nếu nhân viên chưa gán quyền cụ thể

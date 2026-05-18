@@ -65,7 +65,8 @@ public class SecurityConfig {
                         "/swagger-ui/**",
                         "/swagger-ui.html",
                         "/webjars/**",
-                        "/api/v1/auth/**",
+                        "/api/v1/auth/login",
+                        "/api/v1/auth/register",
                         // 🔥 2 DÒNG NÀY LÀ CHÌA KHÓA MỞ DROPDOWN CHO KHÁCH ĐẶT LỊCH NÀY 🔥
                         "/api/v1/nhan-su/chuc-vu/**",
                         "/api/v1/goi-kham/active"

@@ -102,7 +102,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         List<String> roles = taiKhoan.getDanhSachNhom().stream()
-                .map(nhom -> nhom.getMaNhom())
+                .map(nhom -> "ROLE_" + nhom.getMaNhom())
                 .collect(Collectors.toList());
 
         String token = jwtTokenUtil.generateToken(taiKhoan.getUsername(), roles); // Dùng username thay password để làm

@@ -5,6 +5,7 @@ import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -47,7 +48,7 @@ public class AuthController {
     }
 
     @PostMapping("/change-password")
-    // @PreAuthorize("isAuthenticated()") // Bắt buộc phải đăng nhập mới được đổi
+    @PreAuthorize("isAuthenticated()") // Bắt buộc phải đăng nhập mới được đổi
     public ResponseEntity<?> changePassword(
             @Valid @RequestBody ChangePasswordRequestDTO request,
             Principal principal) {
@@ -60,6 +61,7 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> logout(@RequestHeader("Authorization") String authHeader) {
         authService.logout(authHeader);
         return ResponseEntity.ok(Map.of(
