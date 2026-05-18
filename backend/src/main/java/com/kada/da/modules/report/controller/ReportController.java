@@ -34,7 +34,7 @@ public class ReportController {
      * http://localhost:8081/api/reports/revenue?thang=3&nam=2026
      */
     @GetMapping("/revenue")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('QUAN_LY')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('LE_TAN') or hasRole('THU_NGAN')")
     public ResponseEntity<List<DoanhThuResponseDTO>> getRevenue(@RequestParam int thang, @RequestParam int nam) {
         List<DoanhThuResponseDTO> result = reportService.thongKeDoanhThuThang(thang, nam);
         return ResponseEntity.ok(result);

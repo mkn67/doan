@@ -34,7 +34,7 @@ public class PhieuNhapController {
     // 1. API NHẬP KHO (GỌI STORED PROCEDURE)
     // =========================================================
     @PostMapping("/nhap-kho")
-    @PreAuthorize("hasAnyRole('ADMIN', 'QUAN_LY_KHO')") // Mở ra nếu ông dùng Spring Security phân quyền
+    @PreAuthorize("hasAnyRole('ADMIN', 'THU_KHO')") // Mở ra nếu ông dùng Spring Security phân quyền
     public ResponseEntity<PhieuNhapResponseDTO> nhapKhoLoHang(
             @Valid @RequestBody PhieuNhapRequestDTO request) {
         log.info("API: Nhận yêu cầu nhập kho từ NCC: {}, Nhân viên: {}", request.getMaNcc(), request.getMaNs());
