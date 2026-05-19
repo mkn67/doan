@@ -385,9 +385,5 @@ WHERE kh.IS_DELETED = 0
 GROUP BY kh.MAKH, kh.HOTEN, kh.SDT, kh.DIEMTICHLUY
 ORDER BY TONG_CHI_TIEU DESC;
 
--- ============================================================
--- KIỂM TRA VIEW ĐÃ TẠO THÀNH CÔNG
--- ============================================================
-SELECT VIEW_NAME, STATUS FROM USER_VIEWS WHERE VIEW_NAME LIKE 'V_%' ORDER BY VIEW_NAME;
 
 COMMIT;
