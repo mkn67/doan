@@ -39,4 +39,16 @@ public class ReportController {
         List<DoanhThuResponseDTO> result = reportService.thongKeDoanhThuThang(thang, nam);
         return ResponseEntity.ok(result);
     }
+
+    /**
+     * API Thống kê doanh thu theo khoảng ngày
+     * URL: GET /api/v1/reports/doanh-thu-theo-ngay?tuNgay=5&denNgay=2026
+     */
+    @GetMapping("/doanh-thu-theo-ngay")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> getDoanhThuTheoNgay(
+            @RequestParam int tuNgay,
+            @RequestParam int denNgay) {
+        return ResponseEntity.ok(reportService.thongKeDoanhThuNgay(tuNgay, denNgay));
+    }
 }

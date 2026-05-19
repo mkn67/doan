@@ -32,4 +32,11 @@ public class ReportServiceImpl implements ReportService {
         log.info("Gọi SP_THONG_KE_DOANH_THU_THANG: tháng={}, năm={}", thang, nam);
         return reportRepository.getThongKeDoanhThuThang(thang, nam);
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<DoanhThuResponseDTO> thongKeDoanhThuNgay(int tuNgay, int denNgay) {
+        log.info("Gọi SP_THONG_KE_DOANH_THU_NGAY: từ ngày={}, đến ngày={}", tuNgay, denNgay);
+        return reportRepository.getThongKeDoanhThuNgay(tuNgay, denNgay);
+    }
 }

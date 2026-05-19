@@ -25,8 +25,8 @@ interface PageResponseDTO {
   data?: unknown[];
 }
 
-// 1. ROLE ĐƯỢC PHÉP TRUY CẬP (Thủ kho & Quản lý)
-const ALLOWED_ROLES = ["NH03", "NH04"];
+// 1. ROLE ĐƯỢC PHÉP TRUY CẬP (Thủ kho & Quản lý) - ROLE_THU_KHO, ROLE_ADMIN
+const ALLOWED_ROLES = ["ROLE_THU_KHO", "ROLE_ADMIN", "NH03", "NH04"];
 
 export default function InventoryOverviewPage() {
   const router = useRouter();

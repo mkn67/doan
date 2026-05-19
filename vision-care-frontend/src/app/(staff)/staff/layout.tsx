@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { 
   LayoutDashboard, Package, CalendarDays, 
   Stethoscope, LogOut, ShieldAlert,
-  Hammer, Wallet
+  Hammer, Wallet, Users
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth"; 
 import Cookies from 'js-cookie';
@@ -48,6 +48,12 @@ const staffMenuItems = [
     href: "/staff/workshop/glasses", 
     icon: Hammer, 
     roles: ["ROLE_KY_THUAT", "ROLE_THU_KHO", "ROLE_ADMIN"] 
+  },
+  { 
+    name: "Quản trị hệ thống", 
+    href: "/staff/admin", 
+    icon: Users, 
+    roles: ["ROLE_ADMIN", "NH04"] 
   },
 ];
 

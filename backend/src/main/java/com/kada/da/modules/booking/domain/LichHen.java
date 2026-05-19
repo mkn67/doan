@@ -1,14 +1,29 @@
 package com.kada.da.modules.booking.domain;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
+import com.kada.da.modules.booking.Enum.TrangThaiLichHen;
+import com.kada.da.modules.booking.Enum.TrangThaiLichHenConverter;
+import com.kada.da.modules.customer.domain.KhachHang;
 import com.kada.da.modules.examination.domain.GoiKham;
 import com.kada.da.modules.staff.domain.NhanSu;
-import com.kada.da.modules.customer.domain.KhachHang;
-import jakarta.persistence.*;
-import lombok.*;
-import java.util.List;
-import com.kada.da.modules.booking.Enum.TrangThaiLichHen; // Import Enum
+
+import jakarta.persistence.CascadeType; // Import Enum
+import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "LICH_HEN")
@@ -33,6 +48,7 @@ public class LichHen {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "TRANGTHAI", length = 50)
+    @Convert(converter = TrangThaiLichHenConverter.class)
     private TrangThaiLichHen trangThai; // ĐÃ SỬA
 
     @ManyToOne

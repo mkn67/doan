@@ -73,21 +73,21 @@ public class SecurityConfig {
                 ).permitAll()
                 // --- BẮT ĐẦU PHÂN QUYỀN CHUẨN THEO DB ---
 
-                // Kho hàng & Sản phẩm: Dành cho Thủ kho (NH03) và Quản lý (NH04)
+                // Kho hàng & Sản phẩm: Dành cho Thủ kho và Quản lý
                 .requestMatchers("/api/v1/san-pham/**", "/api/v1/kho-hang/**")
-                .hasAnyAuthority("ROLE_NH03", "ROLE_NH04")
-                // Lịch hẹn: Khách hàng (NH07) xem lịch của họ, Lễ tân (NH06) xếp lịch, Bác sĩ (NH01) và Quản lý (NH04)
+                .hasAnyRole("THU_KHO", "ADMIN")
+                // Lịch hẹn: Khách hàng xem lịch của họ, Lễ tân xếp lịch, Bác sĩ và Quản lý
                 .requestMatchers("/api/v1/lich-hen/**")
-                .hasAnyAuthority("ROLE_NH01", "ROLE_NH06", "ROLE_NH04", "ROLE_NH07")
-                // Khách hàng: Lễ tân (NH06) tiếp nhận và Quản lý (NH04)
+                .hasAnyRole("BAC_SI", "LE_TAN", "ADMIN", "CUSTOMER")
+                // Khách hàng: Lễ tân tiếp nhận và Quản lý
                 .requestMatchers("/api/v1/khach-hang/**")
-                .hasAnyAuthority("ROLE_NH06", "ROLE_NH04")
-                // Khám bệnh: Bác sĩ (NH01) trực tiếp khám và Quản lý (NH04) theo dõi
+                .hasAnyRole("LE_TAN", "ADMIN")
+                // Khám bệnh: Bác sĩ trực tiếp khám và Quản lý theo dõi
                 .requestMatchers("/api/v1/kham-benh/**")
-                .hasAnyAuthority("ROLE_NH01", "ROLE_NH04")
-                // Các tính năng tối cao (Dashboard thống kê, Admin tổng): Chỉ Quản lý (NH04)
+                .hasAnyRole("BAC_SI", "ADMIN")
+                // Các tính năng tối cao (Dashboard thống kê, Admin tổng): Chỉ Quản lý
                 .requestMatchers("/api/v1/dashboard/**", "/api/v1/admin/**")
-                .hasAuthority("ROLE_NH04")
+                .hasRole("ADMIN")
                 // Các đường dẫn khác phải có Token mới được vào
                 .anyRequest().authenticated()
                 )

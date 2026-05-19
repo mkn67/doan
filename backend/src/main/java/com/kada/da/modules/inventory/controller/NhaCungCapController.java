@@ -2,6 +2,7 @@ package com.kada.da.modules.inventory.controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -25,6 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 @RestController
 @RequestMapping("/api/v1/nha-cung-cap")
 @RequiredArgsConstructor
+@PreAuthorize("hasAnyRole('ADMIN', 'THU_KHO')")
 public class NhaCungCapController {
 
     private final NhaCungCapService nhaCungCapService;

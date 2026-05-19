@@ -12,8 +12,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 
 // 1. KHAI BÁO CÁC ROLE ĐƯỢC PHÉP TRUY CẬP PHÂN HỆ NÀY
-// NH01: Bác sĩ | NH04: Quản lý | NH06: Lễ tân
-const ALLOWED_ROLES = ["NH01", "NH04", "NH06"];
+// ROLE_BAC_SI (NH01), ROLE_ADMIN (NH04), ROLE_LE_TAN (NH06)
+const ALLOWED_ROLES = ["ROLE_BAC_SI", "ROLE_ADMIN", "ROLE_LE_TAN", "NH01", "NH04", "NH06"];
 
 export default function ClinicOverviewPage() {
   const router = useRouter();

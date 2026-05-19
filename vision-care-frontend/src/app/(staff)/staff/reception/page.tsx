@@ -12,7 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 
 // 1. KHAI BÁO CÁC ROLE ĐƯỢC PHÉP TRUY CẬP (Lễ tân & Quản lý)
-const ALLOWED_ROLES = ["NH06", "NH04"];
+const ALLOWED_ROLES = ["ROLE_LE_TAN", "ROLE_ADMIN", "NH06", "NH04"];
 
 export default function ReceptionOverviewPage() {
   const router = useRouter();

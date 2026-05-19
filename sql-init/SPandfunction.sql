@@ -494,7 +494,33 @@ EXCEPTION
         RAISE;
 END SP_CONG_DIEM;
 /
+-- SP 14: Thống kê doanh thu theo khoảng ngày
+CREATE OR REPLACE PROCEDURE SP_THONG_KE_DOANH_THU_THEO_NGAY (
+    p_tu_ngay IN DATE,
+    p_den_ngay IN DATE,
+    c_result OUT SYS_REFCURSOR
+) AS
+BEGIN
+    -- Check lỗi logic ngày tháng
+    IF p_tu_ngay > p_den_ngay THEN
+        RAISE_APPLICATION_ERROR(-20102, 'Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc!');
+    END IF;
 
+    OPEN c_result FOR
+        SELECT 
+            TRUNC(NGAYTHANHTOAN) AS NGAY_GIAO_DICH,
+            SUM(SOTIEN) AS TONG_DOANH_THU,
+            COUNT(MATT) AS SO_LUONG_DON
+        FROM THANH_TOAN
+        WHERE TRANGTHAI = N'Hoàn thành'
+          AND TRUNC(NGAYTHANHTOAN) BETWEEN p_tu_ngay AND p_den_ngay
+        GROUP BY TRUNC(NGAYTHANHTOAN)
+        ORDER BY NGAY_GIAO_DICH ASC;
+EXCEPTION
+    WHEN OTHERS THEN
+        RAISE;
+END SP_THONG_KE_DOANH_THU_THEO_NGAY;
+/
 -- ============================================================
 -- 3. FUNCTION
 -- ============================================================

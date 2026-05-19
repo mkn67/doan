@@ -1,16 +1,18 @@
 package com.kada.da.modules.report.repository.custom;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.springframework.stereotype.Repository;
+
 import com.kada.da.modules.inventory.dto.CanhBaoHetHanDTO;
 import com.kada.da.modules.report.dto.DoanhThuResponseDTO;
+
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.ParameterMode;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.StoredProcedureQuery;
-import org.springframework.stereotype.Repository;
-
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
 
 @Repository
 public class ReportRepositoryCustomImpl implements ReportRepositoryCustom {
@@ -53,6 +55,29 @@ public class ReportRepositoryCustomImpl implements ReportRepositoryCustom {
         query.registerStoredProcedureParameter("c_data", void.class, ParameterMode.REF_CURSOR);
         query.setParameter("p_thang", thang);
         query.setParameter("p_nam", nam);
+        query.execute();
+
+        @SuppressWarnings("unchecked")
+        List<Object[]> rows = query.getResultList();
+        List<DoanhThuResponseDTO> result = new ArrayList<>();
+        for (Object[] row : rows) {
+            DoanhThuResponseDTO dto = new DoanhThuResponseDTO();
+            dto.setNgay(row[0] != null ? row[0].toString() : "");
+            dto.setSoLuongDon(row[1] != null ? ((Number) row[1]).longValue() : 0L);
+            dto.setDoanhThuNgay(row[2] != null ? new BigDecimal(row[2].toString()) : BigDecimal.ZERO);
+            result.add(dto);
+        }
+        return result;
+    }
+
+    @Override
+    public List<DoanhThuResponseDTO> getThongKeDoanhThuNgay(int tuNgay, int denNgay) {
+        StoredProcedureQuery query = entityManager.createStoredProcedureQuery("SP_THONG_KE_DOANH_THU_NGAY");
+        query.registerStoredProcedureParameter("p_tu_ngay", Integer.class, ParameterMode.IN);
+        query.registerStoredProcedureParameter("p_den_ngay", Integer.class, ParameterMode.IN);
+        query.registerStoredProcedureParameter("c_data", void.class, ParameterMode.REF_CURSOR);
+        query.setParameter("p_tu_ngay", tuNgay);
+        query.setParameter("p_den_ngay", denNgay);
         query.execute();
 
         @SuppressWarnings("unchecked")

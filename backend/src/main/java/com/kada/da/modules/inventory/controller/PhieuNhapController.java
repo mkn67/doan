@@ -25,6 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/phieu-nhap")
+@PreAuthorize("hasAnyRole('ADMIN', 'THU_KHO')")
 @RequiredArgsConstructor
 public class PhieuNhapController {
 
@@ -34,7 +35,6 @@ public class PhieuNhapController {
     // 1. API NHẬP KHO (GỌI STORED PROCEDURE)
     // =========================================================
     @PostMapping("/nhap-kho")
-    @PreAuthorize("hasAnyRole('ADMIN', 'THU_KHO')") // Mở ra nếu ông dùng Spring Security phân quyền
     public ResponseEntity<PhieuNhapResponseDTO> nhapKhoLoHang(
             @Valid @RequestBody PhieuNhapRequestDTO request) {
         log.info("API: Nhận yêu cầu nhập kho từ NCC: {}, Nhân viên: {}", request.getMaNcc(), request.getMaNs());

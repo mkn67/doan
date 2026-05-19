@@ -3,6 +3,9 @@ import React, { useEffect } from "react";
 import Link from "next/link"
 import { useRouter } from "next/navigation";
 import { Users, ShieldAlert, CalendarDays, ClipboardList } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+
+const ALLOWED_ROLES = ["ROLE_ADMIN", "NH04"];
 
 const adminModules = [
   {
@@ -37,15 +40,31 @@ const adminModules = [
 
 export default function AdminDashboard() {
   const router = useRouter();
+  const { user, loading } = useAuth();
 
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem("user") || "{}");
-    const actualRoleCode = (user.roles && user.roles.length > 0) ? user.roles[0] : user.loaiTk;
-    if (actualRoleCode !== "NH04") {
-      alert("Bạn không có quyền truy cập khu vực này!");
-      router.push("/staff"); // Sút về trang chủ nhân viên
+    if (!loading && user) {
+      const userRoles = user?.roles || [];
+      const userGroup = user?.maNhom || user?.loaiTk;
+      const hasAccess = ALLOWED_ROLES.some(role => userRoles.includes(role) || role === userGroup);
+      
+      if (!hasAccess) {
+        router.push("/staff");
+      }
     }
-  }, [router]);
+  }, [user, loading, router]);
+
+  if (loading) {
+    return (
+      <div className="flex h-[calc(100vh-4rem)] items-center justify-center text-blue-600 font-medium">
+        Đang kiểm tra quyền quản trị...
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="p-6">
