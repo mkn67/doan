@@ -139,7 +139,7 @@ export default function InventoryOverviewPage() {
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-md transition-all border-l-4 border-l-emerald-500 group cursor-pointer" onClick={() => router.push('/staff/inventory/imports')}>
+        <Card className="hover:shadow-md transition-all border-l-4 border-l-emerald-500 group cursor-pointer" onClick={() => router.push('/staff/inventory/suppliers')}>
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg text-slate-800 group-hover:text-emerald-600 transition-colors">Lịch Sử Nhập Kho</CardTitle>
@@ -154,7 +154,7 @@ export default function InventoryOverviewPage() {
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-md transition-all border-l-4 border-l-purple-500 group cursor-pointer" onClick={() => router.push('/staff/inventory/suppliers')}>
+        <Card className="hover:shadow-md transition-all border-l-4 border-l-purple-500 group cursor-pointer" onClick={() => router.push('/staff/inventory/imports')}>
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg text-slate-800 group-hover:text-purple-600 transition-colors">Nhà Cung Cấp</CardTitle>

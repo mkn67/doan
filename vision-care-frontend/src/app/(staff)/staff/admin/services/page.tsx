@@ -37,6 +37,68 @@ import {
   CanhBaoTonKhoDto, 
   PageResponseDTO 
 } from '@/types/inventory';
+import { 
+  HoSoKhamRequest, HoSoKhamResponse, 
+  PhieuKeDonRequest, PhieuKeDonResponse, 
+  DichVuKhamRequest, DichVuKhamResponse, 
+  GoiKhamRequest, GoiKhamResponse, 
+  DanhGiaRequest, DanhGiaResponse, 
+  ChiTietKyThuatRequest, ChiTietKyThuatResponse, 
+  DatLichRequest, DatLichResponse 
+} from '@/types/clinic';
+
+const CLINIC_BASE_URL = '/clinic';
+
+export const clinicApi = {
+  createHoSoKham: async (data: HoSoKhamRequest): Promise<HoSoKhamResponse> => {
+    const response = await axiosClient.post(`${CLINIC_BASE_URL}/hoso`, data);
+    return response.data;
+  },
+  getHoSoKham: async (maHoSo: string): Promise<HoSoKhamResponse> => {
+    const response = await axiosClient.get(`${CLINIC_BASE_URL}/hoso/${maHoSo}`);
+    return response.data;
+  },
+  createPhieuKeDon: async (data: PhieuKeDonRequest): Promise<PhieuKeDonResponse> => {
+    const response = await axiosClient.post(`${CLINIC_BASE_URL}/kedon`, data);
+    return response.data;
+  },
+  getDichVu: async (): Promise<DichVuKhamResponse[]> => {
+    const response = await axiosClient.get(`/dich-vu-kham`);
+    return response.data;
+  },
+  createDichVu: async (data: DichVuKhamRequest): Promise<DichVuKhamResponse> => {
+    const response = await axiosClient.post(`/dich-vu-kham`, data);
+    return response.data;
+  },
+  createGoiKham: async (data: GoiKhamRequest): Promise<GoiKhamResponse> => {
+    const response = await axiosClient.post(`${CLINIC_BASE_URL}/goikham`, data);
+    return response.data;
+  },
+  createDanhGia: async (data: DanhGiaRequest): Promise<DanhGiaResponse> => {
+    const response = await axiosClient.post(`${CLINIC_BASE_URL}/danhgia`, data);
+    return response.data;
+  },
+  createChiTietKyThuat: async (data: ChiTietKyThuatRequest): Promise<ChiTietKyThuatResponse> => {
+    const response = await axiosClient.post(`${CLINIC_BASE_URL}/kythuat`, data);
+    return response.data;
+  },
+  datLich: async (data: DatLichRequest): Promise<DatLichResponse> => {
+    const response = await axiosClient.post("/bookings/dat-lich", data);
+    return response.data;
+  },
+  goiVaoKham: async (maHc: string): Promise<string> => {
+    const response = await axiosClient.put(`/hang-cho/${maHc}/goi-kham`);
+    return response.data;
+  },
+  ketThucKham: async (maHc: string, trangThai: 'Hoàn thành' | 'Bỏ về'): Promise<string> => {
+    const response = await axiosClient.put(`/hang-cho/${maHc}/ket-thuc`, null, { params: { trangThai } });
+    return response.data;
+  },
+  getHangChoHomNay: async (maNs?: string) => {
+    const response = await axiosClient.get(`/hang-cho/hom-nay`, { params: { maNs } });
+    return response.data;
+  },
+};
 
 export const inventoryApi = {
   getSanPham: async (): Promise<SanPhamResponse[]> => {

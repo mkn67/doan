@@ -15,7 +15,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 import { HoaDonRequestDTO } from "@/types/billing";
 
-// 🔥 Sửa maHoso thành maHoSo (S viết hoa) cho khớp 100% với Backend DTO
 const billingSchema = z.object({
   maKh: z.string().min(1, "Vui lòng nhập mã khách hàng"),
   maHoSo: z.string().optional(), 

@@ -15,10 +15,18 @@ interface NhaCungCap {
   diaChi?: string;
 }
 
+interface PageResponseDTO<T> {
+  content?: T[];
+  data?: T[];
+}
+
 export default function SuppliersPage() {
-  const { data: nccList = [] } = useDanhSachNhaCungCap(); // Lấy danh sách
+  const { data: rawData } = useDanhSachNhaCungCap(); // Lấy danh sách
   const createMutation = useCreateNhaCungCap();
   const deleteMutation = useDeleteNhaCungCap();
+
+  // Xử lý chuẩn hóa dữ liệu từ API (mảng hoặc object phân trang)
+  const nccList = Array.isArray(rawData) ? rawData : (rawData as unknown as PageResponseDTO<NhaCungCap>)?.content || [];
 
   const [form, setForm] = useState({ tenNcc: "", sdt: "", diaChi: "" });
 
