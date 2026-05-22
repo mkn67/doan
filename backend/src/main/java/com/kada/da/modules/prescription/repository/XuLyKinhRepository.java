@@ -21,6 +21,9 @@ public interface XuLyKinhRepository extends JpaRepository<XuLyKinh, String>, XuL
     // Tìm theo trạng thái (Ví dụ: "Chờ xử lý", "Hoàn thành")
     List<XuLyKinh> findByTrangThai(String trangThai);
 
+    // Tìm theo danh sách trạng thái
+    List<XuLyKinh> findByTrangThaiIn(List<String> trangThais);
+
     // Tìm các kính đang được xử lý bởi 1 kỹ thuật viên cụ thể
     List<XuLyKinh> findByNhanSuKyThuat_MaNsAndTrangThai(String maKyThuat, String trangThai);
 }

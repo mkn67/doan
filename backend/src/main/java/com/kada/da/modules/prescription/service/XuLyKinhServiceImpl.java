@@ -75,7 +75,8 @@ public class XuLyKinhServiceImpl implements XuLyKinhService {
 
     @Override
     public List<XuLyKinhResponseDTO> getXuLyKinhCanXuLy() {
-        return getXuLyKinhByTrangThai("Chờ xử lý");
+        return xuLyKinhRepository.findByTrangThaiIn(List.of("Chờ xử lý", "Đang xử lý", "Lỗi gia công", "Hoàn thành")).stream()
+                .map(this::toDTO).collect(Collectors.toList());
     }
 
     @Override
@@ -142,8 +143,31 @@ public class XuLyKinhServiceImpl implements XuLyKinhService {
 
     // ==================== PRIVATE METHODS ====================
     @Override
+    @Transactional
     public XuLyKinhResponseDTO createXuLyKinh(XuLyKinhRequestDTO request) {
-        throw new UnsupportedOperationException("Dùng taoPhieuGiaoKinh(SP) thay thế cho nghiệp vụ này");
+        String thongSoKinhStr = "";
+        try {
+            if (request.getThongSoKinh() != null) {
+                thongSoKinhStr = objectMapper.writeValueAsString(request.getThongSoKinh());
+            }
+        } catch (Exception e) {
+            log.error("Lỗi parse JSON thongSoKinh: ", e);
+        }
+        String maXl = taoPhieuGiaoKinh(request.getMaDon(), request.getMaNsKyThuat(), thongSoKinhStr);
+        
+        // Cập nhật thêm trạng thái và ghi chú nếu được truyền từ form
+        if (request.getTrangThai() != null && !request.getTrangThai().isEmpty()) {
+            updateTrangThai(maXl, request.getTrangThai());
+        }
+        if (request.getGhiChu() != null && !request.getGhiChu().isEmpty()) {
+            XuLyKinh existing = xuLyKinhRepository.findById(maXl).orElse(null);
+            if (existing != null) {
+                existing.setGhiChu(request.getGhiChu());
+                xuLyKinhRepository.save(existing);
+            }
+        }
+        
+        return getXuLyKinhById(maXl);
     }
 
     private XuLyKinhResponseDTO toDTO(XuLyKinh entity) {

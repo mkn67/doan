@@ -59,7 +59,9 @@ public class HangChoServiceImpl implements HangChoService {
                             : null;
 
                     return HangChoHomNayDto.builder()
-                            .maHc(hc.getMaHc()).soThuTu(hc.getSoThuTu()).loaiKhach(hc.getLoaiKhach())
+                            .maHc(hc.getMaHc())
+                            .maKh(hc.getKhachHang() != null ? hc.getKhachHang().getMaKh() : null)
+                            .soThuTu(hc.getSoThuTu()).loaiKhach(hc.getLoaiKhach())
                             .tenKhach(tenKhach).sdt(hc.getKhachHang() != null ? hc.getKhachHang().getSdt() : null)
                             .tenBacSi(tenBs).goiKham(goiKham)
                             .trangThai(hc.getTrangThai() != null ? hc.getTrangThai().name() : null)

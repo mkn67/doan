@@ -80,6 +80,32 @@ export const staffApi = {
     const response = await axiosClient.post<XuLyKinhResponseDTO>('/xu-ly-kinh', data);
     return response.data;
   },
+  getXuLyKinhCanXuLy: async (): Promise<XuLyKinhResponseDTO[]> => {
+    const response = await axiosClient.get<XuLyKinhResponseDTO[]>('/xu-ly-kinh/can-xu-ly');
+    return response.data;
+  },
+  updateTrangThaiXuLyKinh: async (maXl: string, trangThai: string): Promise<XuLyKinhResponseDTO> => {
+    const response = await axiosClient.patch<XuLyKinhResponseDTO>(`/xu-ly-kinh/${maXl}/trang-thai`, null, {
+      params: { trangThai }
+    });
+    return response.data;
+  },
+  batDauXuLyKinh: async (maXl: string, maKyThuat: string): Promise<XuLyKinhResponseDTO> => {
+    const response = await axiosClient.post<XuLyKinhResponseDTO>(`/xu-ly-kinh/${maXl}/bat-dau`, null, {
+      params: { maKyThuat }
+    });
+    return response.data;
+  },
+  hoanThanhXuLyKinh: async (maXl: string): Promise<XuLyKinhResponseDTO> => {
+    const response = await axiosClient.post<XuLyKinhResponseDTO>(`/xu-ly-kinh/${maXl}/hoan-thanh`);
+    return response.data;
+  },
+  huyXuLyKinh: async (maXl: string, lyDo?: string): Promise<XuLyKinhResponseDTO> => {
+    const response = await axiosClient.post<XuLyKinhResponseDTO>(`/xu-ly-kinh/${maXl}/huy`, null, {
+      params: { lyDo }
+    });
+    return response.data;
+  },
 
   // FIX: Đổi axiosInstance thành axiosClient
   getHangChoHomNay: async (): Promise<HangChoHomNayDTO[]> => {

@@ -1,5 +1,5 @@
 -- ============================================================
--- PHẦN IV: TRIGGERS (ĐÃ SỬA LỖI, TỰ SINH MÃ)
+-- PHẦN IV: TRIGGERS (NAVICAT-READY – KHÔNG LỖI)
 -- ============================================================
 
 -- 1. Nhân Sự
@@ -7,12 +7,12 @@ CREATE OR REPLACE TRIGGER TRG_VALIDATE_NHAN_SU
 BEFORE INSERT OR UPDATE ON NHAN_SU
 FOR EACH ROW
 DECLARE
-    v_tuoi  NUMBER;
+    v_tuoi NUMBER;
 BEGIN
     IF :NEW.NGAYSINH IS NOT NULL THEN
         v_tuoi := FLOOR(MONTHS_BETWEEN(SYSDATE, :NEW.NGAYSINH) / 12);
         IF v_tuoi < 18 THEN
-            RAISE_APPLICATION_ERROR(-20010, 'LỖI: Nhân viên [' || :NEW.HOTEN || '] chưa đủ 18 tuổi!');
+            RAISE_APPLICATION_ERROR(-20010, 'LOI: Nhan vien chua du 18 tuoi!');
         END IF;
     END IF;
 END;
@@ -27,14 +27,14 @@ DECLARE
 BEGIN
     IF INSERTING OR UPDATING THEN
         IF :NEW.SDT IS NOT NULL AND NOT REGEXP_LIKE(:NEW.SDT, '^[0-9]{9,11}$') THEN
-            RAISE_APPLICATION_ERROR(-20013, 'LỖI: SĐT không hợp lệ (9-11 chữ số)!');
+            RAISE_APPLICATION_ERROR(-20013, 'LOI: SDT khong hop le (9-11 chu so)!');
         END IF;
     END IF;
     
     IF DELETING THEN
         BEGIN
             SELECT 1 INTO v_dummy FROM LICH_HEN WHERE MAKH = :OLD.MAKH AND TRANGTHAI = N'Mới' AND ROWNUM = 1;
-            RAISE_APPLICATION_ERROR(-20050, 'LỖI: KH đang có lịch hẹn chờ — dùng Soft Delete!');
+            RAISE_APPLICATION_ERROR(-20050, 'LOI: KH dang co lich hen cho - dung Soft Delete!');
         EXCEPTION WHEN NO_DATA_FOUND THEN NULL; 
         END;
     END IF;
@@ -56,7 +56,6 @@ COMPOUND TRIGGER
 
     BEFORE STATEMENT IS
     BEGIN
-        v_lich_arr.DELETE;
         v_idx := 0;
     END BEFORE STATEMENT;
 
@@ -66,14 +65,14 @@ COMPOUND TRIGGER
         v_ton_ns NUMBER;
     BEGIN
         SELECT COUNT(*) INTO v_ton_kh FROM KHACH_HANG WHERE MAKH = :NEW.MAKH AND IS_DELETED = 0;
-        IF v_ton_kh = 0 THEN RAISE_APPLICATION_ERROR(-20032, 'LỖI: Khách hàng không tồn tại!'); END IF;
+        IF v_ton_kh = 0 THEN RAISE_APPLICATION_ERROR(-20032, 'LOI: Khach hang khong ton tai!'); END IF;
 
         SELECT COUNT(*) INTO v_ton_ns FROM NHAN_SU WHERE MANS = :NEW.MANS AND IS_DELETED = 0;
-        IF v_ton_ns = 0 THEN RAISE_APPLICATION_ERROR(-20033, 'LỖI: Bác sĩ không tồn tại hoặc đã nghỉ!'); END IF;
+        IF v_ton_ns = 0 THEN RAISE_APPLICATION_ERROR(-20033, 'LOI: Bac si khong ton tai hoac da nghi!'); END IF;
 
         SELECT COUNT(*) INTO v_ca_lam FROM LICH_LAM_VIEC
         WHERE MANS = :NEW.MANS AND TRUNC(NGAY_LAM) = TRUNC(:NEW.NGAYHEN) AND IS_NGHI = 0;
-        IF v_ca_lam = 0 THEN RAISE_APPLICATION_ERROR(-20030, 'LỖI: Bác sĩ không có lịch làm việc ngày này!'); END IF;
+        IF v_ca_lam = 0 THEN RAISE_APPLICATION_ERROR(-20030, 'LOI: Bac si khong co lich lam viec ngay nay!'); END IF;
 
         IF :NEW.GIO_HEN IS NOT NULL AND :NEW.TRANGTHAI != N'Đã hủy' THEN
             v_idx := v_idx + 1;
@@ -86,7 +85,7 @@ COMPOUND TRIGGER
     AFTER STATEMENT IS
         v_trung NUMBER;
     BEGIN
-        FOR i IN 1 .. v_lich_arr.COUNT LOOP
+        FOR i IN 1 .. v_idx LOOP
             SELECT COUNT(*) INTO v_trung
             FROM LICH_HEN
             WHERE MANS      = v_lich_arr(i).mans
@@ -95,7 +94,7 @@ COMPOUND TRIGGER
               AND (v_lich_arr(i).malh IS NULL OR MALH != v_lich_arr(i).malh);
               
             IF v_trung > 0 THEN
-                RAISE_APPLICATION_ERROR(-20031, 'LỖI: Bác sĩ đã có lịch slot này!');
+                RAISE_APPLICATION_ERROR(-20031, 'LOI: Bac si da co lich slot nay!');
             END IF;
         END LOOP;
     END AFTER STATEMENT;
@@ -115,10 +114,10 @@ BEGIN
         WHERE ns.MANS = :NEW.MANS;
     EXCEPTION
         WHEN NO_DATA_FOUND THEN
-            RAISE_APPLICATION_ERROR(-20001, 'LỖI: Không tìm thấy chức vụ của nhân viên!');
+            RAISE_APPLICATION_ERROR(-20001, 'LOI: Khong tim thay chuc vu cua nhan vien!');
     END;
     IF v_tencv NOT IN (N'Bác sĩ', N'Kỹ thuật viên mắt kính') THEN
-        RAISE_APPLICATION_ERROR(-20001, 'LỖI: Chỉ Bác sĩ/KTV mắt kính được lập Hồ Sơ!');
+        RAISE_APPLICATION_ERROR(-20001, 'LOI: Chi Bac si/KTV mat kinh duoc lap Ho So!');
     END IF;
 END;
 /
@@ -137,16 +136,16 @@ BEGIN
             WHERE ns.MANS = :NEW.MANS;
 
             IF v_tencv NOT IN (N'Thu ngân', N'Quản lý') THEN
-                RAISE_APPLICATION_ERROR(-20003, 'LỖI: Nhân viên ['|| :NEW.MANS ||'] không có quyền tạo Hóa Đơn!');
+                RAISE_APPLICATION_ERROR(-20003, 'LOI: Nhan vien khong co quyen tao Hoa Don!');
             END IF;
         EXCEPTION
             WHEN NO_DATA_FOUND THEN
-                RAISE_APPLICATION_ERROR(-20003, 'LỖI: Không tìm thấy nhân viên hoặc chức vụ!');
+                RAISE_APPLICATION_ERROR(-20003, 'LOI: Khong tim thay nhan vien hoac chuc vu!');
         END;
     END IF;
 
     IF (UPDATING OR DELETING) AND :OLD.TRANGTHAI = N'Đã thanh toán' THEN
-        RAISE_APPLICATION_ERROR(-20007, 'LỖI: Hóa đơn đã thanh toán, không can thiệp!');
+        RAISE_APPLICATION_ERROR(-20007, 'LOI: Hoa don da thanh toan, khong can thiep!');
     END IF;
 END;
 /
@@ -164,7 +163,7 @@ COMPOUND TRIGGER
         BEGIN
             SELECT TRANGTHAI INTO v_trangthai FROM HOA_DON WHERE MAHD = NVL(:NEW.MAHD, :OLD.MAHD);
             IF v_trangthai IN (N'Đã thanh toán', N'Đã hủy') THEN
-                RAISE_APPLICATION_ERROR(-20033, 'CTHD: Hóa đơn đã đóng (' || v_trangthai || ')!');
+                RAISE_APPLICATION_ERROR(-20033, 'CTHD: Hoa don da dong!');
             END IF;
         EXCEPTION WHEN NO_DATA_FOUND THEN NULL; 
         END;
@@ -172,13 +171,13 @@ COMPOUND TRIGGER
         IF INSERTING OR UPDATING THEN
             SELECT SOLUONGTON, NGAYHETHAN INTO v_ton, v_hsd FROM LO_HANG WHERE MALO = :NEW.MALO;
             IF v_hsd < TRUNC(SYSDATE) THEN
-                RAISE_APPLICATION_ERROR(-20006, 'CTHD: Lô hàng đã hết hạn!');
+                RAISE_APPLICATION_ERROR(-20006, 'CTHD: Lo hang da het han!');
             END IF;
             IF :NEW.SOLUONG <= 0 THEN
-                RAISE_APPLICATION_ERROR(-20014, 'CTHD: Số lượng phải > 0!');
+                RAISE_APPLICATION_ERROR(-20014, 'CTHD: So luong phai > 0!');
             END IF;
             IF :NEW.SOLUONG > (CASE WHEN UPDATING THEN v_ton + :OLD.SOLUONG ELSE v_ton END) THEN
-                RAISE_APPLICATION_ERROR(-20005, 'CTHD: Không đủ hàng trong kho!');
+                RAISE_APPLICATION_ERROR(-20005, 'CTHD: Khong du hang trong kho!');
             END IF;
         END IF;
     END BEFORE EACH ROW;
@@ -216,7 +215,6 @@ COMPOUND TRIGGER
 END TRG_CT_HOA_DON_DV;
 /
 
--- 8. Phiếu Nhập
 CREATE OR REPLACE TRIGGER TRG_PHIEU_NHAP
 BEFORE INSERT OR UPDATE ON PHIEU_NHAP
 FOR EACH ROW
@@ -230,23 +228,24 @@ BEGIN
         WHERE ns.MANS = :NEW.MANS;
     EXCEPTION
         WHEN NO_DATA_FOUND THEN
-            RAISE_APPLICATION_ERROR(-20004, 'LỖI: Không tìm thấy chức vụ của nhân viên!');
+            RAISE_APPLICATION_ERROR(-20004, 'LOI: Khong tim thay chuc vu cua nhan vien!');
     END;
     
     IF v_tencv NOT IN (N'Thủ kho', N'Quản lý') THEN
-        RAISE_APPLICATION_ERROR(-20004, 'LỖI: Chỉ Thủ kho/Quản lý lập phiếu nhập!');
+        RAISE_APPLICATION_ERROR(-20004, 'LOI: Chi Thu kho/Quan ly lap phieu nhap!');
     END IF;
     
-    IF UPDATING THEN
+    -- KIỂM TRA CHỈ KHI MAPN THAY ĐỔI (tránh đọc LO_HANG khi nó đang bị INSERT)
+    IF UPDATING AND :OLD.MAPN != :NEW.MAPN THEN
         SELECT COUNT(*) INTO v_lo_daban FROM LO_HANG WHERE MAPN = :OLD.MAPN AND SOLUONGTON < SOLUONGNHAP;
         IF v_lo_daban > 0 THEN
-            RAISE_APPLICATION_ERROR(-20015, 'LỖI: Phiếu đã xuất bán, không thể sửa!');
+            RAISE_APPLICATION_ERROR(-20015, 'LOI: Phieu da xuat ban, khong the sua!');
         END IF;
     END IF;
 END;
 /
 
--- 9. Thanh Toán (Compound)
+-- 9. Thanh Toán
 CREATE OR REPLACE TRIGGER TRG_THANH_TOAN
 FOR INSERT OR UPDATE ON THANH_TOAN
 COMPOUND TRIGGER
@@ -256,7 +255,6 @@ COMPOUND TRIGGER
 
     BEFORE STATEMENT IS
     BEGIN
-        v_mahd_arr.DELETE;
         v_idx := 0;
     END BEFORE STATEMENT;
 
@@ -270,10 +268,10 @@ COMPOUND TRIGGER
         BEGIN
             SELECT TONGTIEN INTO v_tong_hd FROM HOA_DON WHERE MAHD = :NEW.MAHD;
             IF :NEW.SOTIEN <= 0 THEN
-                RAISE_APPLICATION_ERROR(-20018, 'LỖI: Số tiền thanh toán phải > 0!');
+                RAISE_APPLICATION_ERROR(-20018, 'LOI: So tien thanh toan phai > 0!');
             END IF;
         EXCEPTION WHEN NO_DATA_FOUND THEN
-            RAISE_APPLICATION_ERROR(-20018, 'LỖI: Không tìm thấy hóa đơn để thanh toán!');
+            RAISE_APPLICATION_ERROR(-20018, 'LOI: Khong tim thay hoa don de thanh toan!');
         END;
     END BEFORE EACH ROW;
 
@@ -290,7 +288,7 @@ COMPOUND TRIGGER
         v_da_tt   NUMBER;
         v_makh    VARCHAR2(10);
     BEGIN
-        FOR i IN 1 .. v_mahd_arr.COUNT LOOP
+        FOR i IN 1 .. v_idx LOOP
             SELECT NVL(SUM(SOTIEN), 0) INTO v_da_tt
             FROM THANH_TOAN WHERE MAHD = v_mahd_arr(i) AND TRANGTHAI = N'Hoàn thành';
             
@@ -329,7 +327,7 @@ COMPOUND TRIGGER
     BEGIN
         IF INSERTING THEN :NEW.SOLUONGTON := :NEW.SOLUONGNHAP; END IF;
         IF :NEW.NGAYHETHAN <= TRUNC(SYSDATE) THEN
-            RAISE_APPLICATION_ERROR(-20029, 'LỖI: Lô hàng đã hết hạn!');
+            RAISE_APPLICATION_ERROR(-20029, 'LOI: Lo hang da het han!');
         END IF;
     END BEFORE EACH ROW;
 
@@ -344,6 +342,7 @@ COMPOUND TRIGGER
 END TRG_LO_HANG;
 /
 
+-- 12. Kê Đơn
 CREATE OR REPLACE TRIGGER TRG_VALIDATE_KE_DON
 BEFORE INSERT OR UPDATE ON PHIEU_KE_DON
 FOR EACH ROW
@@ -356,11 +355,11 @@ BEGIN
         WHERE ns.MANS = :NEW.MANS;
     EXCEPTION
         WHEN NO_DATA_FOUND THEN
-            RAISE_APPLICATION_ERROR(-20025, 'LỖI: Không tìm thấy chức vụ của nhân viên!');
+            RAISE_APPLICATION_ERROR(-20025, 'LOI: Khong tim thay chuc vu cua nhan vien!');
     END;
     
     IF v_tencv NOT IN (N'Bác sĩ', N'Kỹ thuật viên mắt kính') THEN
-        RAISE_APPLICATION_ERROR(-20025, 'LỖI: Chỉ Bác sĩ/KTV được Kê Đơn!');
+        RAISE_APPLICATION_ERROR(-20025, 'LOI: Chi Bac si/KTV duoc Ke Don!');
     END IF;
 END;
 /
@@ -387,4 +386,5 @@ BEGIN
     VALUES ('LG' || LPAD(SEQ_LICH_SU_GIA.NEXTVAL, 6, '0'), :NEW.MASP, :OLD.GIABAN, :NEW.GIABAN, USER);
 END;
 /
-commit;
+
+COMMIT;

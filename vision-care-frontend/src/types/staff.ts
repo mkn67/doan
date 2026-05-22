@@ -132,6 +132,7 @@ export interface XuLyKinhResponseDTO {
 }
 export interface HangChoHomNayDTO {
   maHc: string;
+  maKh: string;
   soThuTu: number;
   loaiKhach: string; // "Walk-in" or "Hen truoc"
   tenKhach: string;
