@@ -60,4 +60,8 @@ public interface ThanhToanRepository
             @Param("p_mahd") String maHd,
             @Param("p_mans") String maNs,
             @Param("p_phuongthuc") String phuongThuc);
+
+    // Tính tổng doanh thu mọi thời đại từ các giao dịch thành công
+    @Query("SELECT SUM(t.soTien) FROM ThanhToan t WHERE t.trangThai = 'Hoàn thành'")
+    java.math.BigDecimal sumTotalRevenue();
 }

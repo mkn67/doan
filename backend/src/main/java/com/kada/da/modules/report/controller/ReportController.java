@@ -1,6 +1,7 @@
 package com.kada.da.modules.report.controller;
 
 import java.util.List;
+import java.time.LocalDate;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.kada.da.modules.inventory.dto.CanhBaoHetHanDTO;
 import com.kada.da.modules.report.dto.DoanhThuResponseDTO;
+import com.kada.da.modules.report.dto.ThongKeTongQuanDTO;
 import com.kada.da.modules.report.service.ReportService;
 
 import lombok.RequiredArgsConstructor;
@@ -20,7 +22,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ReportController {
 
-    private final ReportService reportService; // ✅ Đã import đúng
+    private final ReportService reportService;
 
     @GetMapping("/canh-bao-het-han")
     public ResponseEntity<List<CanhBaoHetHanDTO>> getCanhBaoHetHan(
@@ -31,7 +33,7 @@ public class ReportController {
 
     /**
      * API Thống kê doanh thu theo tháng/năm URL: GET
-     * http://localhost:8081/api/reports/revenue?thang=3&nam=2026
+     * http://localhost:8081/api/v1/reports/revenue?thang=3&nam=2026
      */
     @GetMapping("/revenue")
     @PreAuthorize("hasRole('ADMIN') or hasRole('LE_TAN') or hasRole('THU_NGAN')")
@@ -45,10 +47,24 @@ public class ReportController {
      * URL: GET /api/v1/reports/doanh-thu-theo-ngay?tuNgay=5&denNgay=2026
      */
     @GetMapping("/doanh-thu-theo-ngay")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('LE_TAN') or hasRole('THU_NGAN')")
     public ResponseEntity<?> getDoanhThuTheoNgay(
-            @RequestParam int tuNgay,
-            @RequestParam int denNgay) {
-        return ResponseEntity.ok(reportService.thongKeDoanhThuNgay(tuNgay, denNgay));
+            @RequestParam String tuNgay,
+            @RequestParam String denNgay) {
+        if (!tuNgay.contains("-")) {
+            int thang = Integer.parseInt(tuNgay);
+            int nam = Integer.parseInt(denNgay);
+            return ResponseEntity.ok(reportService.thongKeDoanhThuThang(thang, nam));
+        } else {
+            LocalDate start = LocalDate.parse(tuNgay);
+            LocalDate end = LocalDate.parse(denNgay);
+            return ResponseEntity.ok(reportService.thongKeDoanhThuNgay(start, end));
+        }
+    }
+
+    @GetMapping("/tong-quan")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('LE_TAN') or hasRole('THU_NGAN')")
+    public ResponseEntity<ThongKeTongQuanDTO> getThongKeTongQuan() {
+        return ResponseEntity.ok(reportService.layThongKeTongQuan());
     }
 }

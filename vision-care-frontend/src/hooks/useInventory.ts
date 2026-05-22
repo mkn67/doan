@@ -66,6 +66,14 @@ export const useDanhSachPhieuNhap = () => {
   });
 };
 
+export const usePhieuNhapChiTiet = (maPn: string) => {
+  return useQuery({
+    queryKey: ["phieu-nhap", maPn],
+    queryFn: () => inventoryApi.getPhieuNhapById(maPn),
+    enabled: !!maPn,
+  });
+};
+
 export const useCreatePhieuNhap = () => {
   const queryClient = useQueryClient();
   return useMutation({

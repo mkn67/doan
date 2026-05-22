@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import * as React from "react"
 import { useEffect, useState } from "react"
@@ -49,7 +49,7 @@ import {
 
 const CLINIC_BASE_URL = '/clinic';
 
-export const clinicApi = {
+const clinicApi = {
   createHoSoKham: async (data: HoSoKhamRequest): Promise<HoSoKhamResponse> => {
     const response = await axiosClient.post(`${CLINIC_BASE_URL}/hoso`, data);
     return response.data;
@@ -100,7 +100,7 @@ export const clinicApi = {
   },
 };
 
-export const inventoryApi = {
+const inventoryApi = {
   getSanPham: async (): Promise<SanPhamResponse[]> => {
     const response = await axiosClient.get<SanPhamResponse[]>('/san-pham');
     return response.data;

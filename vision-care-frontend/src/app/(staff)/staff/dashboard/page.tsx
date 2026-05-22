@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
@@ -11,7 +11,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 
 // 🔥 IMPORT HOOK MỚI
-import { useThongKeDoanhThuTheoNgay } from "@/hooks/useReport"; 
+import { useThongKeDoanhThuTheoNgay, useThongKeTongQuan } from "@/hooks/useReport"; 
+import { useCanhBaoHetHan } from "@/hooks/useInventory";
 
 // --- INTERFACES ---
 interface StatsCardProps {
@@ -36,7 +37,8 @@ interface QuickLinkCardProps {
 
 interface RevenueItem {
   ngay: string;
-  tongDoanhThu: number;
+  tongDoanhThu?: number;
+  doanhThuNgay?: number;
 }
 
 interface ExpiredItem {
@@ -55,7 +57,15 @@ export default function DashboardPage() {
   const currentYear = currentDate.getFullYear();
 
   const { data: revenueData } = useThongKeDoanhThuTheoNgay(currentMonth.toString(), currentYear.toString());
-  const expiredData: ExpiredItem[] = []; 
+  const { data: tongQuan } = useThongKeTongQuan();
+  const { data: expiredDataRaw } = useCanhBaoHetHan();
+
+  const expiredData: ExpiredItem[] = (expiredDataRaw || []).map((item: any) => ({
+    tenSp: item.tenSp || item.tenSanPham || "",
+    maLo: item.maLo || "",
+    ngayHetHan: item.ngayHetHan || "",
+    soLuongTon: item.tonKho !== undefined ? item.tonKho : (item.soLuongTon || 0),
+  }));
 
   useEffect(() => {
     const userStr = localStorage.getItem("user");
@@ -75,10 +85,9 @@ export default function DashboardPage() {
 
   // XỬ LÝ DỮ LIỆU ĐỂ HIỂN THỊ
   // 1. Tính tổng doanh thu tháng này
-  // Giả định backend trả về mảng các ngày có doanh thu: [{ngay: "2026-05-01", tongDoanhThu: 5000000}, ...]
-  const tongDoanhThu = (revenueData as RevenueItem[])?.reduce((sum: number, item: RevenueItem) => sum + (item.tongDoanhThu || 0), 0) || 0;
+  const tongDoanhThu = (revenueData as RevenueItem[])?.reduce((sum: number, item: RevenueItem) => sum + (item.doanhThuNgay || item.tongDoanhThu || 0), 0) || 0;
   
-  // 2. Chế data cho biểu đồ (Lấy 7 ngày gần nhất từ revenueData hoặc mảng rỗng nếu chưa có)
+  // 2. Chế data cho biểu đồ
   const chartData = revenueData?.slice(-7) || [];
 
   return (
@@ -102,31 +111,30 @@ export default function DashboardPage() {
       {/* STATS GRID */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatsCard 
-          title={`Doanh thu T${currentMonth}`} 
-          // Format tiền tệ VNĐ
-          value={new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(tongDoanhThu)} 
-          change="+12.5%" 
-          trend="up" 
+          title={`Doanh thu tổng`} 
+          value={new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(tongQuan?.tongDoanhThu || 0)} 
+          change={tongQuan?.tyLeTangTruongDoanhThu !== undefined ? `${tongQuan.tyLeTangTruongDoanhThu >= 0 ? "+" : ""}${tongQuan.tyLeTangTruongDoanhThu.toFixed(1)}%` : "+0%"} 
+          trend={tongQuan?.tyLeTangTruongDoanhThu !== undefined && tongQuan.tyLeTangTruongDoanhThu < 0 ? "down" : "up"} 
           icon={<TrendingUp className="w-5 h-5 text-blue-600" />} 
         />
         <StatsCard 
-          title="Lượt khám mới" 
-          value="142" // Chỗ này tương lai nối API useThongKeTongQuan vào
-          change="+8.2%" 
+          title="Tổng số bệnh nhân" 
+          value={tongQuan?.tongSoBenhNhan || 0} 
+          change="+100%" 
           trend="up" 
           icon={<Users className="w-5 h-5 text-emerald-600" />} 
         />
         <StatsCard 
-          title="Đơn hoàn tất" 
-          value="89" 
-          change="-2.4%" 
-          trend="down" 
+          title="Hóa đơn đã lập" 
+          value={tongQuan?.tongSoHoaDon || 0} 
+          change="+100%" 
+          trend="up" 
           icon={<ShoppingBag className="w-5 h-5 text-orange-600" />} 
         />
         <StatsCard 
-          title="Hài lòng (Đánh giá)" 
-          value="4.8/5" // Tương lai gọi từ V_RATING_BAC_SI
-          change="+0.2" 
+          title="Đơn thuốc đã kê" 
+          value={tongQuan?.tongSoDonThuoc || 0} 
+          change="+100%" 
           trend="up" 
           icon={<Activity className="w-5 h-5 text-purple-600" />} 
         />
@@ -144,8 +152,9 @@ export default function DashboardPage() {
               <div className="h-[250px] w-full flex items-end gap-2 px-2 pt-4">
                  {chartData.map((item: RevenueItem, i: number) => {
                    // Tính % chiều cao cột dựa trên ngày cao nhất
-                   const maxDoanhThu = Math.max(...chartData.map((d: RevenueItem) => d.tongDoanhThu));
-                   const heightPercent = maxDoanhThu === 0 ? 0 : (item.tongDoanhThu / maxDoanhThu) * 100;
+                   const itemRevenue = item.doanhThuNgay || item.tongDoanhThu || 0;
+                   const maxDoanhThu = Math.max(...chartData.map((d: RevenueItem) => d.doanhThuNgay || d.tongDoanhThu || 0));
+                   const heightPercent = maxDoanhThu === 0 ? 0 : (itemRevenue / maxDoanhThu) * 100;
                    return (
                      <div key={i} className="flex-1 flex flex-col items-center gap-2 group">
                         <div 
@@ -153,7 +162,7 @@ export default function DashboardPage() {
                           style={{ height: `${heightPercent}%`, minHeight: '4px' }}
                         >
                           <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap bg-slate-800 text-white px-1.5 py-0.5 rounded">
-                            {new Intl.NumberFormat('vi-VN').format(item.tongDoanhThu)}đ
+                            {new Intl.NumberFormat('vi-VN').format(itemRevenue)}đ
                           </span>
                         </div>
                         <span className="text-[10px] text-slate-400 font-medium">

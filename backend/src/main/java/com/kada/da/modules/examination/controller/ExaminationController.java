@@ -2,6 +2,7 @@ package com.kada.da.modules.examination.controller;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.List;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -105,6 +106,53 @@ public class ExaminationController {
 
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Lỗi khi lấy lịch sử khám: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/{maHoSo}")
+    public ResponseEntity<?> getExamination(@PathVariable("maHoSo") String maHoSo) {
+        try {
+            com.kada.da.modules.examination.domain.HoSoThiLuc hoSo = em.find(com.kada.da.modules.examination.domain.HoSoThiLuc.class, maHoSo);
+            if (hoSo == null) {
+                return ResponseEntity.notFound().build();
+            }
+
+            String jpql = "SELECT c FROM ChiTietThiLuc c WHERE c.hoSoThiLuc.maHoSo = :maHoSo";
+            List<com.kada.da.modules.examination.domain.ChiTietThiLuc> chiTiets = em.createQuery(jpql, com.kada.da.modules.examination.domain.ChiTietThiLuc.class)
+                    .setParameter("maHoSo", maHoSo)
+                    .getResultList();
+
+            List<com.kada.da.modules.examination.dto.ChiTietThiLucDTO> listDto = new java.util.ArrayList<>();
+            for (com.kada.da.modules.examination.domain.ChiTietThiLuc ct : chiTiets) {
+                listDto.add(com.kada.da.modules.examination.dto.ChiTietThiLucDTO.builder()
+                        .loaiMat(ct.getMat())
+                        .sph(ct.getCau())
+                        .cyl(ct.getTru())
+                        .axis(ct.getTruc())
+                        .va(ct.getThiLuc())
+                        .build());
+            }
+
+            String jpqlPrescription = "SELECT p.maDon FROM PhieuKeDon p WHERE p.hoSoThiLuc.maHoSo = :maHoSo";
+            List<String> prescriptions = em.createQuery(jpqlPrescription, String.class)
+                    .setParameter("maHoSo", maHoSo)
+                    .getResultList();
+            String maDonThuoc = prescriptions.isEmpty() ? null : prescriptions.get(0);
+
+            com.kada.da.modules.examination.dto.HoSoKhamResponseDTO response = com.kada.da.modules.examination.dto.HoSoKhamResponseDTO.builder()
+                    .maHoSo(hoSo.getMaHoSo())
+                    .maKh(hoSo.getKhachHang() != null ? hoSo.getKhachHang().getMaKh() : null)
+                    .tenKhachHang(hoSo.getKhachHang() != null ? hoSo.getKhachHang().getHoTen() : null)
+                    .tenBacSi(hoSo.getNhanSu() != null ? hoSo.getNhanSu().getHoTen() : null)
+                    .ngayKham(hoSo.getNgayKham() != null ? hoSo.getNgayKham().atStartOfDay() : null)
+                    .ketLuan(hoSo.getKetLuan())
+                    .danhSachThiLuc(listDto)
+                    .maDonThuoc(maDonThuoc)
+                    .build();
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Lỗi khi lấy hồ sơ khám: " + e.getMessage());
         }
     }
 }

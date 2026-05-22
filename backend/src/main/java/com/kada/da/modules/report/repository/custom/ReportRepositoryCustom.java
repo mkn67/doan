@@ -10,5 +10,5 @@ public interface ReportRepositoryCustom {
 
     List<DoanhThuResponseDTO> getThongKeDoanhThuThang(int thang, int nam);
 
-    List<DoanhThuResponseDTO> getThongKeDoanhThuNgay(int tuNgay, int denNgay);
+    List<DoanhThuResponseDTO> getThongKeDoanhThuNgay(java.time.LocalDate tuNgay, java.time.LocalDate denNgay);
 }

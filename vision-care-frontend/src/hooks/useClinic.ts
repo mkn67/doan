@@ -7,6 +7,7 @@ import {
   GoiKhamRequest,
   DatLichRequest, 
   DatLichResponse,
+  AuditHosoThiluc,
 } from "@/types/clinic";
 
 export const useDanhSachDichVu = () => {
@@ -72,6 +73,24 @@ export const useHoSoKham = (maHoSo: string) => {
     queryKey: ["ho-so-kham", maHoSo],
     queryFn: () => clinicApi.getHoSoKham(maHoSo),
     enabled: !!maHoSo,
+    staleTime: 2 * 60 * 1000,
+  });
+};
+
+export const useAuditHoSo = (maHoSo: string) => {
+  return useQuery<AuditHosoThiluc[]>({
+    queryKey: ["audit-ho-so", maHoSo],
+    queryFn: () => clinicApi.getAuditHoSo(maHoSo),
+    enabled: !!maHoSo,
+    staleTime: 2 * 60 * 1000,
+  });
+};
+
+export const useLichSuKham = (maKh: string) => {
+  return useQuery({
+    queryKey: ["lich-su-kham", maKh],
+    queryFn: () => clinicApi.getLichSuKham(maKh),
+    enabled: !!maKh,
     staleTime: 2 * 60 * 1000,
   });
 };

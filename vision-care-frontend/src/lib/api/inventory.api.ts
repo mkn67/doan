@@ -35,6 +35,10 @@ export const inventoryApi = {
     const response = await axiosClient.get<PageResponseDTO<PhieuNhapResponse>>(`/phieu-nhap?page=${page}&size=${size}`);
     return response.data;
   },
+  getPhieuNhapById: async (maPn: string): Promise<PhieuNhapResponse> => {
+    const response = await axiosClient.get<PhieuNhapResponse>(`/phieu-nhap/${maPn}`);
+    return response.data;
+  },
   createPhieuNhap: async (data: PhieuNhapRequest): Promise<PhieuNhapResponse> => {
     const response = await axiosClient.post<PhieuNhapResponse>('/phieu-nhap/nhap-kho', data);
     return response.data;

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useEffect } from "react";
 import { Receipt, FilePlus, Loader2, Info, ArrowLeft } from "lucide-react";
@@ -7,13 +7,13 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useRouter } from "next/navigation";
 
-import { useCreateHoaDon } from "@/hooks/useBilling"; 
+import { useCreateHoaDonJson } from "@/hooks/useBilling"; 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-import { HoaDonRequestDTO } from "@/types/billing";
+import { TaoHoaDonJsonRequest } from "@/types/billing";
 
 const billingSchema = z.object({
   maKh: z.string().min(1, "Vui lòng nhập mã khách hàng"),
@@ -25,7 +25,7 @@ type BillingFormValues = z.infer<typeof billingSchema>;
 
 export default function BillingPage() {
   const router = useRouter();
-  const createMutation = useCreateHoaDon();
+  const createMutation = useCreateHoaDonJson();
   const [isMounted, setIsMounted] = useState(false);
   const [maNs, setMaNs] = useState("");
 
@@ -53,14 +53,13 @@ export default function BillingPage() {
   }, []);
 
   const onSubmit = (values: BillingFormValues) => {
-    const payload: HoaDonRequestDTO = {
+    const payload: TaoHoaDonJsonRequest = {
       maKh: values.maKh,
       maNs: maNs,
-      maHoSo: values.maHoSo || undefined, 
-      dsSanPhams: [], // Cần logic thêm sản phẩm từ maDon hoặc UI
-      dsDichVus: [],  // Cần logic thêm dịch vụ từ maHoSo hoặc UI
-      tongTienDuKien: 0,
-      ghiChu: values.maDon ? `Tạo từ đơn: ${values.maDon}` : "",
+      maHoso: values.maHoSo || undefined,
+      maDon: values.maDon || undefined,
+      jsonSp: "",
+      jsonDv: "",
     };
 
     createMutation.mutate(payload, {
@@ -69,7 +68,10 @@ export default function BillingPage() {
         form.reset();
         router.push("/staff/cashier/payments");
       },
-      onError: () => alert("❌ Có lỗi xảy ra khi tạo hóa đơn!"),
+      onError: (err: any) => {
+        const errorMsg = err?.response?.data || err?.message || "Có lỗi xảy ra";
+        alert(`❌ Có lỗi xảy ra khi tạo hóa đơn: ${errorMsg}`);
+      },
     });
   };
 
