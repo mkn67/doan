@@ -2,36 +2,95 @@
 
 import * as React from "react"
 import { ShieldPlus, Search, ShieldCheck, Settings2, Users } from "lucide-react"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
 
-// Dữ liệu giả lập (Mock) CHUẨN 100% THEO DATABASE BẢNG "NHOM"
-// Mốt ông giáo chỉ cần thay bằng data từ API (ví dụ: const { data } = useDanhSachNhom())
-const mockNhom = [
-  { id: "NH04", name: "Quản lý", desc: "Nhóm quản lý hệ thống", permissions: ["Toàn quyền hệ thống", "Duyệt báo cáo", "Quản lý nhân sự"] },
-  { id: "NH01", name: "Bác sĩ", desc: "Nhóm bác sĩ khám và điều trị", permissions: ["Khám bệnh", "Kê đơn thuốc", "Xem hồ sơ thị lực"] },
-  { id: "NH06", name: "Lễ tân", desc: "Nhóm lễ tân tiếp nhận", permissions: ["Quản lý lịch hẹn", "Tiếp đón khách hàng", "Tạo hồ sơ"] },
-  { id: "NH02", name: "Thu ngân", desc: "Nhóm thu ngân và thanh toán", permissions: ["Quản lý hóa đơn", "Xử lý thanh toán"] },
-  { id: "NH03", name: "Thủ kho", desc: "Nhóm quản lý kho hàng", permissions: ["Nhập/Xuất kho", "Quản lý lô hàng", "Kiểm kê"] },
-  { id: "NH05", name: "Kỹ thuật viên mắt kính", desc: "Nhóm kỹ thuật cắt kính", permissions: ["Xử lý kính", "Cập nhật thông số kính"] },
-]
+import { staffApi } from "@/lib/api/staff.api"
+import type { NhomRequestDTO, NhomResponseDTO } from "@/types/staff"
 
 export default function RolesPage() {
-  const [searchTerm, setSearchTerm] = React.useState("");
+  const [searchTerm, setSearchTerm] = React.useState("")
+  const [isDialogOpen, setIsDialogOpen] = React.useState(false)
+  const [editingNhom, setEditingNhom] = React.useState<NhomResponseDTO | null>(null)
+  const [formValue, setFormValue] = React.useState<NhomRequestDTO>({ tenNhom: "", moTa: "" })
+  const queryClient = useQueryClient()
 
-  // Logic tìm kiếm cơ bản để test giao diện
-  const filteredRoles = mockNhom.filter(role => 
-    role.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    role.id.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const { data: nhomData, isLoading } = useQuery({
+    queryKey: ["nhom-quyen"],
+    queryFn: async () => staffApi.getDanhSachNhomQuyen(),
+  })
+
+  const createMutation = useMutation({
+    mutationFn: (data: NhomRequestDTO) => staffApi.createNhomQuyen(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["nhom-quyen"] })
+      setFormValue({ tenNhom: "", moTa: "" })
+      setIsDialogOpen(false)
+    },
+  })
+
+  const updateMutation = useMutation({
+    mutationFn: ({ maNhom, data }: { maNhom: string; data: NhomRequestDTO }) => staffApi.updateNhomQuyen(maNhom, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["nhom-quyen"] })
+      setEditingNhom(null)
+      setFormValue({ tenNhom: "", moTa: "" })
+      setIsDialogOpen(false)
+    },
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: (maNhom: string) => staffApi.deleteNhomQuyen(maNhom),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["nhom-quyen"] }),
+  })
+
+  const handleOpenDialog = () => {
+    setEditingNhom(null)
+    setFormValue({ tenNhom: "", moTa: "" })
+    setIsDialogOpen(true)
+  }
+
+  const handleEdit = (item: NhomResponseDTO) => {
+    setEditingNhom(item)
+    setFormValue({ tenNhom: item.tenNhom, moTa: item.moTa ?? "" })
+    setIsDialogOpen(true)
+  }
+
+  const handleSubmit = () => {
+    if (editingNhom) {
+      updateMutation.mutate({ maNhom: editingNhom.maNhom, data: formValue })
+    } else {
+      createMutation.mutate(formValue)
+    }
+  }
+
+  const handleDelete = (maNhom: string) => {
+    if (confirm("Bạn có chắc chắn muốn xóa nhóm quyền này?")) {
+      deleteMutation.mutate(maNhom)
+    }
+  }
+
+  const filteredRoles = (nhomData ?? []).filter((role) =>
+    role.tenNhom.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    role.maNhom.toLowerCase().includes(searchTerm.toLowerCase())
+  )
 
   return (
     <div className="p-6 md:p-8 space-y-8 bg-slate-50 min-h-[calc(100vh-4rem)]">
-      {/* HEADER SECTION */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
@@ -42,26 +101,24 @@ export default function RolesPage() {
             Thiết lập quyền truy cập và quản lý nhóm chức danh cho nhân sự Vision Care.
           </p>
         </div>
-        <Button className="bg-indigo-600 hover:bg-indigo-700 shadow-md h-10 font-medium">
+        <Button onClick={handleOpenDialog} className="bg-indigo-600 hover:bg-indigo-700 shadow-md h-10 font-medium">
           <ShieldPlus className="mr-2 h-4 w-4" /> Thêm nhóm quyền
         </Button>
       </div>
 
-      {/* SEARCH SECTION */}
       <div className="flex items-center justify-between bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
         <div className="relative w-full md:w-80">
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-          <Input 
-            type="text" 
-            placeholder="Tìm kiếm theo mã hoặc tên nhóm..." 
-            className="pl-9 bg-slate-50 border-slate-200 focus:bg-white transition-colors" 
+          <Input
+            type="text"
+            placeholder="Tìm kiếm theo mã hoặc tên nhóm..."
+            className="pl-9 bg-slate-50 border-slate-200 focus:bg-white transition-colors"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
       </div>
 
-      {/* TABLE SECTION */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <Table className="w-full text-left border-collapse">
@@ -69,43 +126,44 @@ export default function RolesPage() {
               <TableRow>
                 <TableHead className="w-[120px] font-semibold text-slate-600 py-4 px-6">Mã nhóm</TableHead>
                 <TableHead className="w-[200px] font-semibold text-slate-600 py-4 px-6">Tên chức danh</TableHead>
-                <TableHead className="font-semibold text-slate-600 py-4 px-6">Mô tả nghiệp vụ</TableHead>
-                <TableHead className="font-semibold text-slate-600 py-4 px-6">Quyền hạn chính (Minh họa)</TableHead>
+                <TableHead className="font-semibold text-slate-600 py-4 px-6">Mô tả</TableHead>
+                <TableHead className="font-semibold text-slate-600 py-4 px-6">Số quyền</TableHead>
                 <TableHead className="text-right font-semibold text-slate-600 py-4 px-6">Thao tác</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody className="divide-y divide-slate-100">
-              {filteredRoles.length > 0 ? (
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="py-10 text-center text-slate-500">
+                    Đang tải nhóm quyền...
+                  </TableCell>
+                </TableRow>
+              ) : filteredRoles.length > 0 ? (
                 filteredRoles.map((role) => (
-                  <TableRow key={role.id} className="hover:bg-slate-50/80 transition-colors group">
-                    <TableCell className="py-4 px-6 font-medium text-indigo-600">
-                      {role.id}
-                    </TableCell>
-                    <TableCell className="py-4 px-6 font-semibold text-slate-800">
-                      <div className="flex items-center gap-2">
-                        <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                        {role.name}
-                      </div>
-                    </TableCell>
-                    <TableCell className="py-4 px-6 text-slate-600 text-sm">
-                      {role.desc}
-                    </TableCell>
-                    <TableCell className="py-4 px-6">
-                      <div className="flex flex-wrap gap-1.5">
-                        {role.permissions.map((perm, idx) => (
-                          <span 
-                            key={idx} 
-                            className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200"
-                          >
-                            {perm}
-                          </span>
-                        ))}
-                      </div>
-                    </TableCell>
+                  <TableRow key={role.maNhom} className="hover:bg-slate-50/80 transition-colors group">
+                    <TableCell className="py-4 px-6 font-medium text-indigo-600">{role.maNhom}</TableCell>
+                    <TableCell className="py-4 px-6 font-semibold text-slate-800">{role.tenNhom}</TableCell>
+                    <TableCell className="py-4 px-6 text-slate-600 text-sm">{role.moTa}</TableCell>
+                    <TableCell className="py-4 px-6 text-slate-700">{role.danhSachVaiTro?.length ?? 0}</TableCell>
                     <TableCell className="py-4 px-6 text-right">
-                      <Button variant="outline" size="sm" className="text-indigo-600 border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700">
-                        <Settings2 className="w-4 h-4 mr-1.5" /> Thiết lập
-                      </Button>
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-indigo-600 border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
+                          onClick={() => handleEdit(role)}
+                        >
+                          <Settings2 className="w-4 h-4 mr-1.5" /> Sửa
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-rose-600 hover:bg-rose-50"
+                          onClick={() => handleDelete(role.maNhom)}
+                        >
+                          Xóa
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -120,6 +178,44 @@ export default function RolesPage() {
           </Table>
         </div>
       </div>
+
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{editingNhom ? "Cập nhật nhóm quyền" : "Thêm nhóm quyền mới"}</DialogTitle>
+            <DialogDescription>
+              {editingNhom
+                ? "Cập nhật thông tin nhóm quyền và lưu lại để thay đổi."
+                : "Tạo nhóm quyền mới cho quy trình vận hành và phân quyền hệ thống."}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="tenNhom" className="text-right">Tên nhóm</Label>
+              <Input
+                id="tenNhom"
+                value={formValue.tenNhom}
+                onChange={(e) => setFormValue({ ...formValue, tenNhom: e.target.value })}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="moTa" className="text-right">Mô tả</Label>
+              <Input
+                id="moTa"
+                value={formValue.moTa ?? ""}
+                onChange={(e) => setFormValue({ ...formValue, moTa: e.target.value })}
+                className="col-span-3"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" onClick={handleSubmit} className="bg-indigo-600 hover:bg-indigo-700">
+              {editingNhom ? "Lưu thay đổi" : "Tạo nhóm quyền"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
