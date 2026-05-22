@@ -84,7 +84,7 @@ public class NhanSuServiceImpl implements NhanSuService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public NhanSuResponseDTO updateNhanSu(String maNs, NhanSuRequestDTO request) {
         NhanSu nhanSu = nhanSuRepository.findById(maNs)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy nhân sự: " + maNs));
@@ -160,5 +160,20 @@ public class NhanSuServiceImpl implements NhanSuService {
         return nhanSuRepository.findByChucVu_MaCvAndIsDeleted(maCv, 0).stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public void deleteNhanSu(String maNs) {
+        NhanSu nhanSu = nhanSuRepository.findById(maNs)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy nhân sự: " + maNs));
+        nhanSu.setIsDeleted(1);
+        nhanSuRepository.save(nhanSu);
+
+        if (nhanSu.getTaiKhoan() != null) {
+            TaiKhoan taiKhoan = nhanSu.getTaiKhoan();
+            taiKhoan.setTrangThai(0);
+            taiKhoanRepository.save(taiKhoan);
+        }
     }
 }

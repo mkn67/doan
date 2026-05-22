@@ -12,6 +12,8 @@ import {
   SlotTrongDTO,
   PageResponseDTO // Giả sử đã có trong types/inventory hoặc types/staff
 } from '@/types/staff';
+import { DichVuKhamRequest, DichVuKhamResponse } from '@/types/clinic';
+
 
 export const staffApi = {
   // --- QUẢN LÝ NHÂN SỰ ---
@@ -94,5 +96,55 @@ export const staffApi = {
       const params = ngay ? { ngay } : {};
       const response = await axiosClient.get<SlotTrongDTO[]>("/lich-lam-viec/slot-trong", { params });
       return response.data;
+  },
+
+  // --- HÀNH ĐỘNG QUẢN TRỊ ---
+  updateNhanSu: async (maNs: string, data: NhanSuRequestDTO): Promise<NhanSuResponseDTO> => {
+    const response = await axiosClient.put<NhanSuResponseDTO>(`/nhan-su/${maNs}`, data);
+    return response.data;
+  },
+  deleteNhanSu: async (maNs: string): Promise<void> => {
+    await axiosClient.delete(`/nhan-su/${maNs}`);
+  },
+  getDanhSachNhomQuyen: async (): Promise<NhomResponseDTO[]> => {
+    const response = await axiosClient.get<NhomResponseDTO[]>('/nhom');
+    return response.data;
+  },
+  updateNhomQuyen: async (maNhom: string, data: NhomRequestDTO): Promise<NhomResponseDTO> => {
+    const response = await axiosClient.put<NhomResponseDTO>(`/nhom/${maNhom}`, data);
+    return response.data;
+  },
+  deleteNhomQuyen: async (maNhom: string): Promise<void> => {
+    await axiosClient.delete(`/nhom/${maNhom}`);
+  },
+  getDanhSachLichLamViec: async (page = 0, size = 50): Promise<PageResponseDTO<LichLamViecResponseDTO>> => {
+    const response = await axiosClient.get<PageResponseDTO<LichLamViecResponseDTO>>('/lich-lam-viec', {
+      params: { page, size }
+    });
+    return response.data;
+  },
+  updateLichLamViec: async (maLlv: string, data: LichLamViecRequestDTO): Promise<LichLamViecResponseDTO> => {
+    const response = await axiosClient.put<LichLamViecResponseDTO>(`/lich-lam-viec/${maLlv}`, data);
+    return response.data;
+  },
+  deleteLichLamViec: async (maLlv: string): Promise<void> => {
+    await axiosClient.delete(`/lich-lam-viec/${maLlv}`);
+  },
+  getDanhSachDichVuKham: async (page = 0, size = 50): Promise<PageResponseDTO<DichVuKhamResponse>> => {
+    const response = await axiosClient.get<PageResponseDTO<DichVuKhamResponse>>('/dich-vu-kham', {
+      params: { page, size }
+    });
+    return response.data;
+  },
+  updateDichVuKham: async (maDv: string, data: DichVuKhamRequest): Promise<DichVuKhamResponse> => {
+    const response = await axiosClient.put<DichVuKhamResponse>(`/dich-vu-kham/${maDv}`, data);
+    return response.data;
+  },
+  deleteDichVuKham: async (maDv: string): Promise<void> => {
+    await axiosClient.delete(`/dich-vu-kham/${maDv}`);
+  },
+  createDichVuKham: async (data: DichVuKhamRequest): Promise<DichVuKhamResponse> => {
+    const response = await axiosClient.post<DichVuKhamResponse>('/dich-vu-kham', data);
+    return response.data;
   },
 };

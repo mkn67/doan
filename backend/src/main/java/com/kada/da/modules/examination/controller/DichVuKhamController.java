@@ -34,4 +34,10 @@ public class DichVuKhamController {
             @RequestParam(defaultValue = "10") int size) {
         return ResponseEntity.ok(dichVuKhamService.getAllDichVu(page, size));
     }
+
+    @DeleteMapping("/{maDv}")
+    public ResponseEntity<Void> deleteDichVu(@PathVariable String maDv) {
+        dichVuKhamService.deleteDichVu(maDv);
+        return ResponseEntity.noContent().build();
+    }
 }

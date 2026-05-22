@@ -20,4 +20,6 @@ public interface NhanSuService {
     List<TopBacSiDTO> getTopBacSiRating();
 
     List<NhanSuResponseDTO> getNhanSuByChucVuActive(String maCv);
+
+    void deleteNhanSu(String maNs);
 }
