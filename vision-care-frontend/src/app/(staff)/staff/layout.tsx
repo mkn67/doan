@@ -113,6 +113,17 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
     );
   }
 
+  const getRoleLabel = (roles?: string[]) => {
+    if (!roles || roles.length === 0) return "Nhân viên";
+    if (roles.includes("ROLE_ADMIN")) return "Quản trị viên";
+    if (roles.includes("ROLE_BAC_SI")) return "Bác sĩ";
+    if (roles.includes("ROLE_LE_TAN")) return "Lễ tân";
+    if (roles.includes("ROLE_THU_NGAN")) return "Thu ngân";
+    if (roles.includes("ROLE_THU_KHO")) return "Thủ kho";
+    if (roles.includes("ROLE_KY_THUAT")) return "Kỹ thuật viên";
+    return "Nhân viên";
+  };
+
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">
       
@@ -120,11 +131,25 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
       <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col shadow-2xl z-20 flex-shrink-0">
         
         {/* Header Sidebar */}
-        <div className="p-6 bg-slate-950/50">
-          <h1 className="text-2xl font-black text-white tracking-tight">VISION <span className="text-blue-500">CARE</span></h1>
-          <div className="mt-4 p-3 bg-slate-800/50 rounded-xl border border-slate-700/50">
-            <p className="text-xs uppercase text-slate-400 font-semibold">Tài khoản</p>
-            <p className="text-sm font-bold text-white truncate mt-0.5">{user?.hoTen || "Nhân viên"}</p>
+        <div className="p-6 bg-slate-950/55 border-b border-slate-800/60">
+          <h1 className="text-2xl font-black text-white tracking-tight flex items-center gap-2">
+            VISION <span className="text-blue-500">CARE</span>
+          </h1>
+          
+          <div className="mt-5 flex items-center gap-3 p-3 bg-slate-800/40 backdrop-blur border border-slate-700/40 rounded-2xl">
+            {/* User Avatar */}
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center font-black text-white shadow-md text-sm flex-shrink-0">
+              {user?.hoTen ? user.hoTen.charAt(0).toUpperCase() : "U"}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">TÀI KHOẢN</p>
+              <p className="text-sm font-bold text-white truncate" title={user?.hoTen}>
+                {user?.hoTen || "Nhân viên"}
+              </p>
+              <p className="text-xs text-slate-400 mt-0.5 truncate">
+                Nhân sự: <span className="text-blue-400 font-semibold">{getRoleLabel(user?.roles)}</span>
+              </p>
+            </div>
           </div>
         </div>
         
