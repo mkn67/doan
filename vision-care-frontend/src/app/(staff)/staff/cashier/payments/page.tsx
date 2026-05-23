@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useRef } from "react";
 import {
@@ -346,6 +346,24 @@ export default function PaymentsPage() {
                 </SelectContent>
               </Select>
             </div>
+            {phuongThuc === "Chuyển khoản" && selectedInvoice && (
+              <div className="mt-2 p-4 border border-slate-200 rounded-xl bg-slate-50 flex flex-col items-center justify-center space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Mã QR Thanh Toán VietQR</span>
+                <div className="p-2 bg-white border border-emerald-100 rounded-xl shadow-sm">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={`https://img.vietqr.io/image/MB-1903678999999-compact2.png?amount=${selectedInvoice.tongTien}&addInfo=Thanh%20toan%20hoa%20don%20${selectedInvoice.maHd}&accountName=PHONG%20KHAM%20VISION%20CARE`}
+                    alt="VietQR Dynamic payment"
+                    className="w-48 h-48 object-contain"
+                  />
+                </div>
+                <div className="text-center">
+                  <p className="text-xs text-slate-700 font-bold">Ngân hàng Quân Đội (MB)</p>
+                  <p className="text-[11px] text-slate-500 font-medium">STK: 1903678999999 - PHONG KHAM VISION CARE</p>
+                  <p className="text-[10px] text-emerald-600 mt-1 font-semibold">Tự động điền số tiền & nội dung hóa đơn khi quét</p>
+                </div>
+              </div>
+            )}
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button
