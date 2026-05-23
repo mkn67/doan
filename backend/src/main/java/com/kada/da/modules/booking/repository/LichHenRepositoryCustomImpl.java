@@ -106,7 +106,7 @@ public class LichHenRepositoryCustomImpl implements LichHenRepositoryCustom {
 
         // 4. Lọc theo Trạng thái
         if (filter.getTrangThai() != null && !filter.getTrangThai().isEmpty()) {
-            predicates.add(cb.equal(root.get("trangThai"), TrangThaiLichHen.valueOf(filter.getTrangThai())));
+            predicates.add(cb.equal(root.get("trangThai"), TrangThaiLichHen.safeValueOf(filter.getTrangThai())));
         }
 
         // Thực thi Query

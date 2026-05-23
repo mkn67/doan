@@ -46,7 +46,6 @@ public class LichHen {
     @Column(name = "LOAI_LICH", length = 20)
     private String loaiLich;
 
-    @Enumerated(EnumType.STRING)
     @Column(name = "TRANGTHAI", length = 50)
     @Convert(converter = TrangThaiLichHenConverter.class)
     private TrangThaiLichHen trangThai; // ĐÃ SỬA

@@ -35,4 +35,35 @@ public enum TrangThaiLichHen {
         System.err.println("CẢNH BÁO: Không map được giá trị: " + value);
         throw new IllegalArgumentException("Không tìm thấy trạng thái: " + value);
     }
+
+    public static TrangThaiLichHen safeValueOf(String value) {
+        if (value == null || value.trim().isEmpty()) return null;
+        String normalized = value.trim().toUpperCase();
+        
+        switch (normalized) {
+            case "CHUA_XAC_NHAN":
+            case "CHO_XAC_NHAN":
+                return CHO_XAC_NHAN;
+            case "DA_XAC_NHAN":
+                return DA_XAC_NHAN;
+            case "DA_DEN":
+            case "DA_CHECK_IN":
+                return DA_CHECK_IN;
+            case "HOAN_THANH":
+            case "DA_KHAM":
+                return HOAN_THANH;
+            case "DA_HUY":
+                return DA_HUY;
+            default:
+                try {
+                    return TrangThaiLichHen.valueOf(normalized);
+                } catch (Exception e) {
+                    try {
+                        return fromValue(value);
+                    } catch (Exception ex) {
+                        return null;
+                    }
+                }
+        }
+    }
 }
