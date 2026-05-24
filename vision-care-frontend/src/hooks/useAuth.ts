@@ -31,7 +31,11 @@ export const useAuth = () => {
       const stored = localStorage.getItem("user");
       if (stored) {
         try {
-          return JSON.parse(stored);
+          const parsed = JSON.parse(stored);
+          if (parsed && !parsed.maKh && parsed.loaiTk === "EXTERNAL" && parsed.username?.toLowerCase().startsWith("kh")) {
+            parsed.maKh = parsed.username.toUpperCase();
+          }
+          return parsed;
         } catch (e) {
           console.error("Failed to parse user from localStorage", e);
         }

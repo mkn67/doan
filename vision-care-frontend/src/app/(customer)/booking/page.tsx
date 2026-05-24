@@ -1,7 +1,7 @@
 "use client";
 
 import "@/app/globals.css";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { 
@@ -25,7 +25,13 @@ export default function BookingPage() {
   const [ngayHen, setNgayHen] = useState("");
   const [gioHen, setGioHen] = useState("");
 
-  const isKhachHang = !!user?.maKh;
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const isKhachHang = !!user?.maKh || (user?.loaiTk === "EXTERNAL" && user?.username?.toLowerCase().startsWith("kh"));
+  const showBookingContent = mounted && isKhachHang;
 
   const handleSubmit = async () => {
     if (!isKhachHang) {
@@ -40,9 +46,10 @@ export default function BookingPage() {
     }
 
     try {
+      const userMaKh = user?.maKh || (user?.username?.toLowerCase().startsWith("kh") ? user.username.toUpperCase() : "");
       const gioHenFull = `${ngayHen}T${gioHen}:00`;
       await mutateAsync({
-        maKh: user?.maKh || "",
+        maKh: userMaKh,
         maNs,
         maGoi,
         ngayHen,
@@ -85,7 +92,7 @@ export default function BookingPage() {
               <p className="text-sm font-medium text-slate-400">Chọn lịch, bác sĩ chuyên môn và gói dịch vụ mong muốn</p>
             </div>
           </div>
-          {isKhachHang && (
+          {showBookingContent && (
             <div className="bg-slate-100 px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 flex items-center gap-2 max-w-fit">
               <span className="w-2 h-2 bg-emerald-500 rounded-full animate-ping"></span>
               Khách hàng: <span className="text-slate-800 font-bold">{user?.hoTen || user?.username}</span>
@@ -94,7 +101,7 @@ export default function BookingPage() {
         </div>
 
         {/* Warning if not logged in */}
-        {!isKhachHang && (
+        {!showBookingContent && (
           <div className="flex items-start gap-4 text-amber-900 bg-amber-50/50 border border-amber-200/60 p-5 rounded-2xl animate-fade-in relative overflow-hidden">
             <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 rounded-full blur-xl pointer-events-none" />
             <AlertTriangle className="w-6 h-6 text-amber-600 shrink-0 mt-0.5" />
@@ -111,7 +118,7 @@ export default function BookingPage() {
           </div>
         )}
 
-        <div className={`space-y-8 ${!isKhachHang ? "opacity-60 pointer-events-none select-none" : ""}`}>
+        <div className={`space-y-8 ${!showBookingContent ? "opacity-60 pointer-events-none select-none" : ""}`}>
           
           {/* STEP 1: CHỌN BÁC SĨ */}
           <div className="space-y-4">
@@ -135,7 +142,7 @@ export default function BookingPage() {
                   return (
                     <div
                       key={bs.maNs}
-                      onClick={() => isKhachHang && setMaNs(bs.maNs)}
+                      onClick={() => showBookingContent && setMaNs(bs.maNs)}
                       className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center gap-4 relative overflow-hidden group ${
                         isSelected
                           ? "border-blue-600 bg-blue-50/40 text-blue-800 shadow-md shadow-blue-500/5"
@@ -191,7 +198,7 @@ export default function BookingPage() {
                   return (
                     <div
                       key={goi.maGoi}
-                      onClick={() => isKhachHang && setMaGoi(goi.maGoi)}
+                      onClick={() => showBookingContent && setMaGoi(goi.maGoi)}
                       className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between gap-3 relative overflow-hidden group ${
                         isSelected
                           ? "border-indigo-600 bg-indigo-50/40 text-indigo-800 shadow-md shadow-indigo-500/5"
@@ -241,7 +248,7 @@ export default function BookingPage() {
                   <input
                     id="ngayHen"
                     type="date"
-                    disabled={!isKhachHang}
+                    disabled={!showBookingContent}
                     min={new Date().toISOString().split('T')[0]} // Chặn chọn ngày trong quá khứ
                     value={ngayHen}
                     onChange={(e) => setNgayHen(e.target.value)}
@@ -259,7 +266,7 @@ export default function BookingPage() {
                   <input
                     id="gioHen"
                     type="time"
-                    disabled={!isKhachHang}
+                    disabled={!showBookingContent}
                     value={gioHen}
                     onChange={(e) => setGioHen(e.target.value)}
                     className="w-full h-11 px-4 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white font-semibold text-slate-800 text-sm transition-all"
@@ -275,7 +282,7 @@ export default function BookingPage() {
         <div className="border-t border-slate-100 pt-6">
           <Button
             onClick={handleSubmit}
-            disabled={isPending || (isKhachHang && (!maNs || !maGoi || !ngayHen || !gioHen))}
+            disabled={isPending || (showBookingContent && (!maNs || !maGoi || !ngayHen || !gioHen))}
             className="w-full h-12 text-base font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-2xl shadow-lg shadow-blue-500/10 hover:shadow-blue-500/25 transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-40 disabled:hover:scale-100 disabled:shadow-none gap-2"
           >
             {isPending ? (
@@ -283,7 +290,7 @@ export default function BookingPage() {
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                 Đang gửi yêu cầu...
               </div>
-            ) : !isKhachHang ? (
+            ) : !showBookingContent ? (
               <>
                 Đăng nhập để đặt lịch <ArrowRight className="w-5 h-5" />
               </>

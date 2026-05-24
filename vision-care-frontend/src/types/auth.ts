@@ -54,6 +54,7 @@ export interface LoginResponseDTO {
   loaiTk: string;      // "INTERNAL" hoặc "EXTERNAL"
   maNhom?: string;     // Mã nhóm đơn lẻ (NH01, NH04...)
   roles?: string[];    // Danh sách quyền/mã nhóm từ Spring Security (Khuyên dùng)
+  maKh?: string;
 }
 
 export interface TaiKhoanResponseDTO {

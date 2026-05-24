@@ -16,4 +16,5 @@ public class LoginResponseDTO {
     private String maNhom;
     private String loaiTk;
     private List<String> roles;
+    private String maKh;
 }

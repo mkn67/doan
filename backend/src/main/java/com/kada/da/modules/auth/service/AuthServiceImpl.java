@@ -108,11 +108,20 @@ public class AuthServiceImpl implements AuthService {
         String token = jwtTokenUtil.generateToken(taiKhoan.getUsername(), roles); // Dùng username thay password để làm
         // subject JWT
 
+        String maKh = null;
+        if ("EXTERNAL".equals(taiKhoan.getLoaiTk())) {
+            java.util.Optional<com.kada.da.modules.customer.domain.KhachHang> khOpt = khachHangRepository.findByTaiKhoanUsername(taiKhoan.getUsername());
+            if (khOpt.isPresent()) {
+                maKh = khOpt.get().getMaKh();
+            }
+        }
+
         return LoginResponseDTO.builder()
                 .token(token)
                 .username(taiKhoan.getUsername())
                 .loaiTk(taiKhoan.getLoaiTk())
                 .roles(roles)
+                .maKh(maKh)
                 .build();
     }
 

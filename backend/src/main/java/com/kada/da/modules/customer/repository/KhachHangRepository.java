@@ -22,4 +22,7 @@ public interface KhachHangRepository extends JpaRepository<KhachHang, String> {
 
     @Query(value = "SELECT FN_LAY_LICH_SU_KHAM_CUOI(:p_makh) FROM DUAL", nativeQuery = true)
     String getLichSuKhamCuoi(@Param("p_makh") String maKh);
+
+    @Query("SELECT k FROM KhachHang k WHERE k.taiKhoan.username = :username")
+    java.util.Optional<KhachHang> findByTaiKhoanUsername(@Param("username") String username);
 }

@@ -1,4 +1,4 @@
-import "@/app/globals.css"
+import "@/app/globals.css";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { 
@@ -10,166 +10,233 @@ import {
   UserCircle,
   Search,
   Globe,
-  Stethoscope
+  Stethoscope,
+  Sparkles,
+  Award,
+  HeartHandshake,
+  Activity,
+  Glasses
 } from "lucide-react";
 
 export default function CustomerHomePage() {
   return (
-    <div className="flex flex-col w-full font-sans bg-slate-50">
+    <div className="flex flex-col w-full font-sans bg-slate-50 text-slate-800 min-h-screen relative overflow-hidden">
       
-      {/* 1. HEADER (Lấy cảm hứng từ Vinmec) */}
-      <header className="w-full bg-white shadow-sm z-50 sticky top-0">
-        {/* Tầng 1: Tiện ích & Ngôn ngữ */}
-        <div className="hidden md:flex justify-end items-center px-8 py-2 bg-slate-100 text-sm text-slate-600 gap-6">
-          <Link href="/customer-service" className="hover:text-blue-600 transition-colors">
-            Chăm sóc khách hàng
-          </Link>
-          <Link href="/find-doctor" className="hover:text-blue-600 transition-colors flex items-center gap-1">
-            <Search className="w-3 h-3" /> Tìm bác sĩ
-          </Link>
-          <div className="flex items-center gap-2 border-l border-slate-300 pl-6">
-            <Globe className="w-4 h-4 text-slate-500" />
-            <span className="cursor-pointer hover:text-blue-600 font-medium">VN</span>
-            <span className="text-slate-300">|</span>
-            <span className="cursor-pointer hover:text-blue-600">EN</span>
-          </div>
-        </div>
+      {/* Soft Ambient Light Glow Blobs */}
+      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-100/40 rounded-full blur-[140px] pointer-events-none" />
+      <div className="absolute bottom-[20%] right-[-10%] w-[60%] h-[60%] bg-indigo-100/30 rounded-full blur-[160px] pointer-events-none" />
+      <div className="absolute top-[40%] left-[20%] w-[30%] h-[30%] bg-emerald-100/20 rounded-full blur-[120px] pointer-events-none" />
 
-        {/* Tầng 2: Menu chính */}
-        <div className="flex justify-between items-center px-6 md:px-8 py-4">
-          <Link href="/" className="flex items-center gap-2">
-            <Eye className="w-8 h-8 text-blue-600" />
-            <span className="text-2xl font-bold text-blue-900 tracking-tight">VISIONCARE</span>
+      {/* 1. HEADER (Light Glassmorphic) */}
+      <header className="w-full bg-white/90 backdrop-blur-md border-b border-slate-200/60 z-50 sticky top-0 shadow-sm">
+        <div className="flex justify-between items-center px-6 md:px-12 py-4.5 max-w-7xl mx-auto">
+          <Link href="/" className="flex items-center gap-2.5 group">
+            <div className="p-2.5 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl shadow-md shadow-blue-500/10 group-hover:scale-105 transition-transform duration-300">
+              <Eye className="w-5.5 h-5.5 text-white" />
+            </div>
+            <span className="text-2xl font-black bg-gradient-to-r from-blue-700 via-indigo-800 to-blue-900 bg-clip-text text-transparent tracking-tight">
+              VISIONCARE
+            </span>
           </Link>
 
-          <nav className="hidden lg:flex gap-8 font-medium text-slate-700">
+          <nav className="hidden lg:flex gap-10 font-bold text-xs uppercase tracking-wider text-slate-600">
             <Link href="/chuyen-khoa" className="hover:text-blue-600 transition-colors">Chuyên khoa</Link>
-            <Link href="/huong-dan" className="hover:text-blue-600 transition-colors">Hướng dẫn khách hàng</Link>
-            <Link href="/ve-chung-toi" className="hover:text-blue-600 transition-colors">Về VisionCare</Link>
-            <Link href="/suc-khoe" className="hover:text-blue-600 transition-colors">Chuyên trang sức khoẻ</Link>
+            <Link href="/ve-chung-toi" className="hover:text-blue-600 transition-colors">Về chúng tôi</Link>
+            <Link href="/huong-dan" className="hover:text-blue-600 transition-colors">Hướng dẫn</Link>
+            <Link href="/auth/login" className="hover:text-blue-600 transition-colors text-slate-400">Quản trị</Link>
           </nav>
 
-          <Link href="/auth/login">
-            <Button variant="outline" className="text-blue-600 border-blue-600 hover:bg-blue-50 rounded-full px-6">
-              <UserCircle className="mr-2 h-5 w-5" />
-              Đăng nhập
-            </Button>
-          </Link>
+          <div className="flex items-center gap-4">
+            <div className="hidden sm:flex items-center gap-2 pr-4 border-r border-slate-200 text-xs font-bold text-slate-500 uppercase tracking-widest">
+              <Globe className="w-4 h-4 text-slate-400" />
+              <span className="cursor-pointer hover:text-blue-600 text-blue-600">VN</span>
+              <span className="text-slate-300">|</span>
+              <span className="cursor-pointer hover:text-blue-600">EN</span>
+            </div>
+            <Link href="/auth/login">
+              <Button variant="outline" className="text-blue-600 border-blue-200 hover:border-blue-300 hover:bg-blue-50/50 rounded-xl px-5 gap-2 font-bold transition-all shadow-sm">
+                <UserCircle className="h-5 w-5 text-blue-500" />
+                <span>Đăng nhập</span>
+              </Button>
+            </Link>
+          </div>
         </div>
       </header>
 
       {/* 2. HERO BANNER & QUICK ACTIONS */}
-      <section className="relative bg-gradient-to-r from-blue-900 to-blue-700 text-white overflow-hidden shadow-lg">
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1584362917165-526a968579e8?q=80&w=2000')] bg-cover bg-center opacity-10 mix-blend-overlay"></div>
-        
-        <div className="relative max-w-7xl mx-auto px-6 py-24 md:py-32 flex flex-col items-center text-center z-10">
-          <span className="inline-flex items-center gap-2 py-1.5 px-4 rounded-full bg-blue-500/20 border border-blue-400/50 text-sm font-medium mb-6 backdrop-blur-sm">
-            <ShieldCheck className="w-4 h-4" /> Chăm sóc bằng tài năng, y đức và sự thấu cảm
+      <section className="relative pt-16 pb-20 md:pt-24 md:pb-28 px-6">
+        <div className="max-w-6xl mx-auto flex flex-col items-center text-center relative z-10">
+          
+          {/* Top Intro Badge */}
+          <span className="inline-flex items-center gap-2 py-2 px-5 rounded-full bg-blue-50 border border-blue-100 text-xs font-bold uppercase tracking-widest text-blue-600 mb-8 shadow-sm">
+            <Sparkles className="w-4 h-4 text-blue-500" /> Tiêu chuẩn y khoa - Đội ngũ chuyên gia
           </span>
-          <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-6 max-w-4xl leading-[1.15]">
-            Hệ thống Y tế <br />
-            <span className="text-blue-300">Chăm sóc sức khỏe đôi mắt hàng đầu</span>
+
+          {/* Main Title */}
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-black tracking-tight mb-8 max-w-5xl leading-[1.1] text-slate-900">
+            Ánh Sáng Khát Vọng <br className="hidden md:inline" />
+            <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-800 bg-clip-text text-transparent">Trọn Vẹn Niềm Tin</span>
           </h1>
-          <p className="text-lg md:text-xl max-w-2xl text-blue-100 mb-12 leading-relaxed font-light">
-            Trải nghiệm dịch vụ khám chữa bệnh tiêu chuẩn quốc tế với đội ngũ chuyên gia nhãn khoa tận tâm và hệ thống trang thiết bị hiện đại.
+
+          {/* Subtitle */}
+          <p className="text-sm sm:text-base md:text-lg max-w-3xl text-slate-500 mb-12 leading-relaxed font-medium">
+            Trải nghiệm dịch vụ khám chữa bệnh nhãn khoa tiêu chuẩn quốc tế. Quy tụ đội ngũ chuyên gia đầu ngành cùng trang thiết bị đo khám khúc xạ hiện đại nhất từ Đức và Mỹ.
           </p>
           
-          {/* Box 3 Hành động chính giống Vinmec */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full max-w-4xl bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/20">
-            <Link href="tel:19001000" className="w-full">
-              <Button size="lg" className="bg-white/20 hover:bg-white/30 text-white w-full text-base font-semibold h-16 transition-all border-none flex flex-col items-center justify-center gap-1">
-                <div className="flex items-center">
-                  <Phone className="mr-2 h-5 w-5 text-blue-300" /> Gọi tổng đài
-                </div>
-                <span className="text-xs font-light text-blue-100">Tư vấn và giải đáp</span>
-              </Button>
-            </Link>
-
+          {/* Quick Actions Panel (Bright White Card) */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 w-full max-w-4xl bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xl shadow-slate-200/50">
+            
             <Link href="/booking" className="w-full">
-              <Button size="lg" className="bg-blue-500 hover:bg-blue-600 text-white w-full text-base font-semibold h-16 shadow-md transition-all border-none flex flex-col items-center justify-center gap-1 hover:scale-105">
-                <div className="flex items-center">
-                  <CalendarDays className="mr-2 h-5 w-5" /> Đặt Lịch Hẹn
+              <div className="bg-gradient-to-br from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white w-full rounded-2xl h-20 px-5 flex items-center gap-4 transition-all duration-300 transform hover:scale-[1.02] shadow-lg shadow-blue-500/20 cursor-pointer">
+                <div className="p-3 bg-white/10 rounded-xl">
+                  <CalendarDays className="h-6 w-6 text-white" />
                 </div>
-                <span className="text-xs font-light text-blue-100">Nhanh chóng, tiện lợi</span>
-              </Button>
+                <div className="text-left">
+                  <p className="text-base font-bold">Đặt Lịch Hẹn Khám</p>
+                  <p className="text-xs text-blue-100">Đặt lịch khám online nhanh chóng</p>
+                </div>
+              </div>
             </Link>
 
-            <Link href="/find-doctor" className="w-full">
-              <Button size="lg" className="bg-white/20 hover:bg-white/30 text-white w-full text-base font-semibold h-16 transition-all border-none flex flex-col items-center justify-center gap-1">
-                <div className="flex items-center">
-                  <Stethoscope className="mr-2 h-5 w-5 text-blue-300" /> Tìm bác sĩ
+            <Link href="/chuyen-khoa" className="w-full">
+              <div className="bg-slate-50 hover:bg-slate-100/80 border border-slate-200 text-slate-800 w-full rounded-2xl h-20 px-5 flex items-center gap-4 transition-all duration-300 transform hover:scale-[1.02] cursor-pointer">
+                <div className="p-3 bg-blue-100 text-blue-600 rounded-xl">
+                  <Stethoscope className="h-6 w-6" />
                 </div>
-                <span className="text-xs font-light text-blue-100">Chuyên gia y tế hàng đầu</span>
-              </Button>
+                <div className="text-left">
+                  <p className="text-base font-bold">Tìm Bác Sĩ Chuyên Khoa</p>
+                  <p className="text-xs text-slate-500">Đội ngũ bác sĩ đầu ngành nhãn khoa</p>
+                </div>
+              </div>
             </Link>
+
+            <Link href="tel:19009999" className="w-full">
+              <div className="bg-slate-50 hover:bg-slate-100/80 border border-slate-200 text-slate-800 w-full rounded-2xl h-20 px-5 flex items-center gap-4 transition-all duration-300 transform hover:scale-[1.02] cursor-pointer">
+                <div className="p-3 bg-emerald-100 text-emerald-600 rounded-xl">
+                  <Phone className="h-6 w-6" />
+                </div>
+                <div className="text-left">
+                  <p className="text-base font-bold">Tổng Đài: 1900 9999</p>
+                  <p className="text-xs text-slate-500">Tư vấn khẩn cấp và giải đáp thắc mắc</p>
+                </div>
+              </div>
+            </Link>
+
           </div>
         </div>
       </section>
 
-      {/* 3. KHU VỰC TÍNH NĂNG NỔI BẬT */}
-      <section className="py-20 bg-slate-50 max-w-7xl mx-auto px-4 w-full">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold text-blue-900 mb-4">Tại sao nên chọn VisionCare?</h2>
-          <p className="text-slate-500 max-w-2xl mx-auto text-lg">Chất lượng dịch vụ chuẩn quốc tế mang đến sự an tâm tuyệt đối cho đôi mắt của bạn.</p>
+      {/* 3. CLINIC STATS BANNER */}
+      <section className="border-y border-slate-200/80 bg-white relative z-10 shadow-sm">
+        <div className="max-w-6xl mx-auto px-6 py-10 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+          <div className="space-y-1">
+            <h3 className="text-3xl md:text-4xl font-black bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent font-mono">15.000+</h3>
+            <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Ca Khám Thành Công</p>
+          </div>
+          <div className="space-y-1">
+            <h3 className="text-3xl md:text-4xl font-black bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent font-mono">99%</h3>
+            <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Bệnh Nhân Hài Lòng</p>
+          </div>
+          <div className="space-y-1">
+            <h3 className="text-3xl md:text-4xl font-black bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent font-mono">25+</h3>
+            <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Bác Sĩ Đầu Ngành</p>
+          </div>
+          <div className="space-y-1">
+            <h3 className="text-3xl md:text-4xl font-black bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent font-mono">100%</h3>
+            <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Thiết Bị Đức & Mỹ</p>
+          </div>
+        </div>
+      </section>
+
+      {/* 4. CLINIC ADVANTAGES */}
+      <section className="py-24 max-w-7xl mx-auto px-6 w-full relative z-10">
+        <div className="text-center mb-16 space-y-3">
+          <span className="text-xs font-bold text-blue-600 uppercase tracking-widest">Giá Trị Cốt Lõi</span>
+          <h2 className="text-3xl md:text-4xl font-black text-slate-900">Tại sao chọn VisionCare?</h2>
+          <p className="text-slate-500 max-w-2xl mx-auto text-sm sm:text-base">Chúng tôi cam kết chất lượng chăm sóc sức khỏe mắt tối ưu với công nghệ và y đức.</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Card 1 */}
-          <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
-            <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 mb-6 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-              <Stethoscope className="w-8 h-8" />
+          <div className="bg-white p-8 rounded-3xl border border-slate-200/80 hover:border-blue-300 transition-all duration-300 group shadow-md hover:shadow-xl hover:shadow-blue-500/5">
+            <div className="w-14 h-14 bg-blue-50 border border-blue-100 rounded-2xl flex items-center justify-center text-blue-600 mb-6 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">
+              <Award className="w-7 h-7" />
             </div>
-            <h3 className="text-xl font-bold mb-3 text-slate-800">Chuyên gia hàng đầu</h3>
-            <p className="text-slate-600 leading-relaxed text-sm">
-              VisionCare quy tụ đội ngũ chuyên gia, bác sĩ có trình độ chuyên môn cao, tận tâm và chuyên nghiệp, luôn đặt người bệnh làm trung tâm.
+            <h3 className="text-xl font-bold mb-3 text-slate-800">Đội ngũ Chuyên Gia</h3>
+            <p className="text-slate-500 leading-relaxed text-sm">
+              Quy tụ các bác sĩ chuyên khoa mắt từng làm việc tại các bệnh viện lớn trung ương, giàu kinh nghiệm và liên tục cập nhật phác đồ điều trị quốc tế.
             </p>
           </div>
 
           {/* Card 2 */}
-          <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
-            <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 mb-6 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-              <ShieldCheck className="w-8 h-8" />
+          <div className="bg-white p-8 rounded-3xl border border-slate-200/80 hover:border-emerald-300 transition-all duration-300 group shadow-md hover:shadow-xl hover:shadow-emerald-500/5">
+            <div className="w-14 h-14 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-center justify-center text-emerald-600 mb-6 group-hover:bg-emerald-600 group-hover:text-white transition-all duration-300">
+              <HeartHandshake className="w-7 h-7" />
             </div>
-            <h3 className="text-xl font-bold mb-3 text-slate-800">Chất lượng quốc tế</h3>
-            <p className="text-slate-600 leading-relaxed text-sm">
-              Được quản lý và vận hành dưới sự giám sát khắt khe, đảm bảo cung cấp dịch vụ chăm sóc sức khỏe mắt toàn diện và an toàn nhất.
+            <h3 className="text-xl font-bold mb-3 text-slate-800">Dịch Vụ Toàn Diện</h3>
+            <p className="text-slate-500 leading-relaxed text-sm">
+              Đáp ứng đầy đủ mọi nhu cầu từ đo khúc xạ kính thuốc, gia công mài lắp ráp tròng kính chất lượng cao cho đến điều trị đục thủy tinh thể, glaucoma.
             </p>
           </div>
 
           {/* Card 3 */}
-          <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
-            <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 mb-6 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-              <Eye className="w-8 h-8" />
+          <div className="bg-white p-8 rounded-3xl border border-slate-200/80 hover:border-indigo-300 transition-all duration-300 group shadow-md hover:shadow-xl hover:shadow-indigo-500/5">
+            <div className="w-14 h-14 bg-indigo-50 border border-indigo-100 rounded-2xl flex items-center justify-center text-indigo-600 mb-6 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-300">
+              <Activity className="w-7 h-7" />
             </div>
-            <h3 className="text-xl font-bold mb-3 text-slate-800">Công nghệ tiên tiến</h3>
-            <p className="text-slate-600 leading-relaxed text-sm">
-              Sở hữu cơ sở vật chất hạng nhất với các thiết bị đo khám thị lực và phẫu thuật nhập khẩu 100% từ Đức, Mỹ, Nhật Bản.
+            <h3 className="text-xl font-bold mb-3 text-slate-800">Hạ Tầng Hiện Đại</h3>
+            <p className="text-slate-500 leading-relaxed text-sm">
+              Đầu tư 100% trang thiết bị đo mắt, máy mài tròng kính kỹ thuật số nhập khẩu từ các tập đoàn hàng đầu thế giới (Zeiss Đức, Essilor Pháp).
             </p>
           </div>
         </div>
       </section>
 
-      {/* 4. CALL TO ACTION - MUA KÍNH */}
-      <section className="py-16 mb-10">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex flex-col md:flex-row items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50 p-10 md:p-14 rounded-3xl border border-blue-100 shadow-sm relative overflow-hidden">
-            {/* Decal trang trí */}
-            <div className="absolute -right-10 -top-10 text-blue-100/50">
-              <Eye className="w-64 h-64" />
+      {/* 5. CALL TO ACTION - GLASSES WORKSHOP (High Contrast Medical Blue Card) */}
+      <section className="py-16 mb-16 relative z-10">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="relative flex flex-col lg:flex-row items-center justify-between bg-gradient-to-r from-blue-700 to-indigo-800 border border-blue-800 p-8 md:p-14 rounded-3xl shadow-2xl overflow-hidden text-white">
+            {/* Decal Background Eye Icon */}
+            <div className="absolute right-[-5%] bottom-[-15%] text-white/5 pointer-events-none">
+              <Glasses className="w-80 h-80 rotate-12" />
             </div>
             
-            <div className="mb-8 md:mb-0 relative z-10">
-              <h2 className="text-3xl font-bold text-blue-950 mb-3">Bạn cần cắt kính cận/viễn?</h2>
-              <p className="text-blue-800/80 text-lg">Khám phá bộ sưu tập gọng kính thời trang và tròng kính chất lượng cao ngay hôm nay.</p>
+            <div className="mb-8 lg:mb-0 relative z-10 space-y-3 text-left">
+              <span className="text-xs font-black uppercase text-white tracking-widest bg-white/10 border border-white/20 px-3 py-1 rounded-md">
+                Gian hàng Nhãn Khoa
+              </span>
+              <h2 className="text-3xl font-black text-white">Bạn đang cần cắt kính cận, viễn hay loạn thị?</h2>
+              <p className="text-blue-100 text-sm md:text-base max-w-xl">
+                Khám phá ngay bộ sưu tập gọng kính thời trang cao cấp kết hợp với tròng kính chống ánh sáng xanh, chống lóa chuẩn y khoa của chúng tôi.
+              </p>
             </div>
-            <Link href="/products" className="relative z-10 w-full md:w-auto">
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-8 h-14 w-full text-base shadow-lg shadow-blue-200">
-                Xem gian hàng kính <ArrowRight className="ml-2 w-5 h-5" />
+            
+            <Link href="/ve-chung-toi" className="relative z-10 w-full lg:w-auto flex-shrink-0">
+              <Button className="bg-white hover:bg-slate-100 text-blue-800 rounded-xl px-8 h-14 w-full lg:w-auto text-base font-bold shadow-lg transition-all duration-300">
+                Tìm hiểu về Sản Phẩm <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
             </Link>
           </div>
         </div>
       </section>
+
+      {/* 6. PARTNERS LOGO */}
+      <section className="py-10 border-t border-slate-200 bg-white relative z-10 text-center">
+        <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-6">Đối Tác Tròng Kính & Trang Thiết Bị Chính Thức</p>
+        <div className="flex flex-wrap justify-center items-center gap-10 md:gap-16 opacity-45 grayscale hover:opacity-75 transition-opacity duration-300">
+          <span className="text-lg font-black tracking-wider text-slate-700">ZEISS</span>
+          <span className="text-lg font-black tracking-wider text-slate-700">ESSILOR</span>
+          <span className="text-lg font-black tracking-wider text-slate-700">HOYA</span>
+          <span className="text-lg font-black tracking-wider text-slate-700">RODENSTOCK</span>
+        </div>
+      </section>
+
+      {/* FOOTER */}
+      <footer className="bg-slate-900 py-12 text-slate-400 text-xs text-center border-t border-slate-800 relative z-10">
+        <p className="font-bold text-slate-300 text-sm">VISION CARE EYE CLINIC SYSTEM</p>
+        <p className="mt-2 text-slate-500">© 2026 VisionCare. Bảo lưu mọi quyền.</p>
+        <p className="mt-1 text-slate-500">Địa chỉ: 123 Đường Tôn Đức Thắng, Quận 1, TP.HCM | Hotline: 1900 9999</p>
+      </footer>
     </div>
   );
 }
