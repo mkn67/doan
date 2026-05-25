@@ -296,6 +296,8 @@ BEGIN
         UPDATE HANG_CHO SET TRANG_THAI = p_trang_thai,
             GIO_VAO_KHAM = NVL(p_gio_vao_kham, SYSTIMESTAMP)
         WHERE MAHC = p_mahc;
+    ELSIF v_current_state = N'Đang chờ' AND p_trang_thai = N'Bỏ về' THEN
+        UPDATE HANG_CHO SET TRANG_THAI = p_trang_thai WHERE MAHC = p_mahc;
     ELSIF v_current_state = N'Đang khám' AND p_trang_thai IN (N'Hoàn thành', N'Bỏ về') THEN
         UPDATE HANG_CHO SET TRANG_THAI = p_trang_thai WHERE MAHC = p_mahc;
         IF v_malh IS NOT NULL THEN
