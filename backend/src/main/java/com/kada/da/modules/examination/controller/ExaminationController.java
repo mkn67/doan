@@ -50,20 +50,20 @@ public class ExaminationController {
         sp.registerStoredProcedureParameter("p_pd", Double.class, ParameterMode.IN);
         sp.registerStoredProcedureParameter("p_madon_out", String.class, ParameterMode.OUT);
 
-        // Gán giá trị (ép kiểu về Double để tương thích với NUMBER trong SP)
+        // Gán giá trị (ép kiểu về Double để tương thích với NUMBER trong SP, thêm null check để tránh NullPointerException)
         sp.setParameter("p_mahoso", null); // Trigger sẽ tự sinh mã HS
         sp.setParameter("p_makh", req.getMakh());
         sp.setParameter("p_mans", req.getMans());
-        sp.setParameter("p_ketluan", req.getKetluan());
-        sp.setParameter("p_mat_trai_sph", req.getMatTraiSph().doubleValue());
-        sp.setParameter("p_mat_trai_cyl", req.getMatTraiCyl().doubleValue());
-        sp.setParameter("p_mat_trai_ax", req.getMatTraiAx());
+        sp.setParameter("p_ketluan", req.getKetluan() != null ? req.getKetluan() : "Bình thường");
+        sp.setParameter("p_mat_trai_sph", req.getMatTraiSph() != null ? req.getMatTraiSph().doubleValue() : 0.0);
+        sp.setParameter("p_mat_trai_cyl", req.getMatTraiCyl() != null ? req.getMatTraiCyl().doubleValue() : 0.0);
+        sp.setParameter("p_mat_trai_ax", req.getMatTraiAx() != null ? req.getMatTraiAx() : 0);
         sp.setParameter("p_docong_trai", req.getDoCongTrai() != null ? req.getDoCongTrai().doubleValue() : null);
-        sp.setParameter("p_mat_phai_sph", req.getMatPhaiSph().doubleValue());
-        sp.setParameter("p_mat_phai_cyl", req.getMatPhaiCyl().doubleValue());
-        sp.setParameter("p_mat_phai_ax", req.getMatPhaiAx());
+        sp.setParameter("p_mat_phai_sph", req.getMatPhaiSph() != null ? req.getMatPhaiSph().doubleValue() : 0.0);
+        sp.setParameter("p_mat_phai_cyl", req.getMatPhaiCyl() != null ? req.getMatPhaiCyl().doubleValue() : 0.0);
+        sp.setParameter("p_mat_phai_ax", req.getMatPhaiAx() != null ? req.getMatPhaiAx() : 0);
         sp.setParameter("p_docong_phai", req.getDoCongPhai() != null ? req.getDoCongPhai().doubleValue() : null);
-        sp.setParameter("p_pd", req.getPd().doubleValue());
+        sp.setParameter("p_pd", req.getPd() != null ? req.getPd().doubleValue() : 60.0);
 
         // Thực thi
         sp.execute();

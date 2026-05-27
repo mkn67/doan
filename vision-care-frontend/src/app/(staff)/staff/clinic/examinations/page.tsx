@@ -33,8 +33,13 @@ const examSchema = z.object({
   maKh: z.string().min(1, "Vui lòng nhập mã khách hàng"),
   maNs: z.string().min(1, "Vui lòng nhập mã bác sĩ"),
   matTraiSph: z.any(),
+  matTraiCyl: z.any().optional(),
+  matTraiAx: z.any().optional(),
   matPhaiSph: z.any(),
+  matPhaiCyl: z.any().optional(),
+  matPhaiAx: z.any().optional(),
   pd: z.any(),
+  ketluan: z.string().min(1, "Vui lòng điền kết luận của bác sĩ"),
 });
 
 type ExamFormValues = z.infer<typeof examSchema>;
@@ -155,8 +160,13 @@ function ExaminationContent() {
       maKh: patientIdFromUrl,
       maNs: "", 
       matTraiSph: 0,
+      matTraiCyl: 0,
+      matTraiAx: 0,
       matPhaiSph: 0,
+      matPhaiCyl: 0,
+      matPhaiAx: 0,
       pd: 60,
+      ketluan: "Thị lực ổn định, khúc xạ bình thường",
     },
   });
 
@@ -176,7 +186,7 @@ function ExaminationContent() {
     }
   }, [form]);
 
-  // Mock auto-refractor file reader
+  // Auto-refractor file reader
   const handleAutoRefractorFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -185,21 +195,36 @@ function ExaminationContent() {
     reader.onload = (event) => {
       const text = event.target?.result as string;
       
-      let odSph = 0;
-      let osSph = 0;
+      let odSph = 0; let odCyl = 0; let odAx = 0;
+      let osSph = 0; let osCyl = 0; let osAx = 0;
       let pdVal = 60;
 
-      // Regex parse standard values from file (e.g. "OD: -2.50 SPH", "OS: -3.00 SPH", "PD: 62")
+      // Regex parse standard values from file
       const odMatch = text.match(/OD:?\s*SPH?\s*([+-]?\d+\.?\d*)/i) || text.match(/OD\s*([+-]?\d+\.?\d*)/i);
       const osMatch = text.match(/OS:?\s*SPH?\s*([+-]?\d+\.?\d*)/i) || text.match(/OS\s*([+-]?\d+\.?\d*)/i);
+      
+      const odCylMatch = text.match(/OD:?\s*.*CYL?\s*([+-]?\d+\.?\d*)/i);
+      const odAxMatch = text.match(/OD:?\s*.*AX(?:IS)?\s*(\d+)/i);
+      const osCylMatch = text.match(/OS:?\s*.*CYL?\s*([+-]?\d+\.?\d*)/i);
+      const osAxMatch = text.match(/OS:?\s*.*AX(?:IS)?\s*(\d+)/i);
+
       const pdMatch = text.match(/PD:?\s*(\d+)/i);
 
       if (odMatch) odSph = parseFloat(odMatch[1]);
       if (osMatch) osSph = parseFloat(osMatch[1]);
       if (pdMatch) pdVal = parseInt(pdMatch[1]);
+      
+      if (odCylMatch) odCyl = parseFloat(odCylMatch[1]);
+      if (odAxMatch) odAx = parseInt(odAxMatch[1]);
+      if (osCylMatch) osCyl = parseFloat(osCylMatch[1]);
+      if (osAxMatch) osAx = parseInt(osAxMatch[1]);
 
       form.setValue("matPhaiSph", odSph);
+      form.setValue("matPhaiCyl", odCyl);
+      form.setValue("matPhaiAx", odAx);
       form.setValue("matTraiSph", osSph);
+      form.setValue("matTraiCyl", osCyl);
+      form.setValue("matTraiAx", osAx);
       form.setValue("pd", pdVal);
       toast.success("✅ Đã nạp chỉ số tự động từ tệp máy khúc xạ!");
     };
@@ -211,8 +236,13 @@ function ExaminationContent() {
       makh: values.maKh,
       mans: values.maNs,
       matTraiSph: Number(values.matTraiSph) || 0,
+      matTraiCyl: Number(values.matTraiCyl) || 0,
+      matTraiAx: Number(values.matTraiAx) || 0,
       matPhaiSph: Number(values.matPhaiSph) || 0,
+      matPhaiCyl: Number(values.matPhaiCyl) || 0,
+      matPhaiAx: Number(values.matPhaiAx) || 0,
       pd: Number(values.pd) || 60,
+      ketluan: values.ketluan,
     };
 
     const promise = new Promise((resolve, reject) => {
@@ -289,7 +319,11 @@ function ExaminationContent() {
                       <FormItem>
                         <FormLabel>Mã Bệnh nhân</FormLabel>
                         <FormControl>
-                          <Input readOnly className="bg-slate-100 font-mono" {...field} />
+                          <Input 
+                            readOnly={!!patientIdFromUrl} 
+                            className={`font-mono ${patientIdFromUrl ? 'bg-slate-100' : 'bg-white'}`} 
+                            {...field} 
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -305,58 +339,153 @@ function ExaminationContent() {
                     )} />
                   </div>
 
-                  <div className="p-5 border border-slate-200 rounded-2xl bg-slate-50/50 space-y-5">
-                    <h3 className="font-bold flex items-center text-slate-700 uppercase text-xs tracking-wider">
-                      <Eye className="w-4 h-4 mr-2 text-blue-500" /> Chỉ số cầu độ (SPH)
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      <FormField control={form.control} name="matTraiSph" render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Mắt Trái (OS)</FormLabel>
-                          <FormControl>
-                            <Input 
-                              type="number" 
-                              step="0.25" 
-                              className="bg-white" 
-                              placeholder="0.00" 
-                              {...field} 
-                              onChange={(e) => field.onChange(e.target.value === "" ? "" : Number(e.target.value))}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )} />
-                      <FormField control={form.control} name="matPhaiSph" render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Mắt Phải (OD)</FormLabel>
-                          <FormControl>
-                            <Input 
-                              type="number" 
-                              step="0.25" 
-                              className="bg-white" 
-                              placeholder="0.00" 
-                              {...field} 
-                              onChange={(e) => field.onChange(e.target.value === "" ? "" : Number(e.target.value))}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )} />
-                      <FormField control={form.control} name="pd" render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>KC đồng tử (PD - mm)</FormLabel>
-                          <FormControl>
-                            <Input 
-                              type="number" 
-                              className="bg-white font-mono" 
-                              placeholder="60" 
-                              {...field} 
-                              onChange={(e) => field.onChange(e.target.value === "" ? "" : Number(e.target.value))}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )} />
+                  <div className="p-5 border border-slate-200 rounded-2xl bg-slate-50/50 space-y-6">
+                    {/* Mắt Phải (OD) */}
+                    <div>
+                      <h3 className="font-bold flex items-center text-slate-800 uppercase text-xs tracking-wider mb-3">
+                        <Eye className="w-4 h-4 mr-2 text-blue-600" /> Mắt Phải (OD)
+                      </h3>
+                      <div className="grid grid-cols-3 gap-4 bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+                        <FormField control={form.control} name="matPhaiSph" render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs text-slate-500 font-semibold">Cầu độ (SPH)</FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="number" 
+                                step="0.25" 
+                                className="bg-white h-9" 
+                                placeholder="0.00" 
+                                {...field} 
+                                onChange={(e) => field.onChange(e.target.value === "" ? "" : Number(e.target.value))}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+                        <FormField control={form.control} name="matPhaiCyl" render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs text-slate-500 font-semibold">Loạn độ (CYL)</FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="number" 
+                                step="0.25" 
+                                className="bg-white h-9" 
+                                placeholder="0.00" 
+                                {...field} 
+                                onChange={(e) => field.onChange(e.target.value === "" ? "" : Number(e.target.value))}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+                        <FormField control={form.control} name="matPhaiAx" render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs text-slate-500 font-semibold">Trục (AXIS)</FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="number" 
+                                className="bg-white h-9" 
+                                placeholder="0" 
+                                {...field} 
+                                onChange={(e) => field.onChange(e.target.value === "" ? "" : Number(e.target.value))}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+                      </div>
+                    </div>
+
+                    {/* Mắt Trái (OS) */}
+                    <div>
+                      <h3 className="font-bold flex items-center text-slate-800 uppercase text-xs tracking-wider mb-3">
+                        <Eye className="w-4 h-4 mr-2 text-indigo-600" /> Mắt Trái (OS)
+                      </h3>
+                      <div className="grid grid-cols-3 gap-4 bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+                        <FormField control={form.control} name="matTraiSph" render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs text-slate-500 font-semibold">Cầu độ (SPH)</FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="number" 
+                                step="0.25" 
+                                className="bg-white h-9" 
+                                placeholder="0.00" 
+                                {...field} 
+                                onChange={(e) => field.onChange(e.target.value === "" ? "" : Number(e.target.value))}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+                        <FormField control={form.control} name="matTraiCyl" render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs text-slate-500 font-semibold">Loạn độ (CYL)</FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="number" 
+                                step="0.25" 
+                                className="bg-white h-9" 
+                                placeholder="0.00" 
+                                {...field} 
+                                onChange={(e) => field.onChange(e.target.value === "" ? "" : Number(e.target.value))}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+                        <FormField control={form.control} name="matTraiAx" render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs text-slate-500 font-semibold">Trục (AXIS)</FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="number" 
+                                className="bg-white h-9" 
+                                placeholder="0" 
+                                {...field} 
+                                onChange={(e) => field.onChange(e.target.value === "" ? "" : Number(e.target.value))}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+                      </div>
+                    </div>
+
+                    {/* PD & Kết luận */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+                      <div className="md:col-span-1">
+                        <FormField control={form.control} name="pd" render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="font-semibold text-xs text-slate-700">KC đồng tử (PD - mm)</FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="number" 
+                                className="bg-white font-mono h-10" 
+                                placeholder="60" 
+                                {...field} 
+                                onChange={(e) => field.onChange(e.target.value === "" ? "" : Number(e.target.value))}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+                      </div>
+                      <div className="md:col-span-2">
+                        <FormField control={form.control} name="ketluan" render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="font-semibold text-xs text-slate-700">Kết luận khám bệnh</FormLabel>
+                            <FormControl>
+                              <Input 
+                                className="bg-white h-10 font-medium" 
+                                placeholder="Nhập kết luận của bác sĩ..." 
+                                {...field} 
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+                      </div>
                     </div>
                   </div>
 
