@@ -18,11 +18,18 @@ import {
 import { useSearchParams, useRouter } from "next/navigation"; 
 import { AxiosError } from "axios";
 
-import { useCreateHoSoKham } from "@/hooks/useClinic"; 
+import { useCreateHoSoKham, useHangChoHomNay } from "@/hooks/useClinic"; 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { HoSoKhamRequest } from "@/types/clinic";
 import { toast } from "sonner";
 
@@ -153,6 +160,10 @@ function ExaminationContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const patientIdFromUrl = searchParams.get("makh") || "";
+
+  const [isManualInput, setIsManualInput] = useState(false);
+  const { data: queueData } = useHangChoHomNay();
+  const queueList = queueData || [];
 
   const form = useForm<ExamFormValues>({
     resolver: zodResolver(examSchema),
@@ -317,13 +328,51 @@ function ExaminationContent() {
                   <div className="grid grid-cols-2 gap-4">
                     <FormField control={form.control} name="maKh" render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Mã Bệnh nhân</FormLabel>
+                        <div className="flex items-center justify-between">
+                          <FormLabel>Mã Bệnh nhân</FormLabel>
+                          {!patientIdFromUrl && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIsManualInput(!isManualInput);
+                                form.setValue("maKh", "");
+                              }}
+                              className="text-xs text-blue-600 hover:text-blue-700 font-semibold focus:outline-none"
+                            >
+                              {isManualInput ? "Chọn từ hàng chờ" : "Tự nhập mã"}
+                            </button>
+                          )}
+                        </div>
                         <FormControl>
-                          <Input 
-                            readOnly={!!patientIdFromUrl} 
-                            className={`font-mono ${patientIdFromUrl ? 'bg-slate-100' : 'bg-white'}`} 
-                            {...field} 
-                          />
+                          {isManualInput || patientIdFromUrl ? (
+                            <Input 
+                              readOnly={!!patientIdFromUrl} 
+                              className={`font-mono h-11 ${patientIdFromUrl ? 'bg-slate-100' : 'bg-white'}`} 
+                              placeholder="Nhập mã bệnh nhân (VD: KH001)"
+                              {...field} 
+                            />
+                          ) : (
+                            <Select 
+                              value={field.value} 
+                              onValueChange={field.onChange}
+                            >
+                              <SelectTrigger className="bg-white rounded-xl h-11 border-slate-200">
+                                <SelectValue placeholder="Chọn bệnh nhân..." />
+                              </SelectTrigger>
+                              <SelectContent className="bg-white/95 backdrop-blur-xl rounded-xl border-slate-100 max-h-60">
+                                {queueList.map((patient: any) => (
+                                  <SelectItem key={patient.maKh + "-" + patient.maHc} value={patient.maKh} className="rounded-lg">
+                                    {patient.maKh} - {patient.tenKhach} (STT #{patient.soThuTu} - {patient.trangThai === "DANG_KHAM" ? "Đang khám" : "Chờ khám"})
+                                  </SelectItem>
+                                ))}
+                                {queueList.length === 0 && (
+                                  <SelectItem value="none" disabled className="text-slate-400">
+                                    Không có bệnh nhân trong hàng chờ
+                                  </SelectItem>
+                                )}
+                              </SelectContent>
+                            </Select>
+                          )}
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -332,7 +381,7 @@ function ExaminationContent() {
                       <FormItem>
                         <FormLabel>Bác sĩ khám</FormLabel>
                         <FormControl>
-                          <Input readOnly className="bg-slate-100 font-semibold text-blue-600" {...field} />
+                          <Input readOnly className="bg-slate-100 font-semibold text-blue-600 h-11" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
