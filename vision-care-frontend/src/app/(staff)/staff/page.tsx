@@ -32,18 +32,20 @@ export default function StaffGeneralDashboard() {
     if (userStr) {
       const user = JSON.parse(userStr);
       
-      const roles: Record<string, string> = {
-        "NH04": "Quản trị viên",
-        "NH01": "Bác sĩ chuyên khoa",
-        "NH06": "Lễ tân",
-        "NH03": "Thủ kho",
-        "NH02": "Thu ngân"
-      };
-
       // 🛠️ DÙNG SETTIMEOUT ĐỂ TRỊ LỖI "set-state-in-effect"
       const timer = setTimeout(() => {
         setUserName(user.username);
-        setRoleName(roles[user.loaiTk] || "Nhân sự");
+        
+        const userRoles = user.roles || [];
+        let rName = "Nhân sự";
+        if (userRoles.includes("ROLE_ADMIN")) rName = "Quản trị viên";
+        else if (userRoles.includes("ROLE_BAC_SI")) rName = "Bác sĩ chuyên khoa";
+        else if (userRoles.includes("ROLE_LE_TAN")) rName = "Lễ tân";
+        else if (userRoles.includes("ROLE_THU_KHO")) rName = "Thủ kho";
+        else if (userRoles.includes("ROLE_THU_NGAN")) rName = "Thu ngân";
+        else if (userRoles.includes("ROLE_KY_THUAT")) rName = "Kỹ thuật viên";
+
+        setRoleName(rName);
         setIsMounted(true);
       }, 0);
 
