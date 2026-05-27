@@ -73,20 +73,18 @@ public class LichHenRepositoryCustomImpl implements LichHenRepositoryCustom {
         query.execute();
     }
 
-    @Override
-    public Page<LichHen> findAllWithFilter(LichHenFilterDTO filter) {
-        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
-        CriteriaQuery<LichHen> query = cb.createQuery(LichHen.class);
-        Root<LichHen> root = query.from(LichHen.class);
+    private List<Predicate> getPredicates(CriteriaBuilder cb, Root<LichHen> root, LichHenFilterDTO filter) {
         List<Predicate> predicates = new ArrayList<>();
 
-        // 1. Lọc theo Keyword (Tên hoặc SĐT khách hàng) - Join với bảng KhachHang
+        // 1. Lọc theo Keyword (Tên, SĐT, hoặc Mã khách hàng) - Join với bảng KhachHang
         if (filter.getKeyword() != null && !filter.getKeyword().isEmpty()) {
             Join<Object, Object> khachHangJoin = root.join("khachHang"); // "khachHang" là tên field trong Entity LichHen
             String pattern = "%" + filter.getKeyword().toLowerCase() + "%";
             predicates.add(cb.or(
                     cb.like(cb.lower(khachHangJoin.get("hoTen")), pattern),
-                    cb.like(khachHangJoin.get("sdt"), pattern)));
+                    cb.like(khachHangJoin.get("sdt"), pattern),
+                    cb.like(cb.lower(khachHangJoin.get("maKh")), pattern) // Tìm theo Mã khách hàng (VD: KH002)
+            ));
         }
 
         // 2. Lọc theo Bác sĩ
@@ -109,6 +107,17 @@ public class LichHenRepositoryCustomImpl implements LichHenRepositoryCustom {
             predicates.add(cb.equal(root.get("trangThai"), TrangThaiLichHen.safeValueOf(filter.getTrangThai())));
         }
 
+        return predicates;
+    }
+
+    @Override
+    public Page<LichHen> findAllWithFilter(LichHenFilterDTO filter) {
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<LichHen> query = cb.createQuery(LichHen.class);
+        Root<LichHen> root = query.from(LichHen.class);
+        
+        List<Predicate> predicates = getPredicates(cb, root, filter);
+
         // Thực thi Query
         query.where(predicates.toArray(new Predicate[0]));
 
@@ -125,10 +134,13 @@ public class LichHenRepositoryCustomImpl implements LichHenRepositoryCustom {
 
         List<LichHen> resultList = typedQuery.getResultList();
 
-        // Tính tổng để phân trang
+        // Tính tổng để phân trang (Dùng root mới và predicates mới để tránh lỗi copy SqmSingularJoin trong Hibernate 6)
         CriteriaQuery<Long> countQuery = cb.createQuery(Long.class);
-        countQuery.select(cb.count(countQuery.from(LichHen.class)));
-        countQuery.where(predicates.toArray(new Predicate[0]));
+        Root<LichHen> countRoot = countQuery.from(LichHen.class);
+        List<Predicate> countPredicates = getPredicates(cb, countRoot, filter);
+        
+        countQuery.select(cb.count(countRoot));
+        countQuery.where(countPredicates.toArray(new Predicate[0]));
         Long total = entityManager.createQuery(countQuery).getSingleResult();
 
         return new PageImpl<>(resultList, PageRequest.of(filter.getPage(), filter.getSize()), total);
