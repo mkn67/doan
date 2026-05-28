@@ -2,6 +2,8 @@ package com.kada.da.modules.report.controller;
 
 import java.util.List;
 import java.time.LocalDate;
+import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -66,5 +68,56 @@ public class ReportController {
     @PreAuthorize("hasRole('ADMIN') or hasRole('LE_TAN') or hasRole('THU_NGAN')")
     public ResponseEntity<ThongKeTongQuanDTO> getThongKeTongQuan() {
         return ResponseEntity.ok(reportService.layThongKeTongQuan());
+    }
+
+    @GetMapping("/export-excel")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('LE_TAN') or hasRole('THU_NGAN')")
+    public ResponseEntity<byte[]> exportExcel(
+            @RequestParam(required = false) Integer thang,
+            @RequestParam(required = false) Integer nam) {
+        
+        int t = (thang != null) ? thang : LocalDate.now().getMonthValue();
+        int n = (nam != null) ? nam : LocalDate.now().getYear();
+        
+        List<DoanhThuResponseDTO> revenueList = reportService.thongKeDoanhThuThang(t, n);
+        
+        StringBuilder csv = new StringBuilder();
+        // BOM UTF-8 để Excel hiển thị đúng tiếng Việt
+        csv.append("\ufeff");
+        
+        csv.append("BÁO CÁO THỐNG KÊ DOANH THU VISION CARE\n");
+        csv.append("Tháng: ").append(t).append(", Năm: ").append(n).append("\n");
+        csv.append("Thời gian xuất báo cáo: ").append(java.time.LocalDateTime.now()).append("\n\n");
+        
+        csv.append("Ngày khám,Số lượng hóa đơn,Doanh thu (VND)\n");
+        
+        BigDecimal tongDoanhThu = BigDecimal.ZERO;
+        long tongSoDon = 0;
+        
+        for (DoanhThuResponseDTO item : revenueList) {
+            String ngay = item.getNgay() != null ? item.getNgay() : "N/A";
+            long soDon = item.getSoLuongDon() != null ? item.getSoLuongDon() : 0;
+            BigDecimal doanhThu = item.getDoanhThuNgay() != null ? item.getDoanhThuNgay() : BigDecimal.ZERO;
+            
+            csv.append(ngay).append(",")
+               .append(soDon).append(",")
+               .append(doanhThu).append("\n");
+               
+            tongDoanhThu = tongDoanhThu.add(doanhThu);
+            tongSoDon += soDon;
+        }
+        
+        csv.append("\n");
+        csv.append("TỔNG CỘNG,, \n");
+        csv.append("Tổng số hóa đơn:,").append(tongSoDon).append(",\n");
+        csv.append("Tổng doanh thu:,").append(tongDoanhThu).append(",VND\n");
+        
+        byte[] csvBytes = csv.toString().getBytes(StandardCharsets.UTF_8);
+        String filename = "baocao_doanhthu_" + t + "_" + n + ".csv";
+        
+        return ResponseEntity.ok()
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename)
+                .contentType(org.springframework.http.MediaType.parseMediaType("text/csv; charset=UTF-8"))
+                .body(csvBytes);
     }
 }

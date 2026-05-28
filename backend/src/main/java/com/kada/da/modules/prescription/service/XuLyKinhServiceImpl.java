@@ -11,6 +11,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kada.da.Exception.BusinessRuleException;
+import com.kada.da.modules.inventory.domain.LoHang;
+import com.kada.da.modules.inventory.domain.SanPham;
+import com.kada.da.modules.inventory.repository.LoHangRepository;
+import com.kada.da.modules.prescription.domain.CtKeDon;
 import com.kada.da.modules.prescription.domain.XuLyKinh;
 import com.kada.da.modules.prescription.dto.XuLyKinhRequestDTO;
 import com.kada.da.modules.prescription.dto.XuLyKinhResponseDTO;
@@ -27,6 +31,7 @@ import lombok.extern.slf4j.Slf4j;
 public class XuLyKinhServiceImpl implements XuLyKinhService {
 
     private final XuLyKinhRepository xuLyKinhRepository;
+    private final LoHangRepository loHangRepository;
     private final ObjectMapper objectMapper; // Dùng để ép cục JSON thông số kính thành String
 
     @Override
@@ -138,6 +143,64 @@ public class XuLyKinhServiceImpl implements XuLyKinhService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy phiếu: " + maXl));
         existing.setTrangThai("Đã hủy");
         existing.setGhiChu(lyDo);
+
+        // Check if the cancellation reason is a manufacturing error (lỗi mài/lắp)
+        boolean isMfgError = lyDo != null && (
+            lyDo.toLowerCase().contains("lỗi") ||
+            lyDo.toLowerCase().contains("hỏng") ||
+            lyDo.toLowerCase().contains("vỡ") ||
+            lyDo.toLowerCase().contains("mài") ||
+            lyDo.toLowerCase().contains("lắp") ||
+            lyDo.toLowerCase().contains("damage") ||
+            lyDo.toLowerCase().contains("error") ||
+            lyDo.toLowerCase().contains("breakage")
+        );
+
+        if (isMfgError && existing.getPhieuKeDon() != null) {
+            List<CtKeDon> details = existing.getPhieuKeDon().getChiTietKeDons();
+            if (details != null) {
+                for (CtKeDon detail : details) {
+                    SanPham sp = detail.getSanPham();
+                    // If it is a glass/lens product (laThuoc == 0 or null)
+                    if (sp != null && (sp.getLaThuoc() == null || sp.getLaThuoc() == 0)) {
+                        // Find active batches for this product and perform FIFO deduction
+                        List<LoHang> activeBatches = loHangRepository.findBySanPham(sp).stream()
+                                .filter(l -> l.getSoLuongTon() != null && l.getSoLuongTon() > 0)
+                                .sorted((l1, l2) -> {
+                                    if (l1.getNgaySanXuat() != null && l2.getNgaySanXuat() != null) {
+                                        return l1.getNgaySanXuat().compareTo(l2.getNgaySanXuat());
+                                    }
+                                    return l1.getMaLo().compareTo(l2.getMaLo());
+                                })
+                                .collect(Collectors.toList());
+
+                        if (!activeBatches.isEmpty()) {
+                            LoHang lo = activeBatches.get(0);
+                            lo.setSoLuongTon(lo.getSoLuongTon() - 1);
+                            loHangRepository.save(lo);
+
+                            log.info("[AUDIT_LOG] KTV báo hỏng kính. Đã khấu hao 1 sản phẩm {} từ lô {} theo cơ chế FIFO.", sp.getMaSp(), lo.getMaLo());
+
+                            // Write to a dedicated waste report log file
+                            try {
+                                java.nio.file.Files.writeString(
+                                    java.nio.file.Paths.get("waste_report.log"),
+                                    String.format("[%s] [WASTE_REPORT_LOG] Kính lỗi mài lắp - Phiếu XL: %s, Mã SP: %s, Tên SP: %s, Lô khấu hao: %s, Số lượng: 1, Lý do: %s\n",
+                                        LocalDateTime.now(), maXl, sp.getMaSp(), sp.getTenSp(), lo.getMaLo(), lyDo),
+                                    java.nio.file.StandardOpenOption.CREATE,
+                                    java.nio.file.StandardOpenOption.APPEND
+                                );
+                            } catch (Exception ex) {
+                                log.error("Lỗi ghi file waste_report.log: ", ex);
+                            }
+                        } else {
+                            log.warn("[AUDIT_LOG] KTV báo hỏng sản phẩm {} nhưng không còn lô hàng nào có tồn kho để khấu hao.", sp.getMaSp());
+                        }
+                    }
+                }
+            }
+        }
+
         return toDTO(xuLyKinhRepository.save(existing));
     }
 

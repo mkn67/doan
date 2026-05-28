@@ -200,11 +200,12 @@ CREATE OR REPLACE PROCEDURE SP_DAT_LICH_HEN (
     v_trung  NUMBER;
     v_malh   VARCHAR2(20);
 BEGIN
+    -- Chỉ chặn nếu bác sĩ đăng ký nghỉ (IS_NGHI = 1). Nếu chưa có lịch thì mặc định là rảnh để khách đặt dễ dàng.
     SELECT COUNT(*) INTO v_ca_lam FROM LICH_LAM_VIEC
-    WHERE MANS = p_mans AND NGAY_LAM = TRUNC(p_ngayhen) AND IS_NGHI = 0;
+    WHERE MANS = p_mans AND NGAY_LAM = TRUNC(p_ngayhen) AND IS_NGHI = 1;
     
-    IF v_ca_lam = 0 THEN
-        RAISE_APPLICATION_ERROR(-20035, 'Bác sĩ không làm việc ngày này!');
+    IF v_ca_lam > 0 THEN
+        RAISE_APPLICATION_ERROR(-20035, 'Bác sĩ đã đăng ký nghỉ ngày này!');
     END IF;
 
     SELECT COUNT(*) INTO v_trung FROM LICH_HEN
@@ -424,9 +425,7 @@ BEGIN
             RAISE_APPLICATION_ERROR(-20094, 'Mã hóa đơn không tồn tại');
     END;
 
-    IF v_trang_thai = N'Đã thanh toán' THEN
-        RAISE_APPLICATION_ERROR(-20095, 'Không thể hủy hóa đơn đã thanh toán');
-    ELSIF v_trang_thai = N'Đã hủy' THEN
+    IF v_trang_thai = N'Đã hủy' THEN
         RAISE_APPLICATION_ERROR(-20096, 'Hóa đơn này đã được hủy trước đó');
     END IF;
 

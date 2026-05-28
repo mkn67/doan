@@ -52,18 +52,18 @@ export const clinicApi = {
   },
 
   createGoiKham: async (data: GoiKhamRequest): Promise<GoiKhamResponse> => {
-    const response = await axiosClient.post(`${BASE_URL}/goikham`, data);
+    const response = await axiosClient.post(`/goi-kham`, data);
     return response.data;
   },
 
   // --- ĐÁNH GIÁ ---
   createDanhGia: async (data: DanhGiaRequest): Promise<DanhGiaResponse> => {
-    const response = await axiosClient.post(`${BASE_URL}/danhgia`, data);
+    const response = await axiosClient.post(`/danh-gia`, data);
     return response.data;
   },
 
   createChiTietKyThuat: async (data: ChiTietKyThuatRequest): Promise<ChiTietKyThuatResponse> => {
-    const response = await axiosClient.post(`${BASE_URL}/kythuat`, data);
+    const response = await axiosClient.post(`/ky-thuat`, data);
     return response.data;
   },
 

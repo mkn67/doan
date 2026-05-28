@@ -11,7 +11,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.kada.da.modules.prescription.domain.PhieuKeDon;
+import com.kada.da.modules.prescription.dto.PhieuKeDonRequestDTO;
+import com.kada.da.modules.prescription.dto.PhieuKeDonResponseDTO;
 import com.kada.da.modules.prescription.service.PhieuKeDonService;
 
 import lombok.RequiredArgsConstructor;
@@ -25,15 +26,15 @@ public class PhieuKeDonController {
 
     // API: Tạo đơn thuốc mới
     @PostMapping
-    public ResponseEntity<PhieuKeDon> taoDonThuoc(@RequestBody PhieuKeDon phieuKeDon) {
-        PhieuKeDon response = phieuKeDonService.taoDonThuoc(phieuKeDon);
+    public ResponseEntity<PhieuKeDonResponseDTO> taoDonThuoc(@RequestBody PhieuKeDonRequestDTO dto) {
+        PhieuKeDonResponseDTO response = phieuKeDonService.taoDonThuoc(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     // API: Lấy danh sách đơn thuốc theo mã Hồ sơ thị lực
     @GetMapping("/ho-so/{maHoSo}")
-    public ResponseEntity<List<PhieuKeDon>> layDonThuocTheoHoSo(@PathVariable String maHoSo) {
-        List<PhieuKeDon> response = phieuKeDonService.layDonThuocTheoHoSo(maHoSo);
+    public ResponseEntity<List<PhieuKeDonResponseDTO>> layDonThuocTheoHoSo(@PathVariable String maHoSo) {
+        List<PhieuKeDonResponseDTO> response = phieuKeDonService.layDonThuocTheoHoSo(maHoSo);
         return ResponseEntity.ok(response);
     }
 }

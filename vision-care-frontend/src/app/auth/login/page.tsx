@@ -74,7 +74,7 @@ export default function LoginPage() {
             router.push('/staff/reception/appointments');
             break;
           case 'ROLE_BAC_SI': 
-            router.push('/staff/clinic/examinations');
+            router.push('/staff/clinic');
             break;
           case 'ROLE_THU_KHO': 
             router.push('/staff/inventory/products');

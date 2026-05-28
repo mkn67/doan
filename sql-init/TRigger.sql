@@ -70,9 +70,10 @@ COMPOUND TRIGGER
         SELECT COUNT(*) INTO v_ton_ns FROM NHAN_SU WHERE MANS = :NEW.MANS AND IS_DELETED = 0;
         IF v_ton_ns = 0 THEN RAISE_APPLICATION_ERROR(-20033, 'LOI: Bac si khong ton tai hoac da nghi!'); END IF;
 
+        -- Chỉ chặn nếu bác sĩ có đăng ký nghỉ (IS_NGHI = 1). Nếu chưa có lịch thì mặc định là rảnh để khách đặt dễ dàng.
         SELECT COUNT(*) INTO v_ca_lam FROM LICH_LAM_VIEC
-        WHERE MANS = :NEW.MANS AND TRUNC(NGAY_LAM) = TRUNC(:NEW.NGAYHEN) AND IS_NGHI = 0;
-        IF v_ca_lam = 0 THEN RAISE_APPLICATION_ERROR(-20030, 'LOI: Bac si khong co lich lam viec ngay nay!'); END IF;
+        WHERE MANS = :NEW.MANS AND TRUNC(NGAY_LAM) = TRUNC(:NEW.NGAYHEN) AND IS_NGHI = 1;
+        IF v_ca_lam > 0 THEN RAISE_APPLICATION_ERROR(-20030, 'LOI: Bac si da dang ky nghi phep vao ngay nay!'); END IF;
 
         IF :NEW.GIO_HEN IS NOT NULL AND :NEW.TRANGTHAI != N'Đã hủy' THEN
             v_idx := v_idx + 1;
@@ -369,10 +370,21 @@ CREATE OR REPLACE TRIGGER TRG_HOA_DON_HUY
 AFTER UPDATE OF TRANGTHAI ON HOA_DON
 FOR EACH ROW
 WHEN (NEW.TRANGTHAI = N'Đã hủy' AND OLD.TRANGTHAI != N'Đã hủy')
+DECLARE
+    v_diem_tru INT;
 BEGIN
     FOR rec IN (SELECT MALO, SOLUONG FROM CT_HOA_DON WHERE MAHD = :NEW.MAHD) LOOP
         UPDATE LO_HANG SET SOLUONGTON = SOLUONGTON + rec.SOLUONG WHERE MALO = rec.MALO;
     END LOOP;
+
+    IF :OLD.TRANGTHAI = N'Đã thanh toán' AND :NEW.MAKH IS NOT NULL THEN
+        v_diem_tru := FLOOR(:OLD.TONGTIEN / 100000);
+        IF v_diem_tru > 0 THEN
+            UPDATE KHACH_HANG 
+            SET DIEMTICHLUY = GREATEST(0, DIEMTICHLUY - v_diem_tru)
+            WHERE MAKH = :NEW.MAKH;
+        END IF;
+    END IF;
 END;
 /
 

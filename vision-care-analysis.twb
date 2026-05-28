@@ -1,0 +1,1752 @@
+<?xml version='1.0' encoding='utf-8' ?>
+
+<!-- build 20261.26.0410.0924                               -->
+<workbook source-build='2026.1.1 (20261.26.0410.0924)' source-platform='win' version='18.1' xmlns:user='http://www.tableausoftware.com/xml/user'>
+  <document-format-change-manifest>
+    <AnimationOnByDefault />
+    <MarkAnimation />
+    <ObjectModelEncapsulateLegacy />
+    <ObjectModelTableType />
+    <SchemaViewerObjectModel />
+    <SheetIdentifierTracking />
+    <WindowsPersistSimpleIdentifiers />
+  </document-format-change-manifest>
+  <preferences>
+    <preference name='ui.encoding.shelf.height' value='24' />
+    <preference name='ui.shelf.height' value='26' />
+  </preferences>
+  <style>
+    <style-rule element='animation'>
+      <format attr='animation-on' value='ao-off' />
+    </style-rule>
+  </style>
+  <datasources>
+    <datasource caption='Doanh Thu và Dòng Tiền (Vision Care)' inline='true' name='oracle.doanh_thu' version='18.1'>
+      <connection class='federated'>
+        <named-connections>
+          <named-connection caption='localhost' name='oracle.conn_doanh_thu'>
+            <connection authentication='username-password' class='oracle' one-time-sql='' port='1521' server='localhost' service='XEPDB1' sslmode='' username='KMY' />
+          </named-connection>
+        </named-connections>
+        <relation connection='oracle.conn_doanh_thu' name='Custom SQL Query' type='text'>SELECT 
+              hd.MAHD,
+              hd.NGAYLAP AS NGAY_LAP_HD,
+              TO_CHAR(hd.NGAYLAP, &apos;YYYY-MM&apos;) AS THANG_NAM,
+              hd.TONGTIEN AS TONG_TIEN_HD,
+              hd.TRANGTHAI AS TRANG_THAI_HD,
+              kh.HOTEN AS TEN_KHACH_HANG,
+              kh.GIOITINH AS GIOI_TINH_KH,
+              kh.DIACHI AS DI_CHI_KH,
+              ns.HOTEN AS TEN_THU_NGAN,
+              tt.PHUONGTHUC AS PHUONG_THUC_THANH_TOAN,
+              tt.NGAYTHANHTOAN AS THOI_GIAN_THANH_TOAN,
+              tt.SOTIEN AS SO_TIEN_THANH_TOAN
+          FROM HOA_DON hd
+          LEFT JOIN KHACH_HANG kh ON hd.MAKH = kh.MAKH
+          LEFT JOIN NHAN_SU ns ON hd.MANS = ns.MANS
+          LEFT JOIN THANH_TOAN tt ON hd.MAHD = tt.MAHD
+          WHERE hd.IS_DELETED = 0 AND hd.TRANGTHAI = N&apos;Đã thanh toán&apos;</relation>
+        <metadata-records>
+          <metadata-record class='column'>
+            <remote-name>MAHD</remote-name>
+            <remote-type>129</remote-type>
+            <local-name>[MAHD]</local-name>
+            <parent-name>[Custom SQL Query]</parent-name>
+            <remote-alias>MAHD</remote-alias>
+            <ordinal>2</ordinal>
+            <local-type>string</local-type>
+            <aggregation>Count</aggregation>
+            <scale>0</scale>
+            <width>10</width>
+            <contains-null>false</contains-null>
+            <collation charset='1' flag='0' name='binary' />
+            <attributes>
+              <attribute datatype='string' name='DebugRemoteType'>&quot;SQLT_CHR{charset=873,charform=1}&quot;</attribute>
+            </attributes>
+            <object-id>[Migrated Data]</object-id>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>NGAY_LAP_HD</remote-name>
+            <remote-type>135</remote-type>
+            <local-name>[NGAY_LAP_HD]</local-name>
+            <parent-name>[Custom SQL Query]</parent-name>
+            <remote-alias>NGAY_LAP_HD</remote-alias>
+            <ordinal>3</ordinal>
+            <local-type>datetime</local-type>
+            <aggregation>Year</aggregation>
+            <scale>6</scale>
+            <contains-null>true</contains-null>
+            <attributes>
+              <attribute datatype='string' name='DebugRemoteType'>&quot;SQLT_TIMESTAMP&quot;</attribute>
+            </attributes>
+            <object-id>[Migrated Data]</object-id>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>THANG_NAM</remote-name>
+            <remote-type>129</remote-type>
+            <local-name>[THANG_NAM]</local-name>
+            <parent-name>[Custom SQL Query]</parent-name>
+            <remote-alias>THANG_NAM</remote-alias>
+            <ordinal>4</ordinal>
+            <local-type>string</local-type>
+            <aggregation>Count</aggregation>
+            <scale>0</scale>
+            <width>7</width>
+            <contains-null>true</contains-null>
+            <collation charset='1' flag='0' name='binary' />
+            <attributes>
+              <attribute datatype='string' name='DebugRemoteType'>&quot;SQLT_CHR{charset=873,charform=1}&quot;</attribute>
+            </attributes>
+            <object-id>[Migrated Data]</object-id>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>TONG_TIEN_HD</remote-name>
+            <remote-type>131</remote-type>
+            <local-name>[TONG_TIEN_HD]</local-name>
+            <parent-name>[Custom SQL Query]</parent-name>
+            <remote-alias>TONG_TIEN_HD</remote-alias>
+            <ordinal>5</ordinal>
+            <local-type>real</local-type>
+            <aggregation>Sum</aggregation>
+            <precision>15</precision>
+            <scale>2</scale>
+            <contains-null>true</contains-null>
+            <attributes>
+              <attribute datatype='string' name='DebugRemoteType'>&quot;SQLT_NUM&quot;</attribute>
+            </attributes>
+            <object-id>[Migrated Data]</object-id>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>TRANG_THAI_HD</remote-name>
+            <remote-type>130</remote-type>
+            <local-name>[TRANG_THAI_HD]</local-name>
+            <parent-name>[Custom SQL Query]</parent-name>
+            <remote-alias>TRANG_THAI_HD</remote-alias>
+            <ordinal>6</ordinal>
+            <local-type>string</local-type>
+            <aggregation>Count</aggregation>
+            <scale>0</scale>
+            <width>50</width>
+            <contains-null>true</contains-null>
+            <collation charset='2' flag='0' name='binary' />
+            <attributes>
+              <attribute datatype='string' name='DebugRemoteType'>&quot;SQLT_CHR{charset=2000,charform=2}&quot;</attribute>
+            </attributes>
+            <object-id>[Migrated Data]</object-id>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>TEN_KHACH_HANG</remote-name>
+            <remote-type>130</remote-type>
+            <local-name>[TEN_KHACH_HANG]</local-name>
+            <parent-name>[Custom SQL Query]</parent-name>
+            <remote-alias>TEN_KHACH_HANG</remote-alias>
+            <ordinal>7</ordinal>
+            <local-type>string</local-type>
+            <aggregation>Count</aggregation>
+            <scale>0</scale>
+            <width>100</width>
+            <contains-null>true</contains-null>
+            <collation charset='2' flag='0' name='binary' />
+            <attributes>
+              <attribute datatype='string' name='DebugRemoteType'>&quot;SQLT_CHR{charset=2000,charform=2}&quot;</attribute>
+            </attributes>
+            <object-id>[Migrated Data]</object-id>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>GIOI_TINH_KH</remote-name>
+            <remote-type>130</remote-type>
+            <local-name>[GIOI_TINH_KH]</local-name>
+            <parent-name>[Custom SQL Query]</parent-name>
+            <remote-alias>GIOI_TINH_KH</remote-alias>
+            <ordinal>8</ordinal>
+            <local-type>string</local-type>
+            <aggregation>Count</aggregation>
+            <scale>0</scale>
+            <width>10</width>
+            <contains-null>true</contains-null>
+            <collation charset='2' flag='0' name='binary' />
+            <attributes>
+              <attribute datatype='string' name='DebugRemoteType'>&quot;SQLT_CHR{charset=2000,charform=2}&quot;</attribute>
+            </attributes>
+            <object-id>[Migrated Data]</object-id>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>DI_CHI_KH</remote-name>
+            <remote-type>130</remote-type>
+            <local-name>[DI_CHI_KH]</local-name>
+            <parent-name>[Custom SQL Query]</parent-name>
+            <remote-alias>DI_CHI_KH</remote-alias>
+            <ordinal>9</ordinal>
+            <local-type>string</local-type>
+            <aggregation>Count</aggregation>
+            <scale>0</scale>
+            <width>255</width>
+            <contains-null>true</contains-null>
+            <collation charset='2' flag='0' name='binary' />
+            <attributes>
+              <attribute datatype='string' name='DebugRemoteType'>&quot;SQLT_CHR{charset=2000,charform=2}&quot;</attribute>
+            </attributes>
+            <object-id>[Migrated Data]</object-id>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>TEN_THU_NGAN</remote-name>
+            <remote-type>130</remote-type>
+            <local-name>[TEN_THU_NGAN]</local-name>
+            <parent-name>[Custom SQL Query]</parent-name>
+            <remote-alias>TEN_THU_NGAN</remote-alias>
+            <ordinal>10</ordinal>
+            <local-type>string</local-type>
+            <aggregation>Count</aggregation>
+            <scale>0</scale>
+            <width>100</width>
+            <contains-null>true</contains-null>
+            <collation charset='2' flag='0' name='binary' />
+            <attributes>
+              <attribute datatype='string' name='DebugRemoteType'>&quot;SQLT_CHR{charset=2000,charform=2}&quot;</attribute>
+            </attributes>
+            <object-id>[Migrated Data]</object-id>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>PHUONG_THUC_THANH_TOAN</remote-name>
+            <remote-type>130</remote-type>
+            <local-name>[PHUONG_THUC_THANH_TOAN]</local-name>
+            <parent-name>[Custom SQL Query]</parent-name>
+            <remote-alias>PHUONG_THUC_THANH_TOAN</remote-alias>
+            <ordinal>11</ordinal>
+            <local-type>string</local-type>
+            <aggregation>Count</aggregation>
+            <scale>0</scale>
+            <width>50</width>
+            <contains-null>true</contains-null>
+            <collation charset='2' flag='0' name='binary' />
+            <attributes>
+              <attribute datatype='string' name='DebugRemoteType'>&quot;SQLT_CHR{charset=2000,charform=2}&quot;</attribute>
+            </attributes>
+            <object-id>[Migrated Data]</object-id>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>THOI_GIAN_THANH_TOAN</remote-name>
+            <remote-type>135</remote-type>
+            <local-name>[THOI_GIAN_THANH_TOAN]</local-name>
+            <parent-name>[Custom SQL Query]</parent-name>
+            <remote-alias>THOI_GIAN_THANH_TOAN</remote-alias>
+            <ordinal>12</ordinal>
+            <local-type>datetime</local-type>
+            <aggregation>Year</aggregation>
+            <scale>6</scale>
+            <contains-null>true</contains-null>
+            <attributes>
+              <attribute datatype='string' name='DebugRemoteType'>&quot;SQLT_TIMESTAMP&quot;</attribute>
+            </attributes>
+            <object-id>[Migrated Data]</object-id>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>SO_TIEN_THANH_TOAN</remote-name>
+            <remote-type>131</remote-type>
+            <local-name>[SO_TIEN_THANH_TOAN]</local-name>
+            <parent-name>[Custom SQL Query]</parent-name>
+            <remote-alias>SO_TIEN_THANH_TOAN</remote-alias>
+            <ordinal>13</ordinal>
+            <local-type>real</local-type>
+            <aggregation>Sum</aggregation>
+            <precision>15</precision>
+            <scale>2</scale>
+            <contains-null>true</contains-null>
+            <attributes>
+              <attribute datatype='string' name='DebugRemoteType'>&quot;SQLT_NUM&quot;</attribute>
+            </attributes>
+            <object-id>[Migrated Data]</object-id>
+          </metadata-record>
+        </metadata-records>
+      </connection>
+      <column caption='Migrated Data' datatype='table' name='[__tableau_internal_object_id__].[Migrated Data]' role='measure' type='quantitative' />
+      <layout dim-ordering='alphabetic' measure-ordering='alphabetic' show-structure='true' />
+      <semantic-values>
+        <semantic-value key='[Country].[Name]' value='&quot;United States&quot;' />
+      </semantic-values>
+      <object-graph>
+        <objects>
+          <object caption='Migrated Data' id='Migrated Data'>
+            <properties context=''>
+              <relation connection='oracle.conn_doanh_thu' name='Custom SQL Query' type='text'>SELECT 
+              hd.MAHD,
+              hd.NGAYLAP AS NGAY_LAP_HD,
+              TO_CHAR(hd.NGAYLAP, &apos;YYYY-MM&apos;) AS THANG_NAM,
+              hd.TONGTIEN AS TONG_TIEN_HD,
+              hd.TRANGTHAI AS TRANG_THAI_HD,
+              kh.HOTEN AS TEN_KHACH_HANG,
+              kh.GIOITINH AS GIOI_TINH_KH,
+              kh.DIACHI AS DI_CHI_KH,
+              ns.HOTEN AS TEN_THU_NGAN,
+              tt.PHUONGTHUC AS PHUONG_THUC_THANH_TOAN,
+              tt.NGAYTHANHTOAN AS THOI_GIAN_THANH_TOAN,
+              tt.SOTIEN AS SO_TIEN_THANH_TOAN
+          FROM HOA_DON hd
+          LEFT JOIN KHACH_HANG kh ON hd.MAKH = kh.MAKH
+          LEFT JOIN NHAN_SU ns ON hd.MANS = ns.MANS
+          LEFT JOIN THANH_TOAN tt ON hd.MAHD = tt.MAHD
+          WHERE hd.IS_DELETED = 0 AND hd.TRANGTHAI = N&apos;Đã thanh toán&apos;</relation>
+            </properties>
+          </object>
+        </objects>
+      </object-graph>
+    </datasource>
+    <datasource caption='Hiệu Suất Xưởng Kính (Vision Care)' inline='true' name='oracle.xuly_kinh' version='18.1'>
+      <connection class='federated'>
+        <named-connections>
+          <named-connection caption='localhost' name='oracle.conn_xuly_kinh'>
+            <connection authentication='username-password' class='oracle' one-time-sql='' port='1521' server='localhost' service='XEPDB1' sslmode='' username='KMY' />
+          </named-connection>
+        </named-connections>
+        <relation connection='oracle.conn_xuly_kinh' name='Custom SQL Query' type='text'><![CDATA[SELECT 
+              xl.MAXL,
+              xl.MADON,
+              xl.TRANG_THAI AS TRANG_THAI_GIA_CONG,
+              xl.NGAY_BAT_DAU,
+              xl.NGAY_HOAN_THANH,
+              ROUND((CAST(xl.NGAY_HOAN_THANH AS DATE) - CAST(xl.NGAY_BAT_DAU AS DATE)) * 24 * 60, 2) AS THOI_GIAN_GIA_CONG_PHUT,
+              CASE 
+                  WHEN (CAST(xl.NGAY_HOAN_THANH AS DATE) - CAST(xl.NGAY_BAT_DAU AS DATE)) * 24 * 60 <= 120 THEN 'Đúng hạn (dưới 2h)'
+                  ELSE 'Trễ hạn (trên 2h)'
+              END AS KPI_DUNG_HAN,
+              ns.HOTEN AS TEN_KY_THUAT_VIEN,
+              hd.MAHD,
+              kh.HOTEN AS TEN_BENH_NHAN
+          FROM XU_LY_KINH xl
+          LEFT JOIN PHIEU_KE_DON pkd ON xl.MADON = pkd.MADON
+          LEFT JOIN HOA_DON hd ON pkd.MADON = hd.MADON
+          LEFT JOIN KHACH_HANG kh ON hd.MAKH = kh.MAKH
+          LEFT JOIN NHAN_SU ns ON xl.MANS_KY_THUAT = ns.MANS
+          WHERE xl.NGAY_BAT_DAU IS NOT NULL AND xl.NGAY_HOAN_THANH IS NOT NULL]]></relation>
+        <metadata-records>
+          <metadata-record class='column'>
+            <remote-name>MAXL</remote-name>
+            <remote-type>129</remote-type>
+            <local-name>[MAXL]</local-name>
+            <parent-name>[Custom SQL Query]</parent-name>
+            <remote-alias>MAXL</remote-alias>
+            <ordinal>2</ordinal>
+            <local-type>string</local-type>
+            <aggregation>Count</aggregation>
+            <scale>0</scale>
+            <width>10</width>
+            <contains-null>false</contains-null>
+            <collation charset='1' flag='0' name='binary' />
+            <attributes>
+              <attribute datatype='string' name='DebugRemoteType'>&quot;SQLT_CHR{charset=873,charform=1}&quot;</attribute>
+            </attributes>
+            <object-id>[Migrated Data]</object-id>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>MADON</remote-name>
+            <remote-type>129</remote-type>
+            <local-name>[MADON]</local-name>
+            <parent-name>[Custom SQL Query]</parent-name>
+            <remote-alias>MADON</remote-alias>
+            <ordinal>3</ordinal>
+            <local-type>string</local-type>
+            <aggregation>Count</aggregation>
+            <scale>0</scale>
+            <width>10</width>
+            <contains-null>false</contains-null>
+            <collation charset='1' flag='0' name='binary' />
+            <attributes>
+              <attribute datatype='string' name='DebugRemoteType'>&quot;SQLT_CHR{charset=873,charform=1}&quot;</attribute>
+            </attributes>
+            <object-id>[Migrated Data]</object-id>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>TRANG_THAI_GIA_CONG</remote-name>
+            <remote-type>130</remote-type>
+            <local-name>[TRANG_THAI_GIA_CONG]</local-name>
+            <parent-name>[Custom SQL Query]</parent-name>
+            <remote-alias>TRANG_THAI_GIA_CONG</remote-alias>
+            <ordinal>4</ordinal>
+            <local-type>string</local-type>
+            <aggregation>Count</aggregation>
+            <scale>0</scale>
+            <width>30</width>
+            <contains-null>true</contains-null>
+            <collation charset='2' flag='0' name='binary' />
+            <attributes>
+              <attribute datatype='string' name='DebugRemoteType'>&quot;SQLT_CHR{charset=2000,charform=2}&quot;</attribute>
+            </attributes>
+            <object-id>[Migrated Data]</object-id>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>NGAY_BAT_DAU</remote-name>
+            <remote-type>135</remote-type>
+            <local-name>[NGAY_BAT_DAU]</local-name>
+            <parent-name>[Custom SQL Query]</parent-name>
+            <remote-alias>NGAY_BAT_DAU</remote-alias>
+            <ordinal>5</ordinal>
+            <local-type>datetime</local-type>
+            <aggregation>Year</aggregation>
+            <scale>6</scale>
+            <contains-null>true</contains-null>
+            <attributes>
+              <attribute datatype='string' name='DebugRemoteType'>&quot;SQLT_TIMESTAMP&quot;</attribute>
+            </attributes>
+            <object-id>[Migrated Data]</object-id>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>NGAY_HOAN_THANH</remote-name>
+            <remote-type>135</remote-type>
+            <local-name>[NGAY_HOAN_THANH]</local-name>
+            <parent-name>[Custom SQL Query]</parent-name>
+            <remote-alias>NGAY_HOAN_THANH</remote-alias>
+            <ordinal>6</ordinal>
+            <local-type>datetime</local-type>
+            <aggregation>Year</aggregation>
+            <scale>6</scale>
+            <contains-null>true</contains-null>
+            <attributes>
+              <attribute datatype='string' name='DebugRemoteType'>&quot;SQLT_TIMESTAMP&quot;</attribute>
+            </attributes>
+            <object-id>[Migrated Data]</object-id>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>THOI_GIAN_GIA_CONG_PHUT</remote-name>
+            <remote-type>131</remote-type>
+            <local-name>[THOI_GIAN_GIA_CONG_PHUT]</local-name>
+            <parent-name>[Custom SQL Query]</parent-name>
+            <remote-alias>THOI_GIAN_GIA_CONG_PHUT</remote-alias>
+            <ordinal>7</ordinal>
+            <local-type>real</local-type>
+            <aggregation>Sum</aggregation>
+            <scale>0</scale>
+            <contains-null>true</contains-null>
+            <attributes>
+              <attribute datatype='string' name='DebugRemoteType'>&quot;SQLT_NUM&quot;</attribute>
+            </attributes>
+            <object-id>[Migrated Data]</object-id>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>KPI_DUNG_HAN</remote-name>
+            <remote-type>129</remote-type>
+            <local-name>[KPI_DUNG_HAN]</local-name>
+            <parent-name>[Custom SQL Query]</parent-name>
+            <remote-alias>KPI_DUNG_HAN</remote-alias>
+            <ordinal>8</ordinal>
+            <local-type>string</local-type>
+            <aggregation>Count</aggregation>
+            <scale>0</scale>
+            <width>18</width>
+            <contains-null>true</contains-null>
+            <collation charset='1' flag='0' name='binary' />
+            <attributes>
+              <attribute datatype='string' name='DebugRemoteType'>&quot;SQLT_CHR{charset=873,charform=1}&quot;</attribute>
+            </attributes>
+            <object-id>[Migrated Data]</object-id>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>TEN_KY_THUAT_VIEN</remote-name>
+            <remote-type>130</remote-type>
+            <local-name>[TEN_KY_THUAT_VIEN]</local-name>
+            <parent-name>[Custom SQL Query]</parent-name>
+            <remote-alias>TEN_KY_THUAT_VIEN</remote-alias>
+            <ordinal>9</ordinal>
+            <local-type>string</local-type>
+            <aggregation>Count</aggregation>
+            <scale>0</scale>
+            <width>100</width>
+            <contains-null>true</contains-null>
+            <collation charset='2' flag='0' name='binary' />
+            <attributes>
+              <attribute datatype='string' name='DebugRemoteType'>&quot;SQLT_CHR{charset=2000,charform=2}&quot;</attribute>
+            </attributes>
+            <object-id>[Migrated Data]</object-id>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>MAHD</remote-name>
+            <remote-type>129</remote-type>
+            <local-name>[MAHD]</local-name>
+            <parent-name>[Custom SQL Query]</parent-name>
+            <remote-alias>MAHD</remote-alias>
+            <ordinal>10</ordinal>
+            <local-type>string</local-type>
+            <aggregation>Count</aggregation>
+            <scale>0</scale>
+            <width>10</width>
+            <contains-null>true</contains-null>
+            <collation charset='1' flag='0' name='binary' />
+            <attributes>
+              <attribute datatype='string' name='DebugRemoteType'>&quot;SQLT_CHR{charset=873,charform=1}&quot;</attribute>
+            </attributes>
+            <object-id>[Migrated Data]</object-id>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>TEN_BENH_NHAN</remote-name>
+            <remote-type>130</remote-type>
+            <local-name>[TEN_BENH_NHAN]</local-name>
+            <parent-name>[Custom SQL Query]</parent-name>
+            <remote-alias>TEN_BENH_NHAN</remote-alias>
+            <ordinal>11</ordinal>
+            <local-type>string</local-type>
+            <aggregation>Count</aggregation>
+            <scale>0</scale>
+            <width>100</width>
+            <contains-null>true</contains-null>
+            <collation charset='2' flag='0' name='binary' />
+            <attributes>
+              <attribute datatype='string' name='DebugRemoteType'>&quot;SQLT_CHR{charset=2000,charform=2}&quot;</attribute>
+            </attributes>
+            <object-id>[Migrated Data]</object-id>
+          </metadata-record>
+        </metadata-records>
+      </connection>
+      <column caption='Migrated Data' datatype='table' name='[__tableau_internal_object_id__].[Migrated Data]' role='measure' type='quantitative' />
+      <layout dim-ordering='alphabetic' measure-ordering='alphabetic' show-structure='true' />
+      <semantic-values>
+        <semantic-value key='[Country].[Name]' value='&quot;United States&quot;' />
+      </semantic-values>
+      <object-graph>
+        <objects>
+          <object caption='Migrated Data' id='Migrated Data'>
+            <properties context=''>
+              <relation connection='oracle.conn_xuly_kinh' name='Custom SQL Query' type='text'><![CDATA[SELECT 
+              xl.MAXL,
+              xl.MADON,
+              xl.TRANG_THAI AS TRANG_THAI_GIA_CONG,
+              xl.NGAY_BAT_DAU,
+              xl.NGAY_HOAN_THANH,
+              ROUND((CAST(xl.NGAY_HOAN_THANH AS DATE) - CAST(xl.NGAY_BAT_DAU AS DATE)) * 24 * 60, 2) AS THOI_GIAN_GIA_CONG_PHUT,
+              CASE 
+                  WHEN (CAST(xl.NGAY_HOAN_THANH AS DATE) - CAST(xl.NGAY_BAT_DAU AS DATE)) * 24 * 60 <= 120 THEN 'Đúng hạn (dưới 2h)'
+                  ELSE 'Trễ hạn (trên 2h)'
+              END AS KPI_DUNG_HAN,
+              ns.HOTEN AS TEN_KY_THUAT_VIEN,
+              hd.MAHD,
+              kh.HOTEN AS TEN_BENH_NHAN
+          FROM XU_LY_KINH xl
+          LEFT JOIN PHIEU_KE_DON pkd ON xl.MADON = pkd.MADON
+          LEFT JOIN HOA_DON hd ON pkd.MADON = hd.MADON
+          LEFT JOIN KHACH_HANG kh ON hd.MAKH = kh.MAKH
+          LEFT JOIN NHAN_SU ns ON xl.MANS_KY_THUAT = ns.MANS
+          WHERE xl.NGAY_BAT_DAU IS NOT NULL AND xl.NGAY_HOAN_THANH IS NOT NULL]]></relation>
+            </properties>
+          </object>
+        </objects>
+      </object-graph>
+    </datasource>
+    <datasource caption='Tồn Kho và Lợi Nhuận (Vision Care)' inline='true' name='oracle.ton_kho' version='18.1'>
+      <connection class='federated'>
+        <named-connections>
+          <named-connection caption='localhost' name='oracle.conn_ton_kho'>
+            <connection authentication='username-password' class='oracle' one-time-sql='' port='1521' server='localhost' service='XEPDB1' sslmode='' username='KMY' />
+          </named-connection>
+        </named-connections>
+        <relation connection='oracle.conn_ton_kho' name='Custom SQL Query' type='text'><![CDATA[SELECT 
+              sp.MASP,
+              sp.TENSP AS TEN_SAN_PHAM,
+              lsp.TENLOAI AS LOAI_SAN_PHAM,
+              lh.MALO AS MA_LO_HANG,
+              lh.NGAYHETHAN AS NGAY_HET_HAN,
+              CASE 
+                  WHEN lh.NGAYHETHAN - TRUNC(SYSDATE) < 0 THEN 'Đã hết hạn'
+                  WHEN lh.NGAYHETHAN - TRUNC(SYSDATE) BETWEEN 0 AND 90 THEN 'Cận hạn (dưới 3 tháng)'
+                  ELSE 'An toàn'
+              END AS TRANG_THAI_HSD,
+              lh.SOLUONGNHAP,
+              lh.SOLUONGTON,
+              lh.GIANHAP,
+              sp.GIABAN,
+              (lh.SOLUONGNHAP - lh.SOLUONGTON) * sp.GIABAN AS DOANH_THU_THUC_TE,
+              (lh.SOLUONGNHAP - lh.SOLUONGTON) * lh.GIANHAP AS CHI_PHI_VON_THUC_TE,
+              ((lh.SOLUONGNHAP - lh.SOLUONGTON) * sp.GIABAN) - ((lh.SOLUONGNHAP - lh.SOLUONGTON) * lh.GIANHAP) AS LOI_NHUAN_THUC_TE
+          FROM LO_HANG lh
+          JOIN SAN_PHAM sp ON lh.MASP = sp.MASP
+          JOIN LOAI_SAN_PHAM lsp ON sp.MALOAI = lsp.MALOAI]]></relation>
+        <metadata-records>
+          <metadata-record class='column'>
+            <remote-name>MASP</remote-name>
+            <remote-type>129</remote-type>
+            <local-name>[MASP]</local-name>
+            <parent-name>[Custom SQL Query]</parent-name>
+            <remote-alias>MASP</remote-alias>
+            <ordinal>2</ordinal>
+            <local-type>string</local-type>
+            <aggregation>Count</aggregation>
+            <scale>0</scale>
+            <width>10</width>
+            <contains-null>false</contains-null>
+            <collation charset='1' flag='0' name='binary' />
+            <attributes>
+              <attribute datatype='string' name='DebugRemoteType'>&quot;SQLT_CHR{charset=873,charform=1}&quot;</attribute>
+            </attributes>
+            <object-id>[Migrated Data]</object-id>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>TEN_SAN_PHAM</remote-name>
+            <remote-type>130</remote-type>
+            <local-name>[TEN_SAN_PHAM]</local-name>
+            <parent-name>[Custom SQL Query]</parent-name>
+            <remote-alias>TEN_SAN_PHAM</remote-alias>
+            <ordinal>3</ordinal>
+            <local-type>string</local-type>
+            <aggregation>Count</aggregation>
+            <scale>0</scale>
+            <width>100</width>
+            <contains-null>true</contains-null>
+            <collation charset='2' flag='0' name='binary' />
+            <attributes>
+              <attribute datatype='string' name='DebugRemoteType'>&quot;SQLT_CHR{charset=2000,charform=2}&quot;</attribute>
+            </attributes>
+            <object-id>[Migrated Data]</object-id>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>LOAI_SAN_PHAM</remote-name>
+            <remote-type>130</remote-type>
+            <local-name>[LOAI_SAN_PHAM]</local-name>
+            <parent-name>[Custom SQL Query]</parent-name>
+            <remote-alias>LOAI_SAN_PHAM</remote-alias>
+            <ordinal>4</ordinal>
+            <local-type>string</local-type>
+            <aggregation>Count</aggregation>
+            <scale>0</scale>
+            <width>100</width>
+            <contains-null>true</contains-null>
+            <collation charset='2' flag='0' name='binary' />
+            <attributes>
+              <attribute datatype='string' name='DebugRemoteType'>&quot;SQLT_CHR{charset=2000,charform=2}&quot;</attribute>
+            </attributes>
+            <object-id>[Migrated Data]</object-id>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>MA_LO_HANG</remote-name>
+            <remote-type>129</remote-type>
+            <local-name>[MA_LO_HANG]</local-name>
+            <parent-name>[Custom SQL Query]</parent-name>
+            <remote-alias>MA_LO_HANG</remote-alias>
+            <ordinal>5</ordinal>
+            <local-type>string</local-type>
+            <aggregation>Count</aggregation>
+            <scale>0</scale>
+            <width>10</width>
+            <contains-null>false</contains-null>
+            <collation charset='1' flag='0' name='binary' />
+            <attributes>
+              <attribute datatype='string' name='DebugRemoteType'>&quot;SQLT_CHR{charset=873,charform=1}&quot;</attribute>
+            </attributes>
+            <object-id>[Migrated Data]</object-id>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>NGAY_HET_HAN</remote-name>
+            <remote-type>7</remote-type>
+            <local-name>[NGAY_HET_HAN]</local-name>
+            <parent-name>[Custom SQL Query]</parent-name>
+            <remote-alias>NGAY_HET_HAN</remote-alias>
+            <ordinal>6</ordinal>
+            <local-type>datetime</local-type>
+            <aggregation>Year</aggregation>
+            <scale>0</scale>
+            <contains-null>true</contains-null>
+            <attributes>
+              <attribute datatype='string' name='DebugRemoteType'>&quot;SQLT_DAT&quot;</attribute>
+            </attributes>
+            <object-id>[Migrated Data]</object-id>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>TRANG_THAI_HSD</remote-name>
+            <remote-type>129</remote-type>
+            <local-name>[TRANG_THAI_HSD]</local-name>
+            <parent-name>[Custom SQL Query]</parent-name>
+            <remote-alias>TRANG_THAI_HSD</remote-alias>
+            <ordinal>7</ordinal>
+            <local-type>string</local-type>
+            <aggregation>Count</aggregation>
+            <scale>0</scale>
+            <width>22</width>
+            <contains-null>true</contains-null>
+            <collation charset='1' flag='0' name='binary' />
+            <attributes>
+              <attribute datatype='string' name='DebugRemoteType'>&quot;SQLT_CHR{charset=873,charform=1}&quot;</attribute>
+            </attributes>
+            <object-id>[Migrated Data]</object-id>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>SOLUONGNHAP</remote-name>
+            <remote-type>131</remote-type>
+            <local-name>[SOLUONGNHAP]</local-name>
+            <parent-name>[Custom SQL Query]</parent-name>
+            <remote-alias>SOLUONGNHAP</remote-alias>
+            <ordinal>8</ordinal>
+            <local-type>real</local-type>
+            <aggregation>Sum</aggregation>
+            <contains-null>true</contains-null>
+            <attributes>
+              <attribute datatype='string' name='DebugRemoteType'>&quot;SQLT_NUM&quot;</attribute>
+            </attributes>
+            <object-id>[Migrated Data]</object-id>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>SOLUONGTON</remote-name>
+            <remote-type>131</remote-type>
+            <local-name>[SOLUONGTON]</local-name>
+            <parent-name>[Custom SQL Query]</parent-name>
+            <remote-alias>SOLUONGTON</remote-alias>
+            <ordinal>9</ordinal>
+            <local-type>real</local-type>
+            <aggregation>Sum</aggregation>
+            <contains-null>true</contains-null>
+            <attributes>
+              <attribute datatype='string' name='DebugRemoteType'>&quot;SQLT_NUM&quot;</attribute>
+            </attributes>
+            <object-id>[Migrated Data]</object-id>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>GIANHAP</remote-name>
+            <remote-type>131</remote-type>
+            <local-name>[GIANHAP]</local-name>
+            <parent-name>[Custom SQL Query]</parent-name>
+            <remote-alias>GIANHAP</remote-alias>
+            <ordinal>10</ordinal>
+            <local-type>real</local-type>
+            <aggregation>Sum</aggregation>
+            <precision>15</precision>
+            <scale>2</scale>
+            <contains-null>true</contains-null>
+            <attributes>
+              <attribute datatype='string' name='DebugRemoteType'>&quot;SQLT_NUM&quot;</attribute>
+            </attributes>
+            <object-id>[Migrated Data]</object-id>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>GIABAN</remote-name>
+            <remote-type>131</remote-type>
+            <local-name>[GIABAN]</local-name>
+            <parent-name>[Custom SQL Query]</parent-name>
+            <remote-alias>GIABAN</remote-alias>
+            <ordinal>11</ordinal>
+            <local-type>real</local-type>
+            <aggregation>Sum</aggregation>
+            <precision>15</precision>
+            <scale>2</scale>
+            <contains-null>true</contains-null>
+            <attributes>
+              <attribute datatype='string' name='DebugRemoteType'>&quot;SQLT_NUM&quot;</attribute>
+            </attributes>
+            <object-id>[Migrated Data]</object-id>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>DOANH_THU_THUC_TE</remote-name>
+            <remote-type>131</remote-type>
+            <local-name>[DOANH_THU_THUC_TE]</local-name>
+            <parent-name>[Custom SQL Query]</parent-name>
+            <remote-alias>DOANH_THU_THUC_TE</remote-alias>
+            <ordinal>12</ordinal>
+            <local-type>real</local-type>
+            <aggregation>Sum</aggregation>
+            <scale>0</scale>
+            <contains-null>true</contains-null>
+            <attributes>
+              <attribute datatype='string' name='DebugRemoteType'>&quot;SQLT_NUM&quot;</attribute>
+            </attributes>
+            <object-id>[Migrated Data]</object-id>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>CHI_PHI_VON_THUC_TE</remote-name>
+            <remote-type>131</remote-type>
+            <local-name>[CHI_PHI_VON_THUC_TE]</local-name>
+            <parent-name>[Custom SQL Query]</parent-name>
+            <remote-alias>CHI_PHI_VON_THUC_TE</remote-alias>
+            <ordinal>13</ordinal>
+            <local-type>real</local-type>
+            <aggregation>Sum</aggregation>
+            <scale>0</scale>
+            <contains-null>true</contains-null>
+            <attributes>
+              <attribute datatype='string' name='DebugRemoteType'>&quot;SQLT_NUM&quot;</attribute>
+            </attributes>
+            <object-id>[Migrated Data]</object-id>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>LOI_NHUAN_THUC_TE</remote-name>
+            <remote-type>131</remote-type>
+            <local-name>[LOI_NHUAN_THUC_TE]</local-name>
+            <parent-name>[Custom SQL Query]</parent-name>
+            <remote-alias>LOI_NHUAN_THUC_TE</remote-alias>
+            <ordinal>14</ordinal>
+            <local-type>real</local-type>
+            <aggregation>Sum</aggregation>
+            <scale>0</scale>
+            <contains-null>true</contains-null>
+            <attributes>
+              <attribute datatype='string' name='DebugRemoteType'>&quot;SQLT_NUM&quot;</attribute>
+            </attributes>
+            <object-id>[Migrated Data]</object-id>
+          </metadata-record>
+        </metadata-records>
+      </connection>
+      <column caption='Migrated Data' datatype='table' name='[__tableau_internal_object_id__].[Migrated Data]' role='measure' type='quantitative' />
+      <layout dim-ordering='alphabetic' measure-ordering='alphabetic' show-structure='true' />
+      <semantic-values>
+        <semantic-value key='[Country].[Name]' value='&quot;United States&quot;' />
+      </semantic-values>
+      <object-graph>
+        <objects>
+          <object caption='Migrated Data' id='Migrated Data'>
+            <properties context=''>
+              <relation connection='oracle.conn_ton_kho' name='Custom SQL Query' type='text'><![CDATA[SELECT 
+              sp.MASP,
+              sp.TENSP AS TEN_SAN_PHAM,
+              lsp.TENLOAI AS LOAI_SAN_PHAM,
+              lh.MALO AS MA_LO_HANG,
+              lh.NGAYHETHAN AS NGAY_HET_HAN,
+              CASE 
+                  WHEN lh.NGAYHETHAN - TRUNC(SYSDATE) < 0 THEN 'Đã hết hạn'
+                  WHEN lh.NGAYHETHAN - TRUNC(SYSDATE) BETWEEN 0 AND 90 THEN 'Cận hạn (dưới 3 tháng)'
+                  ELSE 'An toàn'
+              END AS TRANG_THAI_HSD,
+              lh.SOLUONGNHAP,
+              lh.SOLUONGTON,
+              lh.GIANHAP,
+              sp.GIABAN,
+              (lh.SOLUONGNHAP - lh.SOLUONGTON) * sp.GIABAN AS DOANH_THU_THUC_TE,
+              (lh.SOLUONGNHAP - lh.SOLUONGTON) * lh.GIANHAP AS CHI_PHI_VON_THUC_TE,
+              ((lh.SOLUONGNHAP - lh.SOLUONGTON) * sp.GIABAN) - ((lh.SOLUONGNHAP - lh.SOLUONGTON) * lh.GIANHAP) AS LOI_NHUAN_THUC_TE
+          FROM LO_HANG lh
+          JOIN SAN_PHAM sp ON lh.MASP = sp.MASP
+          JOIN LOAI_SAN_PHAM lsp ON sp.MALOAI = lsp.MALOAI]]></relation>
+            </properties>
+          </object>
+        </objects>
+      </object-graph>
+    </datasource>
+    <datasource caption='Đánh Giá Khách Hàng - CSI (Vision Care)' inline='true' name='oracle.danh_gia' version='18.1'>
+      <connection class='federated'>
+        <named-connections>
+          <named-connection caption='localhost' name='oracle.conn_danh_gia'>
+            <connection authentication='username-password' class='oracle' one-time-sql='' port='1521' server='localhost' service='XEPDB1' sslmode='' username='KMY' />
+          </named-connection>
+        </named-connections>
+        <relation connection='oracle.conn_danh_gia' name='Custom SQL Query' type='text'>SELECT 
+              dg.MADG,
+              dg.SO_SAO,
+              dg.NOI_DUNG AS Y_KIEN_KHACH_HANG,
+              dg.NGAY_DG AS THOI_GIAN_DANH_GIA,
+              kh.HOTEN AS TEN_KHACH_HANG,
+              ns.HOTEN AS TEN_BAC_SI_KHAM,
+              hd.TONGTIEN AS GIA_TRI_DON_HANG
+          FROM DANH_GIA dg
+          JOIN KHACH_HANG kh ON dg.MAKH = kh.MAKH
+          JOIN NHAN_SU ns ON dg.MANS = ns.MANS
+          JOIN HO_SO_THI_LUC hs ON dg.MAHOSO = hs.MAHOSO
+          LEFT JOIN HOA_DON hd ON hs.MAHOSO = hd.MAHOSO
+          WHERE dg.IS_HIDDEN = 0</relation>
+        <metadata-records>
+          <metadata-record class='column'>
+            <remote-name>MADG</remote-name>
+            <remote-type>129</remote-type>
+            <local-name>[MADG]</local-name>
+            <parent-name>[Custom SQL Query]</parent-name>
+            <remote-alias>MADG</remote-alias>
+            <ordinal>2</ordinal>
+            <local-type>string</local-type>
+            <aggregation>Count</aggregation>
+            <scale>0</scale>
+            <width>10</width>
+            <contains-null>false</contains-null>
+            <collation charset='1' flag='0' name='binary' />
+            <attributes>
+              <attribute datatype='string' name='DebugRemoteType'>&quot;SQLT_CHR{charset=873,charform=1}&quot;</attribute>
+            </attributes>
+            <object-id>[Migrated Data]</object-id>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>SO_SAO</remote-name>
+            <remote-type>131</remote-type>
+            <local-name>[SO_SAO]</local-name>
+            <parent-name>[Custom SQL Query]</parent-name>
+            <remote-alias>SO_SAO</remote-alias>
+            <ordinal>3</ordinal>
+            <local-type>integer</local-type>
+            <aggregation>Sum</aggregation>
+            <precision>1</precision>
+            <scale>0</scale>
+            <contains-null>false</contains-null>
+            <attributes>
+              <attribute datatype='string' name='DebugRemoteType'>&quot;SQLT_NUM&quot;</attribute>
+            </attributes>
+            <object-id>[Migrated Data]</object-id>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>Y_KIEN_KHACH_HANG</remote-name>
+            <remote-type>130</remote-type>
+            <local-name>[Y_KIEN_KHACH_HANG]</local-name>
+            <parent-name>[Custom SQL Query]</parent-name>
+            <remote-alias>Y_KIEN_KHACH_HANG</remote-alias>
+            <ordinal>4</ordinal>
+            <local-type>string</local-type>
+            <aggregation>Count</aggregation>
+            <scale>0</scale>
+            <width>500</width>
+            <contains-null>true</contains-null>
+            <collation charset='2' flag='0' name='binary' />
+            <attributes>
+              <attribute datatype='string' name='DebugRemoteType'>&quot;SQLT_CHR{charset=2000,charform=2}&quot;</attribute>
+            </attributes>
+            <object-id>[Migrated Data]</object-id>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>THOI_GIAN_DANH_GIA</remote-name>
+            <remote-type>135</remote-type>
+            <local-name>[THOI_GIAN_DANH_GIA]</local-name>
+            <parent-name>[Custom SQL Query]</parent-name>
+            <remote-alias>THOI_GIAN_DANH_GIA</remote-alias>
+            <ordinal>5</ordinal>
+            <local-type>datetime</local-type>
+            <aggregation>Year</aggregation>
+            <scale>6</scale>
+            <contains-null>true</contains-null>
+            <attributes>
+              <attribute datatype='string' name='DebugRemoteType'>&quot;SQLT_TIMESTAMP&quot;</attribute>
+            </attributes>
+            <object-id>[Migrated Data]</object-id>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>TEN_KHACH_HANG</remote-name>
+            <remote-type>130</remote-type>
+            <local-name>[TEN_KHACH_HANG]</local-name>
+            <parent-name>[Custom SQL Query]</parent-name>
+            <remote-alias>TEN_KHACH_HANG</remote-alias>
+            <ordinal>6</ordinal>
+            <local-type>string</local-type>
+            <aggregation>Count</aggregation>
+            <scale>0</scale>
+            <width>100</width>
+            <contains-null>true</contains-null>
+            <collation charset='2' flag='0' name='binary' />
+            <attributes>
+              <attribute datatype='string' name='DebugRemoteType'>&quot;SQLT_CHR{charset=2000,charform=2}&quot;</attribute>
+            </attributes>
+            <object-id>[Migrated Data]</object-id>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>TEN_BAC_SI_KHAM</remote-name>
+            <remote-type>130</remote-type>
+            <local-name>[TEN_BAC_SI_KHAM]</local-name>
+            <parent-name>[Custom SQL Query]</parent-name>
+            <remote-alias>TEN_BAC_SI_KHAM</remote-alias>
+            <ordinal>7</ordinal>
+            <local-type>string</local-type>
+            <aggregation>Count</aggregation>
+            <scale>0</scale>
+            <width>100</width>
+            <contains-null>true</contains-null>
+            <collation charset='2' flag='0' name='binary' />
+            <attributes>
+              <attribute datatype='string' name='DebugRemoteType'>&quot;SQLT_CHR{charset=2000,charform=2}&quot;</attribute>
+            </attributes>
+            <object-id>[Migrated Data]</object-id>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>GIA_TRI_DON_HANG</remote-name>
+            <remote-type>131</remote-type>
+            <local-name>[GIA_TRI_DON_HANG]</local-name>
+            <parent-name>[Custom SQL Query]</parent-name>
+            <remote-alias>GIA_TRI_DON_HANG</remote-alias>
+            <ordinal>8</ordinal>
+            <local-type>real</local-type>
+            <aggregation>Sum</aggregation>
+            <precision>15</precision>
+            <scale>2</scale>
+            <contains-null>true</contains-null>
+            <attributes>
+              <attribute datatype='string' name='DebugRemoteType'>&quot;SQLT_NUM&quot;</attribute>
+            </attributes>
+            <object-id>[Migrated Data]</object-id>
+          </metadata-record>
+        </metadata-records>
+      </connection>
+      <column caption='Migrated Data' datatype='table' name='[__tableau_internal_object_id__].[Migrated Data]' role='measure' type='quantitative' />
+      <layout dim-ordering='alphabetic' measure-ordering='alphabetic' show-structure='true' />
+      <semantic-values>
+        <semantic-value key='[Country].[Name]' value='&quot;United States&quot;' />
+      </semantic-values>
+      <object-graph>
+        <objects>
+          <object caption='Migrated Data' id='Migrated Data'>
+            <properties context=''>
+              <relation connection='oracle.conn_danh_gia' name='Custom SQL Query' type='text'>SELECT 
+              dg.MADG,
+              dg.SO_SAO,
+              dg.NOI_DUNG AS Y_KIEN_KHACH_HANG,
+              dg.NGAY_DG AS THOI_GIAN_DANH_GIA,
+              kh.HOTEN AS TEN_KHACH_HANG,
+              ns.HOTEN AS TEN_BAC_SI_KHAM,
+              hd.TONGTIEN AS GIA_TRI_DON_HANG
+          FROM DANH_GIA dg
+          JOIN KHACH_HANG kh ON dg.MAKH = kh.MAKH
+          JOIN NHAN_SU ns ON dg.MANS = ns.MANS
+          JOIN HO_SO_THI_LUC hs ON dg.MAHOSO = hs.MAHOSO
+          LEFT JOIN HOA_DON hd ON hs.MAHOSO = hd.MAHOSO
+          WHERE dg.IS_HIDDEN = 0</relation>
+            </properties>
+          </object>
+        </objects>
+      </object-graph>
+    </datasource>
+  </datasources>
+  <worksheets>
+    <worksheet name='Chỉ Số CSI'>
+      <table>
+        <view>
+          <datasources>
+            <datasource caption='Đánh Giá Khách Hàng - CSI (Vision Care)' name='oracle.danh_gia' />
+          </datasources>
+          <datasource-dependencies datasource='oracle.danh_gia'>
+            <column datatype='integer' name='[SO_SAO]' role='measure' type='quantitative' />
+            <column datatype='string' name='[TEN_BAC_SI_KHAM]' role='dimension' type='nominal' />
+            <column-instance column='[TEN_BAC_SI_KHAM]' derivation='None' name='[none:TEN_BAC_SI_KHAM:nk]' pivot='key' type='nominal' />
+            <column-instance column='[SO_SAO]' derivation='Sum' name='[sum:SO_SAO:qk]' pivot='key' type='quantitative' />
+          </datasource-dependencies>
+          <aggregation value='true' />
+        </view>
+        <style />
+        <panes>
+          <pane selection-relaxation-option='selection-relaxation-allow'>
+            <view>
+              <breakdown value='auto' />
+            </view>
+            <mark class='Circle' />
+            <encodings>
+              <size column='[oracle.danh_gia].[sum:SO_SAO:qk]' />
+              <text column='[oracle.danh_gia].[none:TEN_BAC_SI_KHAM:nk]' />
+            </encodings>
+            <style>
+              <style-rule element='mark'>
+                <format attr='mark-labels-show' value='true' />
+                <format attr='mark-labels-cull' value='true' />
+                <format attr='mark-labels-line-first' value='true' />
+                <format attr='mark-labels-line-last' value='true' />
+                <format attr='mark-labels-range-min' value='true' />
+                <format attr='mark-labels-range-max' value='true' />
+                <format attr='mark-labels-mode' value='all' />
+                <format attr='mark-labels-range-scope' value='pane' />
+                <format attr='mark-labels-range-field' value='' />
+              </style-rule>
+            </style>
+          </pane>
+        </panes>
+        <rows />
+        <cols />
+      </table>
+      <simple-id uuid='{D8A0FCF5-98F6-4A81-A31F-01A367A4F8AC}' />
+    </worksheet>
+    <worksheet name='Doanh Thu'>
+      <table>
+        <view>
+          <datasources>
+            <datasource caption='Doanh Thu và Dòng Tiền (Vision Care)' name='oracle.doanh_thu' />
+          </datasources>
+          <datasource-dependencies datasource='oracle.doanh_thu'>
+            <column datatype='string' name='[PHUONG_THUC_THANH_TOAN]' role='dimension' type='nominal' />
+            <column datatype='string' name='[THANG_NAM]' role='dimension' type='nominal' />
+            <column datatype='real' name='[TONG_TIEN_HD]' role='measure' type='quantitative' />
+            <column-instance column='[PHUONG_THUC_THANH_TOAN]' derivation='None' name='[none:PHUONG_THUC_THANH_TOAN:nk]' pivot='key' type='nominal' />
+            <column-instance column='[THANG_NAM]' derivation='None' name='[none:THANG_NAM:nk]' pivot='key' type='nominal' />
+            <column-instance column='[TONG_TIEN_HD]' derivation='Sum' name='[sum:TONG_TIEN_HD:qk]' pivot='key' type='quantitative' />
+          </datasource-dependencies>
+          <aggregation value='true' />
+        </view>
+        <style>
+          <style-rule element='axis'>
+            <encoding attr='space' class='0' field='[oracle.doanh_thu].[sum:TONG_TIEN_HD:qk]' field-type='quantitative' max='4890305.5376225458' min='-605473.66319303273' range-type='fixed' scope='rows' type='space' />
+          </style-rule>
+        </style>
+        <panes>
+          <pane selection-relaxation-option='selection-relaxation-disallow'>
+            <view>
+              <breakdown value='auto' />
+            </view>
+            <mark class='Automatic' />
+            <encodings>
+              <color column='[oracle.doanh_thu].[none:PHUONG_THUC_THANH_TOAN:nk]' />
+            </encodings>
+          </pane>
+        </panes>
+        <rows>[oracle.doanh_thu].[sum:TONG_TIEN_HD:qk]</rows>
+        <cols>[oracle.doanh_thu].[none:THANG_NAM:nk]</cols>
+      </table>
+      <simple-id uuid='{32EFDF5C-621C-47DB-846A-38AE9EFC981C}' />
+    </worksheet>
+    <worksheet name='Hiệu Suất Xưởng'>
+      <table>
+        <view>
+          <datasources>
+            <datasource caption='Hiệu Suất Xưởng Kính (Vision Care)' name='oracle.xuly_kinh' />
+          </datasources>
+          <datasource-dependencies datasource='oracle.xuly_kinh'>
+            <column datatype='string' name='[KPI_DUNG_HAN]' role='dimension' type='nominal' />
+            <column datatype='string' name='[TEN_KY_THUAT_VIEN]' role='dimension' type='nominal' />
+            <column datatype='real' name='[THOI_GIAN_GIA_CONG_PHUT]' role='measure' type='quantitative' />
+            <column-instance column='[KPI_DUNG_HAN]' derivation='None' name='[none:KPI_DUNG_HAN:nk]' pivot='key' type='nominal' />
+            <column-instance column='[TEN_KY_THUAT_VIEN]' derivation='None' name='[none:TEN_KY_THUAT_VIEN:nk]' pivot='key' type='nominal' />
+            <column-instance column='[THOI_GIAN_GIA_CONG_PHUT]' derivation='Sum' name='[sum:THOI_GIAN_GIA_CONG_PHUT:qk]' pivot='key' type='quantitative' />
+          </datasource-dependencies>
+          <aggregation value='true' />
+        </view>
+        <style />
+        <panes>
+          <pane selection-relaxation-option='selection-relaxation-disallow'>
+            <view>
+              <breakdown value='auto' />
+            </view>
+            <mark class='Automatic' />
+            <encodings>
+              <color column='[oracle.xuly_kinh].[none:KPI_DUNG_HAN:nk]' />
+            </encodings>
+          </pane>
+        </panes>
+        <rows>[oracle.xuly_kinh].[none:TEN_KY_THUAT_VIEN:nk]</rows>
+        <cols>[oracle.xuly_kinh].[sum:THOI_GIAN_GIA_CONG_PHUT:qk]</cols>
+      </table>
+      <simple-id uuid='{3DC70C34-6E00-4E56-BBCB-D8C1651FAA0B}' />
+    </worksheet>
+    <worksheet name='Tồn Kho &amp; Lợi Nhuận'>
+      <table>
+        <view>
+          <datasources>
+            <datasource caption='Tồn Kho và Lợi Nhuận (Vision Care)' name='oracle.ton_kho' />
+          </datasources>
+          <datasource-dependencies datasource='oracle.ton_kho'>
+            <column datatype='string' name='[LOAI_SAN_PHAM]' role='dimension' type='nominal' />
+            <column datatype='real' name='[LOI_NHUAN_THUC_TE]' role='measure' type='quantitative' />
+            <column datatype='string' name='[TRANG_THAI_HSD]' role='dimension' type='nominal' />
+            <column-instance column='[LOAI_SAN_PHAM]' derivation='None' name='[none:LOAI_SAN_PHAM:nk]' pivot='key' type='nominal' />
+            <column-instance column='[TRANG_THAI_HSD]' derivation='None' name='[none:TRANG_THAI_HSD:nk]' pivot='key' type='nominal' />
+            <column-instance column='[LOI_NHUAN_THUC_TE]' derivation='Sum' name='[sum:LOI_NHUAN_THUC_TE:qk]' pivot='key' type='quantitative' />
+          </datasource-dependencies>
+          <aggregation value='true' />
+        </view>
+        <style />
+        <panes>
+          <pane selection-relaxation-option='selection-relaxation-allow'>
+            <view>
+              <breakdown value='on' />
+            </view>
+            <mark class='Automatic' />
+            <encodings>
+              <size column='[oracle.ton_kho].[sum:LOI_NHUAN_THUC_TE:qk]' />
+              <color column='[oracle.ton_kho].[sum:LOI_NHUAN_THUC_TE:qk]' />
+              <text column='[oracle.ton_kho].[none:TRANG_THAI_HSD:nk]' />
+              <text column='[oracle.ton_kho].[none:LOAI_SAN_PHAM:nk]' />
+            </encodings>
+            <style>
+              <style-rule element='mark'>
+                <format attr='mark-labels-show' value='true' />
+                <format attr='mark-labels-cull' value='true' />
+                <format attr='mark-labels-line-first' value='true' />
+                <format attr='mark-labels-line-last' value='true' />
+                <format attr='mark-labels-range-min' value='true' />
+                <format attr='mark-labels-range-max' value='true' />
+                <format attr='mark-labels-mode' value='all' />
+                <format attr='mark-labels-range-scope' value='pane' />
+                <format attr='mark-labels-range-field' value='' />
+              </style-rule>
+            </style>
+          </pane>
+        </panes>
+        <rows />
+        <cols />
+      </table>
+      <simple-id uuid='{3AB47AB7-22FA-424D-A155-4103AD3AC225}' />
+    </worksheet>
+  </worksheets>
+  <windows saved-dpi-scale-factor='1.25' source-height='115'>
+    <window class='worksheet' maximized='true' name='Doanh Thu'>
+      <cards>
+        <edge name='left'>
+          <strip size='160'>
+            <card type='pages' />
+            <card type='filters' />
+            <card type='marks' />
+          </strip>
+        </edge>
+        <edge name='top'>
+          <strip size='2147483647'>
+            <card type='columns' />
+          </strip>
+          <strip size='2147483647'>
+            <card type='rows' />
+          </strip>
+        </edge>
+        <edge name='right'>
+          <strip size='160'>
+            <card pane-specification-id='0' param='[oracle.doanh_thu].[none:PHUONG_THUC_THANH_TOAN:nk]' type='color' />
+          </strip>
+        </edge>
+      </cards>
+      <viewpoint>
+        <highlight>
+          <color-one-way>
+            <field>[oracle.doanh_thu].[none:PHUONG_THUC_THANH_TOAN:nk]</field>
+            <field>[oracle.doanh_thu].[none:THANG_NAM:nk]</field>
+          </color-one-way>
+        </highlight>
+      </viewpoint>
+      <simple-id uuid='{0BAC25B4-8A05-4944-85AE-853072D31473}' />
+    </window>
+    <window class='worksheet' name='Hiệu Suất Xưởng'>
+      <cards>
+        <edge name='left'>
+          <strip size='160'>
+            <card type='pages' />
+            <card type='filters' />
+            <card type='marks' />
+          </strip>
+        </edge>
+        <edge name='top'>
+          <strip size='2147483647'>
+            <card type='columns' />
+          </strip>
+          <strip size='2147483647'>
+            <card type='rows' />
+          </strip>
+        </edge>
+        <edge name='right'>
+          <strip size='160'>
+            <card pane-specification-id='0' param='[oracle.xuly_kinh].[none:KPI_DUNG_HAN:nk]' type='color' />
+          </strip>
+        </edge>
+      </cards>
+      <viewpoint>
+        <highlight>
+          <color-one-way>
+            <field>[oracle.xuly_kinh].[none:KPI_DUNG_HAN:nk]</field>
+            <field>[oracle.xuly_kinh].[none:TEN_KY_THUAT_VIEN:nk]</field>
+          </color-one-way>
+        </highlight>
+      </viewpoint>
+      <simple-id uuid='{A4F5D999-FAFA-4987-8702-F1A52E0D16E6}' />
+    </window>
+    <window class='worksheet' name='Tồn Kho &amp; Lợi Nhuận'>
+      <cards>
+        <edge name='left'>
+          <strip size='160'>
+            <card type='pages' />
+            <card type='filters' />
+            <card type='marks' />
+          </strip>
+        </edge>
+        <edge name='top'>
+          <strip size='2147483647'>
+            <card type='columns' />
+          </strip>
+          <strip size='2147483647'>
+            <card type='rows' />
+          </strip>
+        </edge>
+        <edge name='right'>
+          <strip size='160'>
+            <card pane-specification-id='0' param='[oracle.ton_kho].[sum:LOI_NHUAN_THUC_TE:qk]' type='color' />
+          </strip>
+        </edge>
+      </cards>
+      <viewpoint>
+        <highlight>
+          <color-one-way>
+            <field>[oracle.ton_kho].[none:LOAI_SAN_PHAM:nk]</field>
+            <field>[oracle.ton_kho].[none:TRANG_THAI_HSD:nk]</field>
+            <field>[oracle.ton_kho].[sum:LOI_NHUAN_THUC_TE:qk]</field>
+          </color-one-way>
+        </highlight>
+      </viewpoint>
+      <simple-id uuid='{55994FD1-6027-4F95-A8D0-8FD24566870B}' />
+    </window>
+    <window class='worksheet' name='Chỉ Số CSI'>
+      <cards>
+        <edge name='left'>
+          <strip size='160'>
+            <card type='pages' />
+            <card type='filters' />
+            <card type='marks' />
+          </strip>
+        </edge>
+        <edge name='top'>
+          <strip size='2147483647'>
+            <card type='columns' />
+          </strip>
+          <strip size='2147483647'>
+            <card type='rows' />
+          </strip>
+        </edge>
+      </cards>
+      <viewpoint>
+        <highlight>
+          <color-one-way>
+            <field>[oracle.danh_gia].[none:TEN_BAC_SI_KHAM:nk]</field>
+          </color-one-way>
+        </highlight>
+      </viewpoint>
+      <simple-id uuid='{444F5286-9CB5-4BD3-BEA0-3F35079F9BD7}' />
+    </window>
+  </windows>
+  <thumbnails>
+    <thumbnail height='192' name='Chỉ Số CSI' width='192'>
+      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
+      YN5E8yRxlAAAAABJRU5ErkJggg==
+    </thumbnail>
+    <thumbnail height='192' name='Doanh Thu' width='192'>
+      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
+      TUS2AAAAAElFTkSuQmCC
+    </thumbnail>
+    <thumbnail height='127' name='Hiệu Suất Xưởng' width='192'>
+      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
+      RK5CYII=
+    </thumbnail>
+    <thumbnail height='192' name='Tồn Kho &amp; Lợi Nhuận' width='192'>
+      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
+      YwAAAABJRU5ErkJggg==
+    </thumbnail>
+  </thumbnails>
+</workbook>

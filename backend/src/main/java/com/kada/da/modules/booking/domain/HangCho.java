@@ -40,7 +40,7 @@ public class HangCho {
     @JoinColumn(name = "MANS_PHAN_CONG")
     private NhanSu nhanSuPhanCong;
 
-    @Enumerated(EnumType.STRING)
+    @Convert(converter = com.kada.da.modules.booking.Enum.TrangThaiHangChoConverter.class)
     @Column(name = "TRANG_THAI", length = 30)
     private TrangThaiHangCho trangThai;
 

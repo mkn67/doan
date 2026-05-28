@@ -20,18 +20,24 @@ public class ChiTietThiLuc {
     @JsonIgnore
     private HoSoThiLuc hoSoThiLuc;
     @Id
-    @Column(name = "MAT", length = 10)
+    @Column(name = "MAT", length = 1)
     private String mat;
 
-    @Column(name = "CAU")
+    @Column(name = "DOCAU_SPH")
     private Double cau;
 
-    @Column(name = "TRU")
+    @Column(name = "DOTRU_CYL")
     private Double tru;
 
-    @Column(name = "TRUC")
+    @Column(name = "TRUC_AX")
     private Integer truc;
 
-    @Column(name = "THILUC", length = 20)
+    @Column(name = "KHOANGCACH_PD")
+    private Double pd;
+
+    @Column(name = "DOCONG_ADD")
+    private Double add;
+
+    @Transient
     private String thiLuc;
 }

@@ -15,8 +15,11 @@ import {
   Calendar,
   AlertCircle,
   HelpCircle,
-  TrendingUp
+  TrendingUp,
+  Printer
 } from "lucide-react";
+import { useReactToPrint } from "react-to-print";
+import { QRCodeSVG } from "qrcode.react";
 
 import { useHangChoHomNay, useGoiVaoKham, useKetThucKham } from "@/hooks/useClinic"; 
 import { Button } from "@/components/ui/button";
@@ -25,6 +28,23 @@ import { HangChoHomNayDTO } from "@/types/staff";
 
 export default function QueuePage() {
   const router = useRouter();
+  
+  // Printing Ticket STT State & Ref
+  const [ticketToPrint, setTicketToPrint] = useState<HangChoHomNayDTO | null>(null);
+  const ticketPrintRef = React.useRef<HTMLDivElement>(null);
+
+  const handlePrintTicket = useReactToPrint({
+    contentRef: ticketPrintRef,
+    documentTitle: `PhieuSTT_VisionCare_${ticketToPrint?.maHc || "New"}`,
+    onAfterPrint: () => setTicketToPrint(null),
+  });
+
+  const triggerPrintTicket = (item: HangChoHomNayDTO) => {
+    setTicketToPrint(item);
+    setTimeout(() => {
+      handlePrintTicket();
+    }, 100);
+  };
   
   // Fetch patient queue data
   const { data, isLoading, refetch, isRefetching } = useHangChoHomNay();
@@ -246,15 +266,26 @@ export default function QueuePage() {
                       <span>Chờ {item.phutCho || 0} phút</span>
                     </div>
 
-                    <Button
-                      onClick={() => handleGoiKham(item.maKh, item.maHc)}
-                      disabled={isMutating}
-                      size="sm"
-                      className="bg-amber-600 hover:bg-amber-500 text-white font-semibold text-[11px] h-7 px-3 rounded-lg flex items-center gap-1 shadow-sm transition-all"
-                    >
-                      <PlayCircle className="w-3.5 h-3.5" />
-                      <span>Gọi Khám</span>
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        onClick={() => triggerPrintTicket(item)}
+                        className="h-7 w-7 rounded-lg border-slate-700 hover:bg-slate-800 hover:text-white text-slate-400"
+                        title="In phiếu STT"
+                      >
+                        <Printer className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button
+                        onClick={() => handleGoiKham(item.maKh, item.maHc)}
+                        disabled={isMutating}
+                        size="sm"
+                        className="bg-amber-600 hover:bg-amber-500 text-white font-semibold text-[11px] h-7 px-3 rounded-lg flex items-center gap-1 shadow-sm transition-all"
+                      >
+                        <PlayCircle className="w-3.5 h-3.5" />
+                        <span>Gọi Khám</span>
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ))
@@ -326,6 +357,15 @@ export default function QueuePage() {
                     </div>
 
                     <div className="flex items-center gap-1.5">
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        onClick={() => triggerPrintTicket(item)}
+                        className="h-7 w-7 rounded-lg border-slate-700 hover:bg-slate-800 hover:text-white text-slate-400"
+                        title="In phiếu STT"
+                      >
+                        <Printer className="w-3.5 h-3.5" />
+                      </Button>
                       <Button
                         onClick={() => handleKetThucKham(item.maHc, "Hoàn thành")}
                         disabled={isMutating}
@@ -405,6 +445,46 @@ export default function QueuePage() {
               </p>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Hidden Ticket Container for Printing */}
+      <div className="hidden">
+        <div ref={ticketPrintRef} className="p-8 w-[80mm] text-black font-mono text-center flex flex-col items-center justify-center bg-white">
+          <h2 className="text-xl font-bold tracking-wider">VISION CARE</h2>
+          <p className="text-[10px] mt-0.5">He thong cham soc mat toan dien</p>
+          <p className="text-[10px]">DC: 123 Ton Duc Thang, Q.1, TP.HCM</p>
+          <div className="border-b border-dashed border-black w-full my-3" />
+          
+          <h1 className="text-3xl font-extrabold my-2">SO THU TU: {ticketToPrint?.soThuTu}</h1>
+          <p className="text-sm font-semibold">Ma hang cho: {ticketToPrint?.maHc}</p>
+          
+          <div className="border-b border-dashed border-black w-full my-3" />
+          
+          <div className="text-left w-full text-xs space-y-1">
+            <p><strong>Khach hang:</strong> {ticketToPrint?.tenKhach}</p>
+            {ticketToPrint?.sdt && <p><strong>SDT:</strong> {ticketToPrint?.sdt}</p>}
+            {ticketToPrint?.tenBacSi && <p><strong>Bac si:</strong> {ticketToPrint?.tenBacSi}</p>}
+            {ticketToPrint?.goiKham && <p><strong>Goi kham:</strong> {ticketToPrint?.goiKham}</p>}
+            <p><strong>Ngay gio:</strong> {new Date().toLocaleString("vi-VN")}</p>
+          </div>
+          
+          <div className="border-b border-dashed border-black w-full my-3" />
+          
+          {ticketToPrint && (
+            <div className="p-2 border border-black rounded-lg bg-white inline-block">
+              <QRCodeSVG
+                value={`http://localhost:3000/staff/clinic/examinations?makh=${ticketToPrint.maKh}&mahc=${ticketToPrint.maHc}`}
+                size={120}
+                level={"H"}
+              />
+            </div>
+          )}
+          <p className="text-[9px] mt-2 text-slate-500 font-sans">
+            Quet ma QR de mo ho so nhanh tai phong kham
+          </p>
+          
+          <p className="text-[11px] mt-4 font-bold uppercase tracking-wider">Vui long doi goi so!</p>
         </div>
       </div>
     </div>

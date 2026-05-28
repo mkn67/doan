@@ -86,23 +86,58 @@ public class ExaminationController {
     @GetMapping("/khach-hang/{maKh}")
     public ResponseEntity<?> getLichSuKham(@PathVariable("maKh") String maKh) {
         try {
-            // Dùng JPQL truy vấn thẳng vào Entity HoSoThiLuc
-            // Sắp xếp theo mã hồ sơ (hoặc ngày khám) giảm dần (mới nhất lên đầu)
             String jpql = "SELECT h FROM HoSoThiLuc h WHERE h.khachHang.maKh = :maKh ORDER BY h.maHoSo DESC";
-
-            var lichSu = em.createQuery(jpql)
+            List<com.kada.da.modules.examination.domain.HoSoThiLuc> lichSu = em.createQuery(jpql, com.kada.da.modules.examination.domain.HoSoThiLuc.class)
                     .setParameter("maKh", maKh)
                     .getResultList();
 
             if (lichSu.isEmpty()) {
                 return ResponseEntity.ok(Map.of(
                         "message", "Khách hàng này chưa có lịch sử khám.",
-                        "data", lichSu));
+                        "data", new java.util.ArrayList<>()));
+            }
+
+            List<com.kada.da.modules.examination.dto.HoSoKhamResponseDTO> dtoList = new java.util.ArrayList<>();
+            for (com.kada.da.modules.examination.domain.HoSoThiLuc hoSo : lichSu) {
+                String jpqlDetails = "SELECT c FROM ChiTietThiLuc c WHERE c.hoSoThiLuc.maHoSo = :maHoSo";
+                List<com.kada.da.modules.examination.domain.ChiTietThiLuc> chiTiets = em.createQuery(jpqlDetails, com.kada.da.modules.examination.domain.ChiTietThiLuc.class)
+                        .setParameter("maHoSo", hoSo.getMaHoSo())
+                        .getResultList();
+
+                List<com.kada.da.modules.examination.dto.ChiTietThiLucDTO> listDto = new java.util.ArrayList<>();
+                for (com.kada.da.modules.examination.domain.ChiTietThiLuc ct : chiTiets) {
+                    listDto.add(com.kada.da.modules.examination.dto.ChiTietThiLucDTO.builder()
+                            .loaiMat(ct.getMat())
+                            .sph(ct.getCau())
+                            .cyl(ct.getTru())
+                            .axis(ct.getTruc())
+                            .va(ct.getThiLuc() != null ? ct.getThiLuc() : "10/10")
+                            .pd(ct.getPd())
+                            .add(ct.getAdd())
+                            .build());
+                }
+
+                String jpqlPrescription = "SELECT p.maDon FROM PhieuKeDon p WHERE p.hoSoThiLuc.maHoSo = :maHoSo";
+                List<String> prescriptions = em.createQuery(jpqlPrescription, String.class)
+                        .setParameter("maHoSo", hoSo.getMaHoSo())
+                        .getResultList();
+                String maDonThuoc = prescriptions.isEmpty() ? null : prescriptions.get(0);
+
+                dtoList.add(com.kada.da.modules.examination.dto.HoSoKhamResponseDTO.builder()
+                        .maHoSo(hoSo.getMaHoSo())
+                        .maKh(hoSo.getKhachHang() != null ? hoSo.getKhachHang().getMaKh() : null)
+                        .tenKhachHang(hoSo.getKhachHang() != null ? hoSo.getKhachHang().getHoTen() : null)
+                        .tenBacSi(hoSo.getNhanSu() != null ? hoSo.getNhanSu().getHoTen() : null)
+                        .ngayKham(hoSo.getNgayKham() != null ? hoSo.getNgayKham().atStartOfDay() : null)
+                        .ketLuan(hoSo.getKetLuan())
+                        .danhSachThiLuc(listDto)
+                        .maDonThuoc(maDonThuoc)
+                        .build());
             }
 
             return ResponseEntity.ok(Map.of(
                     "message", "Lấy lịch sử khám thành công!",
-                    "data", lichSu));
+                    "data", dtoList));
 
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Lỗi khi lấy lịch sử khám: " + e.getMessage());
@@ -129,7 +164,9 @@ public class ExaminationController {
                         .sph(ct.getCau())
                         .cyl(ct.getTru())
                         .axis(ct.getTruc())
-                        .va(ct.getThiLuc())
+                        .va(ct.getThiLuc() != null ? ct.getThiLuc() : "10/10")
+                        .pd(ct.getPd())
+                        .add(ct.getAdd())
                         .build());
             }
 
