@@ -10,8 +10,6 @@ import {
   AuditHosoThiluc
 } from '@/types/clinic';
 
-const BASE_URL = '/clinic';
-
 export const clinicApi = {
   // --- HỒ SƠ KHÁM ---
   createHoSoKham: async (data: HoSoKhamRequest): Promise<HoSoKhamResponse> => {
@@ -29,7 +27,7 @@ export const clinicApi = {
     return response.data;
   },
 
-  getLichSuKham: async (maKh: string): Promise<{ message: string; data: any[] }> => {
+  getLichSuKham: async (maKh: string): Promise<{ message: string; data: HoSoKhamResponse[] }> => {
     const response = await axiosClient.get(`/examinations/khach-hang/${maKh}`);
     return response.data;
   },

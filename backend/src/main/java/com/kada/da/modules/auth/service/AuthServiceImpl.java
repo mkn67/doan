@@ -145,29 +145,20 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private String generateMaKh() {
-        String maxMa = khachHangRepository.findMaxMaKh();
-        int nextNumber = 1;
-        if (maxMa != null && maxMa.length() > 2) {
-            try {
-                nextNumber = Integer.parseInt(maxMa.substring(2)) + 1;
-            } catch (NumberFormatException e) {
-                log.warn("Không thể parse mã khách hàng: {}", maxMa);
-                List<KhachHang> all = khachHangRepository.findAll();
-                int maxSeq = 0;
-                for (KhachHang kh : all) {
-                    String code = kh.getMaKh();
-                    if (code != null && code.startsWith("KH") && code.length() > 2) {
-                        try {
-                            int num = Integer.parseInt(code.substring(2));
-                            if (num > maxSeq) {
-                                maxSeq = num;
-                            }
-                        } catch (NumberFormatException ignored) {}
+        List<KhachHang> all = khachHangRepository.findAll();
+        int maxSeq = 0;
+        for (KhachHang kh : all) {
+            String code = kh.getMaKh();
+            if (code != null && code.startsWith("KH") && code.length() > 2) {
+                try {
+                    int num = Integer.parseInt(code.substring(2));
+                    if (num > maxSeq) {
+                        maxSeq = num;
                     }
-                }
-                nextNumber = maxSeq + 1;
+                } catch (NumberFormatException ignored) {}
             }
         }
+        int nextNumber = maxSeq + 1;
         return "KH" + String.format("%03d", nextNumber);
     }
 

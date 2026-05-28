@@ -27,8 +27,8 @@ export const customerApi = {
   },
 
   // Lấy chi tiết một khách hàng
-  getKhachHang: async (maKh: string): Promise<any> => {
-    const response = await axiosClient.get<any>(`/khach-hang/${maKh}`);
+  getKhachHang: async (maKh: string): Promise<KhachHangResponseDTO> => {
+    const response = await axiosClient.get<KhachHangResponseDTO>(`/khach-hang/${maKh}`);
     return response.data;
   },
 

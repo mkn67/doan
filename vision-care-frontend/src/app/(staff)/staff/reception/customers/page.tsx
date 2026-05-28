@@ -1,9 +1,10 @@
-﻿"use client";
+"use client";
 
-import * as React from "react";
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
 import { 
-  Search, Plus, UserCircle, Phone, Award, Loader2 
+  Search, Plus, UserCircle, Phone, Award, Loader2, ShieldAlert 
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -53,8 +54,17 @@ const customerSchema = z.object({
 type CustomerFormValues = z.infer<typeof customerSchema>;
 
 export default function CustomersPage() {
+  const router = useRouter();
+  const { user, loading } = useAuth();
+  const [isMounted, setIsMounted] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  const ALLOWED_ROLES = ["ROLE_LE_TAN", "ROLE_ADMIN", "NH06", "NH04"];
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // 2. GỌI HOOK API
   const { data: listCustomers, isLoading } = useDanhSachKhachHang();
@@ -67,6 +77,38 @@ export default function CustomersPage() {
     },
   });
 
+  const hasAccess = () => {
+    if (!user) return false;
+    const userRoles = user?.roles || [];
+    const userGroup = user?.maNhom ? user.maNhom : null;
+    return ALLOWED_ROLES.some(role => userRoles.includes(role) || role === userGroup);
+  };
+
+  if (!isMounted || loading) {
+    return (
+      <div className="flex h-[calc(100vh-4rem)] items-center justify-center text-blue-600 font-medium">
+        Đang kiểm tra quyền truy cập...
+      </div>
+    );
+  }
+
+  if (!hasAccess()) {
+    return (
+      <div className="flex h-[calc(100vh-4rem)] flex-col items-center justify-center bg-slate-50/50 rounded-2xl border-2 border-dashed border-slate-200 m-6">
+        <ShieldAlert className="w-16 h-16 text-rose-500 mb-4 animate-bounce" />
+        <h2 className="text-2xl font-bold text-slate-800">Truy Cập Bị Từ Chối</h2>
+        <p className="text-slate-500 mt-2 max-w-md text-center">
+          Tài khoản <b>{user?.username}</b> không có nghiệp vụ Lễ tân.
+        </p>
+        <Button onClick={() => router.back()} className="mt-6 bg-slate-800 hover:bg-slate-900">
+          Quay lại trang trước
+        </Button>
+      </div>
+    );
+  }
+
+  const isAdmin = user?.roles?.includes("ROLE_ADMIN") || user?.maNhom === "NH04";
+
   // Chuyển đổi dữ liệu từ DTO sang kiểu Customer local một cách an toàn
   // "as unknown as Customer[]" giúp vượt qua kiểm tra nghiêm ngặt của TS khi DTO thiếu trường
   const customers = (listCustomers as unknown as Customer[]) || [];
@@ -77,6 +119,10 @@ export default function CustomersPage() {
   );
 
   function onSubmit(values: CustomerFormValues) {
+    if (isAdmin) {
+      alert("⚠️ Tài khoản Admin đang ở chế độ Chỉ đọc, không thể thêm khách hàng!");
+      return;
+    }
     createCustomerMutation.mutate(values as Parameters<typeof createCustomerMutation.mutate>[0], {
       onSuccess: () => {
         alert("Thêm khách hàng thành công!");
@@ -96,7 +142,7 @@ export default function CustomersPage() {
         
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-blue-600 hover:bg-blue-700 shadow-md">
+            <Button className="bg-blue-600 hover:bg-blue-700 shadow-md" disabled={isAdmin}>
               <Plus className="mr-2 h-4 w-4" /> Thêm khách hàng mới
             </Button>
           </DialogTrigger>

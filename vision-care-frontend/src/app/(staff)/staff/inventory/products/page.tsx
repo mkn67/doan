@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useDanhSachSanPham, useCreateSanPham, useDeleteSanPham } from "@/hooks/useInventory";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useAuth } from "@/hooks/useAuth";
 import { Package, Plus, Box, DollarSign, Layers, Tag, AlertTriangle, Pill, CheckCircle2, Trash2, Search } from "lucide-react";
 
 interface SanPham {
@@ -20,6 +21,9 @@ interface SanPham {
 }
 
 export default function ProductsPage() {
+  const { user } = useAuth();
+  const isAdmin = user?.roles?.includes("ROLE_ADMIN") || user?.maNhom === "NH04";
+
   const { data } = useDanhSachSanPham();
   const createMutation = useCreateSanPham();
   const deleteMutation = useDeleteSanPham(); // Thêm hook Xóa
@@ -122,6 +126,7 @@ export default function ProductsPage() {
                 placeholder="VD: Kính cận chống phản quang Essilor..." 
                 value={form.tenSp}
                 onChange={(e) => setForm({ ...form, tenSp: e.target.value })} 
+                disabled={isAdmin}
               />
             </div>
           </div>
@@ -136,6 +141,7 @@ export default function ProductsPage() {
                 placeholder="VD: L01..." 
                 value={form.maLoai}
                 onChange={(e) => setForm({ ...form, maLoai: e.target.value })} 
+                disabled={isAdmin}
               />
             </div>
           </div>
@@ -151,6 +157,7 @@ export default function ProductsPage() {
                 placeholder="0" 
                 value={form.giaBan || ""}
                 onChange={(e) => setForm({ ...form, giaBan: Number(e.target.value) })} 
+                disabled={isAdmin}
               />
             </div>
           </div>
@@ -165,6 +172,7 @@ export default function ProductsPage() {
                 type="number" 
                 value={form.tonKhoToiThieu || ""}
                 onChange={(e) => setForm({ ...form, tonKhoToiThieu: Number(e.target.value) })} 
+                disabled={isAdmin}
               />
             </div>
           </div>
@@ -185,6 +193,7 @@ export default function ProductsPage() {
                 className="w-4.5 h-4.5 text-amber-600 border-slate-300 rounded focus:ring-amber-500 accent-amber-600"
                 checked={form.laThuoc}
                 onChange={(e) => setForm({ ...form, laThuoc: e.target.checked })}
+                disabled={isAdmin}
               />
               <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider">
                 <Pill className={`w-4 h-4 ${form.laThuoc ? "text-amber-600" : "text-slate-400"}`} />
@@ -197,7 +206,7 @@ export default function ProductsPage() {
           <div className="md:col-span-2">
             <Button 
               onClick={handleSubmit} 
-              disabled={createMutation.isPending}
+              disabled={createMutation.isPending || isAdmin}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/10 hover:shadow-blue-600/25 transition-all hover:scale-[1.02] font-bold h-11 rounded-xl text-sm gap-2"
             >
               <Plus className="w-5 h-5" /> {createMutation.isPending ? "Đang xử lý..." : "Thêm vào kho"}
@@ -322,8 +331,9 @@ export default function ProductsPage() {
                     <td className="py-4 px-6 text-center">
                       <button 
                         onClick={() => handleDelete(sp.maSp)}
-                        className="text-slate-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-xl transition-all"
+                        className="text-slate-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-xl transition-all disabled:opacity-30 disabled:pointer-events-none"
                         title="Xóa sản phẩm"
+                        disabled={isAdmin}
                       >
                         <Trash2 className="w-4.5 h-4.5" />
                       </button>

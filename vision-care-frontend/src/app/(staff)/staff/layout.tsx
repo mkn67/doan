@@ -47,7 +47,7 @@ const staffMenuItems = [
     name: "Xưởng mài lắp kính", 
     href: "/staff/workshop/glasses", 
     icon: Hammer, 
-    roles: ["ROLE_KY_THUAT", "ROLE_THU_KHO", "ROLE_ADMIN"] 
+    roles: ["ROLE_KY_THUAT", "ROLE_ADMIN"] 
   },
   { 
     name: "Quản trị hệ thống", 

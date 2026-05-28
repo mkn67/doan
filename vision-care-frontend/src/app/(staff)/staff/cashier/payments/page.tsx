@@ -46,6 +46,8 @@ import {
 } from "@/components/ui/select";
 import { HoaDonResponseDTO, ThanhToanRequestDTO } from "@/types/billing";
 
+import { useAuth } from "@/hooks/useAuth";
+
 interface PageResponseDTO {
   content?: unknown[];
   data?: unknown[];
@@ -53,6 +55,9 @@ interface PageResponseDTO {
 
 export default function PaymentsPage() {
   const router = useRouter();
+  const { user } = useAuth();
+  const isAdmin = user?.roles?.includes("ROLE_ADMIN") || user?.maNhom === "NH04";
+  
   const { data: listHoaDon, isLoading } = useDanhSachHoaDon();
   const thanhToanMutation = useThanhToan();
   const deleteMutation = useDeleteHoaDon();
@@ -305,6 +310,7 @@ export default function PaymentsPage() {
                           size="sm"
                           className="bg-emerald-600 hover:bg-emerald-700 text-white flex-1 shadow-sm rounded-lg"
                           onClick={() => handleOpenPayment(hd)}
+                          disabled={isAdmin}
                         >
                           Thu
                         </Button>
@@ -312,6 +318,7 @@ export default function PaymentsPage() {
                           size="sm"
                           variant="destructive"
                           className="bg-rose-650 hover:bg-rose-700 text-white rounded-lg px-2"
+                          disabled={isAdmin}
                           onClick={() => {
                             if (window.confirm(`⚠️ Bạn có chắc chắn muốn HỦY/XÓA hóa đơn ${hd.maHd}?`)) {
                               deleteMutation.mutate(hd.maHd, {
@@ -441,7 +448,7 @@ export default function PaymentsPage() {
             <Button
               className="bg-emerald-600 hover:bg-emerald-700 rounded-lg px-6"
               onClick={handleConfirmPayment}
-              disabled={thanhToanMutation.isPending}
+              disabled={thanhToanMutation.isPending || isAdmin}
             >
               {thanhToanMutation.isPending ? (
                 <Loader2 className="w-5 h-5 animate-spin" />

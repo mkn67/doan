@@ -24,9 +24,11 @@ export default function BookingPage() {
   const [maGoi, setMaGoi] = useState("");
   const [ngayHen, setNgayHen] = useState("");
   const [gioHen, setGioHen] = useState("");
-
   const [mounted, setMounted] = useState(false);
+
+  // Hydration guard: useAuth() hook data is not available during SSR
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 
@@ -71,7 +73,7 @@ export default function BookingPage() {
     <div className="min-h-screen bg-slate-50/50 flex flex-col items-center justify-center px-4 py-12 relative overflow-hidden">
       {/* Background Decorative Blur Circles */}
       <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-blue-300/15 rounded-full blur-[100px] -z-10 pointer-events-none animate-pulse duration-5000"></div>
-      <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-indigo-300/15 rounded-full blur-[100px] -z-10 pointer-events-none animate-pulse duration-7000" style={{ animationDelay: "2s" }}></div>
+      <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-indigo-300/15 rounded-full blur-[100px] -z-10 pointer-events-none animate-pulse duration-7000 animation-delay-2s"></div>
 
       <div className="w-full max-w-3xl bg-white/90 backdrop-blur-md rounded-[2.5rem] shadow-2xl shadow-slate-200/50 p-6 md:p-10 space-y-8 border border-white/60 relative">
         
@@ -193,8 +195,9 @@ export default function BookingPage() {
               </div>
             ) : listGoiKham && listGoiKham.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                {listGoiKham.map((goi: { maGoi: string; tenGoi: string; gia: number }) => {
+                {listGoiKham.map((goi: { maGoi: string; tenGoi: string; giaGoi?: number; gia?: number }) => {
                   const isSelected = maGoi === goi.maGoi;
+                  const price = goi.giaGoi ?? goi.gia ?? 0;
                   return (
                     <div
                       key={goi.maGoi}
@@ -212,7 +215,7 @@ export default function BookingPage() {
                       <div className="flex items-center justify-between border-t border-slate-100/60 pt-2 mt-1">
                         <span className="text-[11px] text-slate-400 font-semibold">Chi phí trọn gói</span>
                         <span className="font-extrabold text-indigo-600 text-sm">
-                          {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(goi.gia)}
+                          {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price)}
                         </span>
                       </div>
                       {isSelected && (

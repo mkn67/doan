@@ -72,8 +72,8 @@ function WorkshopContent() {
   const [currentFilter, setCurrentFilter] = useState<FilterType>("all");
   
   // Role & Details computed reactively from state to prevent hydration mismatch
-  const isTechnician = userData.roles?.includes("NH05") || userData.maNhom === "NH05";
-  const isAdmin = userData.roles?.includes("NH04") || userData.maNhom === "NH04";
+  const isTechnician = userData.roles?.includes("NH05") || userData.maNhom === "NH05" || userData.roles?.includes("ROLE_KY_THUAT");
+  const isAdmin = userData.roles?.includes("NH04") || userData.maNhom === "NH04" || userData.roles?.includes("ROLE_ADMIN");
   const isWarehouse = userData.roles?.includes("NH03") || userData.maNhom === "NH03" || userData.roles?.includes("ROLE_THU_KHO") || userData.maNhom === "ROLE_THU_KHO";
   const currentUsername = userData.username || "";
 
@@ -305,7 +305,8 @@ function WorkshopContent() {
     batDauMutation.isPending || 
     hoanThanhMutation.isPending || 
     huyMutation.isPending || 
-    updateTrangThaiMutation.isPending;
+    updateTrangThaiMutation.isPending ||
+    isAdmin;
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -454,7 +455,7 @@ function WorkshopContent() {
                   {(isTechnician || isAdmin) ? (
                     <Button 
                       type="submit" 
-                      disabled={createMutation.isPending} 
+                      disabled={createMutation.isPending || isAdmin} 
                       className="w-full bg-amber-600 hover:bg-amber-500 h-11 text-md font-bold shadow-md transition-all active:scale-95 text-white"
                     >
                       {createMutation.isPending ? (

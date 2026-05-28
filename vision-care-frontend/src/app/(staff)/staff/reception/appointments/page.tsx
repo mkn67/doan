@@ -93,7 +93,7 @@ export default function AppointmentsPage() {
     keyword: searchKeyword || undefined,
     tuNgay: filterDate || undefined,
     denNgay: filterDate || undefined,
-    maNs: filterDoctor || undefined,
+    maNs: (filterDoctor && filterDoctor !== "ALL_DOCTORS") ? filterDoctor : undefined,
     page: 0,
     size: 100
   };
@@ -563,7 +563,7 @@ export default function AppointmentsPage() {
                         )}
 
                         {/* Block medical recording option for receptionist, only show for doctor or admin */}
-                        {!user?.roles?.includes("ROLE_LE_TAN") && (
+                        {!user?.roles?.includes("ROLE_LE_TAN") && user?.maNhom !== "NH06" && (
                           <DropdownMenuItem onClick={() => router.push(`/staff/clinic/examinations?makh=${item.maKh}`)} className="rounded-lg cursor-pointer py-2 text-xs">
                              Ghi hồ sơ khám
                           </DropdownMenuItem>

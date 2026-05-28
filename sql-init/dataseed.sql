@@ -500,4 +500,98 @@ INSERT INTO KH_KHUYEN_MAI (MAKH, MAKM, MAHD, NGAY_SD) VALUES ('KH002', 'KM02', '
 INSERT INTO KH_KHUYEN_MAI (MAKH, MAKM, MAHD, NGAY_SD) VALUES ('KH004', 'KM03', 'HD_S08', TIMESTAMP '2025-04-16 15:10:00');
 INSERT INTO KH_KHUYEN_MAI (MAKH, MAKM, MAHD, NGAY_SD) VALUES ('KH011', 'KM02', 'HD_S10', TIMESTAMP '2025-05-05 10:05:00');
 
+-- ============================================================================
+-- KỊCH BẢN CHÈN BỔ SUNG: PHỤC VỤ CHUỖI THUYẾT TRÌNH 3 NGÀY (29/05, 01/06, 02/06/2026)
+-- FIX LỖI ORA-12899: KHỐNG CHẾ ĐỘ DÀI MÃ ID <= 10 KÝ TỰ KHỚP SCHEMA VẬT LÝ
+-- ============================================================================
+
+-------------------------------------------------------------------------------
+-- NGÀY THUYẾT TRÌNH 1: 29/05/2026 (Thứ Sáu - Khai mạc đồ án)
+-------------------------------------------------------------------------------
+-- 1. Lịch hẹn khám hôm nay (Mã rút gọn còn 8 ký tự)
+INSERT INTO LICH_HEN (MALH, MAKH, MANS, MAGOI, NGAYHEN, GIO_HEN, LOAI_LICH, TRANGTHAI) 
+VALUES ('LH_P_29A', 'KH003', 'NS005', 'GK01', DATE '2026-05-29', TIMESTAMP '2026-05-29 09:00:00', N'Online', N'Mới');
+INSERT INTO LICH_HEN (MALH, MAKH, MANS, MAGOI, NGAYHEN, GIO_HEN, LOAI_LICH, TRANGTHAI) 
+VALUES ('LH_P_29B', 'KH005', 'NS012', 'GK02', DATE '2026-05-29', TIMESTAMP '2026-05-29 14:00:00', N'Online', N'Mới');
+
+INSERT INTO LICH_HEN_TRIEU_CHUNG (MALH, MA_TC, MO_TA_TU_DO) VALUES ('LH_P_29A', 'TC01', N'Nhìn mờ đột ngột khi mở laptop');
+INSERT INTO LICH_HEN_TRIEU_CHUNG (MALH, MA_TC, MO_TA_TU_DO) VALUES ('LH_P_29B', 'TC06', N'Mắt cộm rát dữ dội, nghi tăng độ loạn');
+
+-- 2. Hàng chờ phòng khám (Mã HC rút gọn còn 8 ký tự)
+INSERT INTO HANG_CHO (MAHC, MAKH, TEN_KHACH, SO_THU_TU, LOAI_KHACH, MALH, MANS_PHAN_CONG, TRANG_THAI, GIO_DANG_KY) 
+VALUES ('HC_P_291', 'KH003', N'Trần Thị Bích', 1, N'Đặt lịch', 'LH_P_29A', 'NS005', N'Đang chờ', SYSTIMESTAMP);
+INSERT INTO HANG_CHO (MAHC, MAKH, TEN_KHACH, SO_THU_TU, LOAI_KHACH, MALH, MANS_PHAN_CONG, TRANG_THAI, GIO_DANG_KY) 
+VALUES ('HC_P_292', 'KH005', N'Lê Ngọc Hân', 2, N'Đặt lịch', 'LH_P_29B', 'NS012', N'Đang chờ', SYSTIMESTAMP);
+
+-- 3. Hóa đơn treo chưa thanh toán (Mã HD rút gọn còn 8 ký tự)
+INSERT INTO HOA_DON (MAHD, MAKH, MANS, MAHOSO, MADON, NGAYLAP, TRANGTHAI, IS_DELETED)
+VALUES ('HD_P_291', 'KH003', 'NS010', 'HS_T03_01', 'KD_S03', TIMESTAMP '2026-05-29 09:30:00', N'Chưa thanh toán', 0);
+INSERT INTO CT_HOA_DON_DV (MAHD, MADV, SOLUONG, DONGIA) VALUES ('HD_P_291', 'DV01', 1, 150000);
+INSERT INTO CT_HOA_DON (MAHD, MALO, MASP, SOLUONG, DONGIA) VALUES ('HD_P_291', 'LO_S01', 'SP001', 1, 350000);
+
+-- 4. Đơn mài lắp kính Ngày 29/05 (Mã XL rút gọn vừa khít 10 ký tự)
+-- Đơn ở hàng đợi Chờ xử lý (Nút "Bắt đầu mài")
+INSERT INTO XU_LY_KINH (MAXL, MADON, THONG_SO_KINH, TRANG_THAI, NGAY_BAT_DAU, MANS_KY_THUAT, GHI_CHU)
+VALUES ('XL_P_29_PE', 'KD_S01', '{"sph_r": -2.50, "pd": 63.0}', N'Chờ xử lý', TIMESTAMP '2026-05-29 08:00:00', 'NS006', N'Khách cần gấp trước 11h để đi làm');
+
+-- Đơn Đang xử lý (Nút "Hoàn thành" & "Báo lỗi")
+INSERT INTO XU_LY_KINH (MAXL, MADON, THONG_SO_KINH, TRANG_THAI, NGAY_BAT_DAU, MANS_KY_THUAT, GHI_CHU)
+VALUES ('XL_P_29_PR', 'KD_S03', '{"sph_r": -0.50, "cyl_r": -1.75, "ax_r": 175}', N'Đang xử lý', TIMESTAMP '2026-05-29 08:30:00', 'NS006', N'Tròng đổi màu Transitions đổi màu gọng nhựa Acetate');
+
+-- Đơn bị Lỗi gia công (Nút "Gia công lại")
+INSERT INTO XU_LY_KINH (MAXL, MADON, THONG_SO_KINH, TRANG_THAI, NGAY_BAT_DAU, MANS_KY_THUAT, GHI_CHU)
+VALUES ('XL_P_29_FA', 'KD_S06', '{"sph_r": -3.00, "cyl_r": -0.50}', N'Lỗi gia công', TIMESTAMP '2026-05-29 07:45:00', 'NS007', N'Tròng kính cận phải bị mẻ góc trong lúc mài trục');
+
+
+-------------------------------------------------------------------------------
+-- NGÀY THUYẾT TRÌNH 2: 01/06/2026 (Thứ Hai - Giữa tuần cân não)
+-------------------------------------------------------------------------------
+-- 1. Lịch hẹn khám
+INSERT INTO LICH_HEN (MALH, MAKH, MANS, MAGOI, NGAYHEN, GIO_HEN, LOAI_LICH, TRANGTHAI) 
+VALUES ('LH_P_01A', 'KH009', 'NS005', 'GK01', DATE '2026-06-01', TIMESTAMP '2026-06-01 10:00:00', N'Online', N'Mới');
+
+-- 2. Hàng chờ phòng khám
+INSERT INTO HANG_CHO (MAHC, MAKH, TEN_KHACH, SO_THU_TU, LOAI_KHACH, MALH, MANS_PHAN_CONG, TRANG_THAI, GIO_DANG_KY) 
+VALUES ('HC_P_011', 'KH009', N'Ngô Thị Thanh', 1, N'Đặt lịch', 'LH_P_01A', 'NS005', N'Đang chờ', TIMESTAMP '2026-06-01 09:30:00');
+
+-- 3. Hóa đơn treo chưa thanh toán
+INSERT INTO HOA_DON (MAHD, MAKH, MANS, MAHOSO, MADON, NGAYLAP, TRANGTHAI, IS_DELETED)
+VALUES ('HD_P_011', 'KH009', 'NS010', 'HS_T01_02', 'KD_S02', TIMESTAMP '2026-06-01 10:15:00', N'Chưa thanh toán', 0);
+INSERT INTO CT_HOA_DON_DV (MAHD, MADV, SOLUONG, DONGIA) VALUES ('HD_P_011', 'DV02', 1, 80000);
+INSERT INTO CT_HOA_DON (MAHD, MALO, MASP, SOLUONG, DONGIA) VALUES ('HD_P_011', 'LO_S12', 'SP009', 1, 185000);
+
+-- 4. Đơn mài lắp kính
+-- Đơn Chờ xử lý
+INSERT INTO XU_LY_KINH (MAXL, MADON, THONG_SO_KINH, TRANG_THAI, NGAY_BAT_DAU, MANS_KY_THUAT, GHI_CHU)
+VALUES ('XL_P_01_PE', 'KD_S02', '{"sph_r": -1.75, "cyl_r": -0.50}', N'Chờ xử lý', TIMESTAMP '2026-06-01 09:00:00', 'NS007', N'Gia công mắt mỏi cận nhẹ');
+
+-- Đơn Đang xử lý
+INSERT INTO XU_LY_KINH (MAXL, MADON, THONG_SO_KINH, TRANG_THAI, NGAY_BAT_DAU, MANS_KY_THUAT, GHI_CHU)
+VALUES ('XL_P_01_PR', 'KD_S04', '{"sph_r": 1.00, "add_r": 2.00}', N'Đang xử lý', TIMESTAMP '2026-06-01 09:30:00', 'NS006', N'Kính đa tròng cao cấp Varilux gọng Titanium');
+
+
+-------------------------------------------------------------------------------
+-- NGÀY THUYẾT TRÌNH 3: 02/06/2026 (Thứ Ba - Ngày chốt hạ bảng điểm)
+-------------------------------------------------------------------------------
+-- 1. Lịch hẹn khám
+INSERT INTO LICH_HEN (MALH, MAKH, MANS, MAGOI, NGAYHEN, GIO_HEN, LOAI_LICH, TRANGTHAI) 
+VALUES ('LH_P_02A', 'KH011', 'NS012', 'GK03', DATE '2026-06-02', TIMESTAMP '2026-06-02 11:00:00', N'Walk-in', N'Mới');
+
+-- 2. Hàng chờ phòng khám
+INSERT INTO HANG_CHO (MAHC, MAKH, TEN_KHACH, SO_THU_TU, LOAI_KHACH, MALH, MANS_PHAN_CONG, TRANG_THAI, GIO_DANG_KY) 
+VALUES ('HC_P_021', 'KH011', N'Trương Thị Mai', 1, N'Walk-in', 'LH_P_02A', 'NS012', N'Đang chờ', TIMESTAMP '2026-06-02 10:45:00');
+
+-- 3. Hóa đơn treo chưa thanh toán
+INSERT INTO HOA_DON (MAHD, MAKH, MANS, MAHOSO, MADON, NGAYLAP, TRANGTHAI, IS_DELETED)
+VALUES ('HD_P_021', 'KH011', 'NS013', 'HS_T05_01', 'KD_S06', TIMESTAMP '2026-06-02 11:15:00', N'Chưa thanh toán', 0);
+INSERT INTO CT_HOA_DON_DV (MAHD, MADV, SOLUONG, DONGIA) VALUES ('HD_P_021', 'DV04', 1, 120000);
+
+-- 4. Đơn mài lắp kính
+-- Đơn Đang xử lý
+INSERT INTO XU_LY_KINH (MAXL, MADON, THONG_SO_KINH, TRANG_THAI, NGAY_BAT_DAU, MANS_KY_THUAT, GHI_CHU)
+VALUES ('XL_P_02_PR', 'KD_S06', '{"sph_r": -3.00, "ax_r": 170}', N'Đang xử lý', TIMESTAMP '2026-06-02 08:30:00', 'NS007', N'Tròng đổi màu Transitions kết hợp gọng TR90 bền');
+
+-- Đơn Đã Hoàn thành
+INSERT INTO XU_LY_KINH (MAXL, MADON, THONG_SO_KINH, TRANG_THAI, NGAY_BAT_DAU, NGAY_HOAN_THANH, MANS_KY_THUAT, GHI_CHU)
+VALUES ('XL_P_02_DO', 'KD_S01', '{"sph_r": -2.50, "sph_l": -3.00}', N'Hoàn thành', TIMESTAMP '2026-06-02 08:00:00', TIMESTAMP '2026-06-02 09:15:00', 'NS006', N'Đã căn chỉnh gọng titanium hoàn tất sạch sẽ');
 COMMIT;
