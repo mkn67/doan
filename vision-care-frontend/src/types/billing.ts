@@ -41,6 +41,22 @@ export interface TaoHoaDonJsonRequest {
 }
 
 
+export interface ChiTietSanPhamResponse {
+  tenSanPham: string
+  maLo: string
+  soLuong: number
+  donGia: number
+  thanhTien: number
+}
+
+export interface ChiTietDichVuResponse {
+  tenDichVu: string
+  soLuong: number
+  donGia: number
+  thanhTien: number
+  ghiChu?: string
+}
+
 export interface HoaDonResponseDTO {
   maHd: string
   ngayLap: string
@@ -49,6 +65,8 @@ export interface HoaDonResponseDTO {
   tenKhachHang: string
   sdtKhachHang: string
   tenNhanVienLap: string
+  danhSachSanPham?: ChiTietSanPhamResponse[]
+  danhSachDichVu?: ChiTietDichVuResponse[]
 }
 
 export interface ThanhToanResponseDTO {

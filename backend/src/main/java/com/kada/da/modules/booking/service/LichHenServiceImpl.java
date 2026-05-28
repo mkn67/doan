@@ -144,6 +144,7 @@ public class LichHenServiceImpl implements LichHenService {
         return LichHenResponseDTO.builder()
                 .maLh(entity.getMaLh())
                 .tenKhachHang(entity.getKhachHang() != null ? entity.getKhachHang().getHoTen() : null)
+                .sdtKhachHang(entity.getKhachHang() != null ? entity.getKhachHang().getSdt() : null)
                 .tenBacSi(entity.getNhanSu() != null ? entity.getNhanSu().getHoTen() : null)
                 .ngayHen(entity.getNgayHen() != null ? entity.getNgayHen().toLocalDate() : null) // Giữ nguyên kiểu trả
                 // về của DTO nếu DTO
@@ -154,6 +155,7 @@ public class LichHenServiceImpl implements LichHenService {
                 .trieuChung(trieuChungStr)
                 .loaiLich(entity.getLoaiLich())
                 .trangThai(entity.getTrangThai() != null ? entity.getTrangThai().name() : null)
+                .tenGoiKham(entity.getGoiKham() != null ? entity.getGoiKham().getTenGoi() : null)
                 .build();
     }
 

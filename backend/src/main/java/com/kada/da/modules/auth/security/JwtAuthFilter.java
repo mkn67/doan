@@ -47,13 +47,17 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
             try {
                 if (tokenBlacklistRepository.existsByToken(token)) {
-                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token has been revoked");
                     return;
                 }
 
                 String username = jwtTokenUtil.getUsernameFromToken(token);
                 // Lấy thẳng cái mảng roles từ token ra
-                List<String> roles = jwtTokenUtil.getClaimFromToken(token, claims -> (List<String>) claims.get("roles"));
+                List<?> rawRoles = jwtTokenUtil.getClaimFromToken(token, claims -> claims.get("roles", List.class));
+                List<String> roles = rawRoles != null ? rawRoles.stream()
+                        .filter(String.class::isInstance)
+                        .map(String.class::cast)
+                        .collect(Collectors.toList()) : List.of();
 
                 if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                     // Biến đổi mảng roles thành danh sách quyền (Authorities)

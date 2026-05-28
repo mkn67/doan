@@ -33,6 +33,10 @@ export const billingApi = {
     return response.data;
   },
 
+  deleteHoaDon: async (maHd: string): Promise<void> => {
+    await axiosClient.delete(`/billing/${maHd}`);
+  },
+
   // 4. Thanh toán
   thanhToan: async (data: ThanhToanRequestDTO): Promise<ThanhToanResponseDTO> => {
     const response = await axiosClient.post<ThanhToanResponseDTO>('/thanh-toan', data);

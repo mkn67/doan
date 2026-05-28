@@ -33,6 +33,8 @@ import {
   useDeleteDichVuKham 
 } from "@/hooks/useStaff"
 
+import { toast } from "sonner"
+
 export default function ServicesPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [openCreate, setOpenCreate] = useState(false)
@@ -40,6 +42,11 @@ export default function ServicesPage() {
   const [selectedService, setSelectedService] = useState<DichVuKhamResponse | null>(null)
   const [formValue, setFormValue] = useState<DichVuKhamRequest>({ tenDv: "", giaDv: 0, moTa: "" })
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
+
+  // Bulk Edit States
+  const [isBulkEditMode, setIsBulkEditMode] = useState(false)
+  const [editedServices, setEditedServices] = useState<Record<string, DichVuKhamRequest>>({})
+  const [isSavingBulk, setIsSavingBulk] = useState(false)
 
   const { data, isLoading } = useDanhSachDichVuKham(0, 50)
   
@@ -78,6 +85,7 @@ export default function ServicesPage() {
       onSuccess: () => {
         setOpenCreate(false)
         setFormValue({ tenDv: "", giaDv: 0, moTa: "" })
+        toast.success("Thêm dịch vụ khám mới thành công! 🎉")
       }
     })
   }
@@ -89,6 +97,7 @@ export default function ServicesPage() {
         setOpenEdit(false)
         setSelectedService(null)
         setFormValue({ tenDv: "", giaDv: 0, moTa: "" })
+        toast.success("Cập nhật thông tin dịch vụ thành công! 📝")
       }
     })
   }
@@ -96,8 +105,45 @@ export default function ServicesPage() {
   const handleDelete = () => {
     if (deleteConfirm) {
       deleteMutation.mutate(deleteConfirm, {
-        onSuccess: () => setDeleteConfirm(null)
+        onSuccess: () => {
+          setDeleteConfirm(null)
+          toast.success("Đã xóa dịch vụ khám thành công.")
+        }
       })
+    }
+  }
+
+  const handleSaveBulk = async () => {
+    const entries = Object.entries(editedServices)
+    if (entries.length === 0) {
+      toast.info("Chưa có thay đổi nào cần lưu.")
+      setIsBulkEditMode(false)
+      return
+    }
+
+    setIsSavingBulk(true)
+    const promise = Promise.all(
+      entries.map(([maDv, data]) =>
+        updateMutation.mutateAsync({ maDv, data })
+      )
+    )
+
+    toast.promise(promise, {
+      loading: "Đang lưu tất cả các thay đổi dịch vụ...",
+      success: () => {
+        setIsBulkEditMode(false)
+        setEditedServices({})
+        return "Đã cập nhật hàng loạt dịch vụ thành công! 🚀"
+      },
+      error: (err) => `Gặp sự cố khi lưu hàng loạt: ${err.message || err}`
+    })
+
+    try {
+      await promise
+    } catch (e) {
+      console.error("Bulk update error:", e)
+    } finally {
+      setIsSavingBulk(false)
     }
   }
 
@@ -108,9 +154,39 @@ export default function ServicesPage() {
           <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">Danh mục dịch vụ</h1>
           <p className="text-sm font-medium text-slate-500 mt-1">Quản lý các dịch vụ khám chữa bệnh và bảng giá chính xác.</p>
         </div>
-        <Button onClick={handleOpenCreate} className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 shadow-md shadow-emerald-500/20 text-white font-semibold px-5 py-2.5 rounded-xl transition-all duration-300 hover:scale-[1.02]">
-          <PlusCircle className="mr-2 h-5 w-5" /> Thêm dịch vụ
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button
+            onClick={() => {
+              if (isBulkEditMode) {
+                setEditedServices({})
+              }
+              setIsBulkEditMode(!isBulkEditMode)
+            }}
+            variant="outline"
+            className={`border-slate-200 shadow-sm rounded-xl font-semibold px-4 h-11 ${
+              isBulkEditMode ? "bg-amber-50 text-amber-700 border-amber-200" : "bg-white hover:bg-slate-50"
+            }`}
+          >
+            {isBulkEditMode ? "Hủy sửa nhanh" : "Chế độ sửa nhanh"}
+          </Button>
+
+          {isBulkEditMode && (
+            <Button
+              onClick={handleSaveBulk}
+              disabled={isSavingBulk}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 h-11 rounded-xl shadow-md shadow-blue-500/10"
+            >
+              {isSavingBulk ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : null}
+              Lưu tất cả thay đổi
+            </Button>
+          )}
+
+          {!isBulkEditMode && (
+            <Button onClick={handleOpenCreate} className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 shadow-md shadow-emerald-500/20 text-white font-semibold px-5 py-2.5 rounded-xl transition-all duration-300 hover:scale-[1.02]">
+              <PlusCircle className="mr-2 h-5 w-5" /> Thêm dịch vụ
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="flex items-center justify-between gap-4">
@@ -133,9 +209,9 @@ export default function ServicesPage() {
               <TableHead className="w-[140px] font-semibold text-slate-600 py-4 pl-6">Mã DV</TableHead>
               <TableHead className="font-semibold text-slate-600 py-4">Tên dịch vụ</TableHead>
               <TableHead className="font-semibold text-slate-600 py-4">Mô tả</TableHead>
-              <TableHead className="text-right font-semibold text-slate-600 py-4">Đơn giá</TableHead>
-              <TableHead className="text-center font-semibold text-slate-600 py-4">Trạng thái</TableHead>
-              <TableHead className="text-right font-semibold text-slate-600 py-4 pr-6">Tùy chọn</TableHead>
+              <TableHead className="text-right font-semibold text-slate-600 py-4 w-48">Đơn giá</TableHead>
+              <TableHead className="text-center font-semibold text-slate-600 py-4 w-36">Trạng thái</TableHead>
+              <TableHead className="text-right font-semibold text-slate-600 py-4 pr-6 w-24">Tùy chọn</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -147,43 +223,96 @@ export default function ServicesPage() {
                 </TableCell>
               </TableRow>
             ) : filteredServices.length ? (
-              filteredServices.map((svc) => (
-                <TableRow key={svc.maDv} className="hover:bg-emerald-50/40 transition-colors border-b border-slate-100/50 group">
-                  <TableCell className="font-semibold text-slate-500 pl-6">{svc.maDv}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-3 font-semibold text-slate-800">
-                      <div className="w-8 h-8 rounded-full bg-emerald-100/50 flex items-center justify-center">
-                        <Stethoscope className="w-4 h-4 text-emerald-600" />
-                      </div>
-                      {svc.tenDv}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-slate-600 text-sm font-medium">{svc.moTa || <span className="text-slate-300 italic">Không có mô tả</span>}</TableCell>
-                  <TableCell className="text-right font-bold text-emerald-600">{formatVND(svc.giaDv)}</TableCell>
-                  <TableCell className="text-center">
-                    <span className="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-600 border border-emerald-200/50 shadow-sm">
-                      Hoạt động
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-right pr-6">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-9 w-9 opacity-0 group-hover:opacity-100 transition-opacity rounded-full hover:bg-slate-200/50">
-                          <MoreHorizontal className="h-4 w-4 text-slate-500" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="bg-white/95 backdrop-blur-xl rounded-2xl border border-slate-100 shadow-xl p-1.5 w-40">
-                        <DropdownMenuItem className="rounded-xl cursor-pointer hover:bg-emerald-50 hover:text-emerald-700 focus:bg-emerald-50 font-medium py-2.5 transition-colors" onClick={() => handleEdit(svc)}>
-                          <Pencil className="mr-2.5 h-4 w-4" /> Chỉnh sửa
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="rounded-xl cursor-pointer text-rose-600 hover:bg-rose-50 hover:text-rose-700 focus:bg-rose-50 font-medium py-2.5 transition-colors mt-1" onClick={() => setDeleteConfirm(svc.maDv)}>
-                          <Trash2 className="mr-2.5 h-4 w-4" /> Xóa dịch vụ
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))
+              filteredServices.map((svc) => {
+                const isEdited = !!editedServices[svc.maDv]
+                const currentVal = editedServices[svc.maDv] || { tenDv: svc.tenDv, giaDv: svc.giaDv, moTa: svc.moTa ?? "" }
+
+                return (
+                  <TableRow key={svc.maDv} className={`transition-colors border-b border-slate-100/50 group ${isEdited ? "bg-amber-50/30" : "hover:bg-emerald-50/40"}`}>
+                    <TableCell className="font-semibold text-slate-500 pl-6">{svc.maDv}</TableCell>
+                    <TableCell>
+                      {isBulkEditMode ? (
+                        <Input
+                          value={currentVal.tenDv}
+                          onChange={(e) => {
+                            setEditedServices({
+                              ...editedServices,
+                              [svc.maDv]: { ...currentVal, tenDv: e.target.value }
+                            })
+                          }}
+                          className="h-9 border-slate-200 focus-visible:ring-blue-500 rounded-lg max-w-sm"
+                        />
+                      ) : (
+                        <div className="flex items-center gap-3 font-semibold text-slate-800">
+                          <div className="w-8 h-8 rounded-full bg-emerald-100/50 flex items-center justify-center">
+                            <Stethoscope className="w-4 h-4 text-emerald-600" />
+                          </div>
+                          {svc.tenDv}
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {isBulkEditMode ? (
+                        <Input
+                          value={currentVal.moTa ?? ""}
+                          onChange={(e) => {
+                            setEditedServices({
+                              ...editedServices,
+                              [svc.maDv]: { ...currentVal, moTa: e.target.value }
+                            })
+                          }}
+                          className="h-9 border-slate-200 focus-visible:ring-blue-500 rounded-lg"
+                        />
+                      ) : (
+                        <span className="text-slate-600 text-sm font-medium">
+                          {svc.moTa || <span className="text-slate-300 italic">Không có mô tả</span>}
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {isBulkEditMode ? (
+                        <Input
+                          type="number"
+                          value={currentVal.giaDv}
+                          onChange={(e) => {
+                            setEditedServices({
+                              ...editedServices,
+                              [svc.maDv]: { ...currentVal, giaDv: Number(e.target.value) }
+                            })
+                          }}
+                          className="h-9 border-slate-200 focus-visible:ring-blue-500 rounded-lg text-right font-bold text-emerald-600"
+                        />
+                      ) : (
+                        <span className="font-bold text-emerald-600">{formatVND(svc.giaDv)}</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <span className="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-600 border border-emerald-200/50 shadow-sm">
+                        Hoạt động
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-right pr-6">
+                      {!isBulkEditMode && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-9 w-9 opacity-0 group-hover:opacity-100 transition-opacity rounded-full hover:bg-slate-200/50">
+                              <MoreHorizontal className="h-4 w-4 text-slate-500" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="bg-white/95 backdrop-blur-xl rounded-2xl border border-slate-100 shadow-xl p-1.5 w-40">
+                            <DropdownMenuItem className="rounded-xl cursor-pointer hover:bg-emerald-50 hover:text-emerald-700 focus:bg-emerald-50 font-medium py-2.5 transition-colors" onClick={() => handleEdit(svc)}>
+                              <Pencil className="mr-2.5 h-4 w-4" /> Chỉnh sửa
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="rounded-xl cursor-pointer text-rose-600 hover:bg-rose-50 hover:text-rose-700 focus:bg-rose-50 font-medium py-2.5 transition-colors mt-1" onClick={() => setDeleteConfirm(svc.maDv)}>
+                              <Trash2 className="mr-2.5 h-4 w-4" /> Xóa dịch vụ
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                )
+              })
             ) : (
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-20 text-slate-500">

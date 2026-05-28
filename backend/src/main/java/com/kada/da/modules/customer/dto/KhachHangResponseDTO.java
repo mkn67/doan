@@ -18,6 +18,11 @@ public class KhachHangResponseDTO {
     private String diaChi;
     private String ghiChu;
 
+    private String cccd;
+    private java.time.LocalDate ngaySinh;
+    private String gioiTinh;
+    private Integer diemTichLuy;
+
     // Thêm các thông tin thống kê để "ăn điểm" IS201
     private LocalDateTime ngayTao;
     private Integer tongSoLanKham; // Tính từ số lượng HoSoThiLuc

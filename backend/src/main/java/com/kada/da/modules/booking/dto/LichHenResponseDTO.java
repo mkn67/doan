@@ -24,6 +24,7 @@ public class LichHenResponseDTO {
     private String loaiLich;
     private String trangThai; // 👉 Đổi thành String để trả về cho Frontend dễ đọc
     private String trieuChung;
+    private String tenGoiKham;
 
     // Static Factory Method để Map từ Entity sang DTO
     public static LichHenResponseDTO fromEntity(LichHen lichHen) {
@@ -52,6 +53,10 @@ public class LichHenResponseDTO {
 
         if (lichHen.getNhanSu() != null) {
             builder.tenBacSi(lichHen.getNhanSu().getHoTen());
+        }
+
+        if (lichHen.getGoiKham() != null) {
+            builder.tenGoiKham(lichHen.getGoiKham().getTenGoi());
         }
 
         return builder.build();

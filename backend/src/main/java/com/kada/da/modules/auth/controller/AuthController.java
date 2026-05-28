@@ -16,6 +16,11 @@ import com.kada.da.modules.auth.dto.ChangePasswordRequestDTO;
 import com.kada.da.modules.auth.dto.LoginRequestDTO;
 import com.kada.da.modules.auth.dto.TaiKhoanRequestDTO;
 import com.kada.da.modules.auth.dto.TaiKhoanResponseDTO;
+import com.kada.da.modules.auth.dto.ForgotPasswordRequestDTO;
+import com.kada.da.modules.auth.dto.ProfileResponseDTO;
+import com.kada.da.modules.auth.dto.ProfileUpdateRequestDTO;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import com.kada.da.modules.auth.service.AuthService;
 
 import jakarta.validation.Valid;
@@ -45,6 +50,30 @@ public class AuthController {
             @RequestBody TaiKhoanRequestDTO request) {
         // Lệnh này sẽ gọi thẳng vào cái hàm register có sinh mã tự động bên Service
         return ResponseEntity.ok(authService.register(request));
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(
+            @Valid @RequestBody ForgotPasswordRequestDTO request) {
+        authService.forgotPassword(request);
+        return ResponseEntity.ok(
+                Map.of("status", "success", "message", "Mật khẩu của bạn đã được cập nhật thành công!"));
+    }
+
+    @GetMapping("/me")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ProfileResponseDTO> getMyProfile(Principal principal) {
+        String username = principal.getName();
+        return ResponseEntity.ok(authService.getProfile(username));
+    }
+
+    @PutMapping("/me")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ProfileResponseDTO> updateMyProfile(
+            @Valid @RequestBody ProfileUpdateRequestDTO request,
+            Principal principal) {
+        String username = principal.getName();
+        return ResponseEntity.ok(authService.updateProfile(username, request));
     }
 
     @PostMapping("/change-password")

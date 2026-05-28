@@ -136,13 +136,13 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
             VISION <span className="text-blue-500">CARE</span>
           </h1>
           
-          <div className="mt-5 flex items-center gap-3 p-3 bg-slate-800/40 backdrop-blur border border-slate-700/40 rounded-2xl">
+          <Link href="/staff/profile" className="mt-5 flex items-center gap-3 p-3 bg-slate-800/40 hover:bg-slate-800/60 transition-colors border border-slate-700/40 rounded-2xl cursor-pointer block">
             {/* User Avatar */}
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center font-black text-white shadow-md text-sm flex-shrink-0">
               {user?.hoTen ? user.hoTen.charAt(0).toUpperCase() : "U"}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">TÀI KHOẢN</p>
+              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">CÁ NHÂN</p>
               <p className="text-sm font-bold text-white truncate" title={user?.hoTen}>
                 {user?.hoTen || "Nhân viên"}
               </p>
@@ -150,7 +150,7 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
                 Nhân sự: <span className="text-blue-400 font-semibold">{getRoleLabel(user?.roles)}</span>
               </p>
             </div>
-          </div>
+          </Link>
         </div>
         
         {/* Menu Navigation */}
@@ -187,8 +187,17 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
       </aside>
 
       {/* KHU VỰC HIỂN THỊ NỘI DUNG (MAIN CONTENT) */}
-      <main className="flex-1 overflow-y-auto relative bg-slate-50/50">
-        <div className="p-8 min-h-full">
+      <main className="flex-1 overflow-y-auto relative bg-slate-50/50 flex flex-col">
+        {user?.roles?.includes("ROLE_ADMIN") && 
+         !pathname.startsWith("/staff/admin") && 
+         !pathname.startsWith("/staff/dashboard") && 
+         pathname !== "/staff" && (
+          <div className="bg-amber-500/15 border-b border-amber-500/30 px-6 py-3.5 flex items-center gap-2 text-amber-700 font-bold text-xs shadow-sm">
+            <ShieldAlert className="w-4.5 h-4.5 animate-pulse text-amber-500 shrink-0" />
+            <span>Chế độ Xem & Đọc dành cho Quản trị viên (Admin Read-Only). Bạn đang ở màn hình nghiệp vụ - Các thao tác ghi, xóa hoặc cập nhật đã bị khóa.</span>
+          </div>
+        )}
+        <div className="p-8 min-h-full flex-1">
           {children}
         </div>
       </main>

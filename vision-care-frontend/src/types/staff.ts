@@ -107,6 +107,7 @@ export interface LichHenResponseDTO {
   loaiLich: string
   trangThai: string
   trieuChung?: string
+  tenGoiKham?: string
 }
 
 export interface HangChoResponseDTO {

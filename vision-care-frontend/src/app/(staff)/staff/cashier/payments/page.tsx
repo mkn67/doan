@@ -16,9 +16,11 @@ import { useReactToPrint } from "react-to-print";
 import { QRCodeSVG } from "qrcode.react";
 import { useRouter } from "next/navigation";
 
-import { useDanhSachHoaDon, useThanhToan } from "@/hooks/useBilling";
+import { useDanhSachHoaDon, useThanhToan, useDeleteHoaDon } from "@/hooks/useBilling";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
+import { toast } from "sonner";
 import {
   Table,
   TableBody,
@@ -53,7 +55,9 @@ export default function PaymentsPage() {
   const router = useRouter();
   const { data: listHoaDon, isLoading } = useDanhSachHoaDon();
   const thanhToanMutation = useThanhToan();
+  const deleteMutation = useDeleteHoaDon();
   const [searchTerm, setSearchTerm] = useState("");
+  const [scanTerm, setScanTerm] = useState("");
 
   // ==========================================
   // STATE: THANH TOÁN
@@ -78,7 +82,6 @@ export default function PaymentsPage() {
 
   const triggerPrint = (invoice: HoaDonResponseDTO) => {
     setInvoiceToPrint(invoice);
-    // Delay nhẹ 100ms để React kịp render dữ liệu vào DOM ẩn rồi mới bật hộp thoại In
     setTimeout(() => {
       handlePrint();
     }, 100);
@@ -104,11 +107,31 @@ export default function PaymentsPage() {
     setIsOpen(true);
   };
 
+  // Scanner quick checkout trigger
+  const handleScanSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanCode = scanTerm.trim();
+    if (!cleanCode) return;
+
+    const matchedInvoice = invoices.find(
+      (hd) => hd.maHd?.toLowerCase() === cleanCode.toLowerCase()
+    );
+
+    if (matchedInvoice) {
+      if (matchedInvoice.trangThai === "Chưa thanh toán" || matchedInvoice.trangThai === "Chờ thanh toán") {
+        handleOpenPayment(matchedInvoice);
+        toast.success(`Đã quét mã ${matchedInvoice.maHd} - Mở thanh toán.`);
+      } else {
+        toast.info(`Hóa đơn ${matchedInvoice.maHd} đã thanh toán.`);
+      }
+      setScanTerm("");
+    } else {
+      toast.error(`Không tìm thấy hóa đơn có mã: ${cleanCode}`);
+    }
+  };
+
   const handleConfirmPayment = () => {
     if (!selectedInvoice) return;
-
-    // DEBUG: Kiểm tra giá trị thực tế của hóa đơn
-    console.log("Hóa đơn đang thanh toán:", selectedInvoice);
 
     const userStr = localStorage.getItem("user");
     const userObj = userStr ? JSON.parse(userStr) : null;
@@ -130,7 +153,6 @@ export default function PaymentsPage() {
       onSuccess: () => {
         alert("✅ Thanh toán thành công!");
         setIsOpen(false);
-        // Gợi ý in luôn sau khi thanh toán
         triggerPrint(selectedInvoice);
       },
       onError: () => alert("❌ Lỗi xử lý thanh toán!"),
@@ -172,6 +194,32 @@ export default function PaymentsPage() {
           />
         </div>
       </div>
+
+      {/* BARCODE / QR SCANNER QUICK SEARCH */}
+      <Card className="border-emerald-100 shadow-sm bg-gradient-to-r from-emerald-50/50 to-teal-50/20 overflow-hidden">
+        <CardContent className="p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="space-y-0.5">
+            <h3 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
+              <span>Quét mã vạch thanh toán nhanh</span>
+            </h3>
+            <p className="text-xs text-slate-500">
+              Nhập hoặc dùng máy quét mã vạch quét mã hóa đơn (VD: HD001) để tự động mở màn hình thanh toán.
+            </p>
+          </div>
+          <form onSubmit={handleScanSubmit} className="flex items-center gap-2 w-full sm:w-auto">
+            <Input
+              value={scanTerm}
+              onChange={(e) => setScanTerm(e.target.value)}
+              placeholder="Quét mã HĐ vào đây..."
+              className="bg-white border-slate-200 h-10 w-full sm:w-64 rounded-xl font-mono text-center tracking-widest text-slate-800"
+            />
+            <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700 h-10 rounded-xl font-bold">
+              Kiểm tra
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
 
       {/* BẢNG DỮ LIỆU */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
@@ -252,13 +300,30 @@ export default function PaymentsPage() {
                   <TableCell className="text-center">
                     {hd.trangThai === "Chưa thanh toán" ||
                     hd.trangThai === "Chờ thanh toán" ? (
-                      <Button
-                        size="sm"
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white w-full shadow-sm rounded-lg"
-                        onClick={() => handleOpenPayment(hd)}
-                      >
-                        Thu tiền
-                      </Button>
+                      <div className="flex items-center gap-1.5">
+                        <Button
+                          size="sm"
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white flex-1 shadow-sm rounded-lg"
+                          onClick={() => handleOpenPayment(hd)}
+                        >
+                          Thu
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          className="bg-rose-650 hover:bg-rose-700 text-white rounded-lg px-2"
+                          onClick={() => {
+                            if (window.confirm(`⚠️ Bạn có chắc chắn muốn HỦY/XÓA hóa đơn ${hd.maHd}?`)) {
+                              deleteMutation.mutate(hd.maHd, {
+                                onSuccess: () => toast.success(`Đã hủy hóa đơn ${hd.maHd} thành công.`),
+                                onError: (err: any) => toast.error(err.response?.data?.message || `Lỗi khi hủy hóa đơn ${hd.maHd}`)
+                              });
+                            }
+                          }}
+                        >
+                          Hủy
+                        </Button>
+                      </div>
                     ) : (
                       <Button
                         size="sm"
@@ -451,30 +516,82 @@ export default function PaymentsPage() {
             </div>
           </div>
 
-          {/* Bảng tóm tắt (Do không có chi tiết nên in tổng tiền) */}
-          <table className="w-full text-left border-collapse mb-8">
+          {/* Bảng chi tiết hóa đơn */}
+          <table className="w-full text-left border-collapse mb-8 text-sm">
             <thead>
-              <tr className="border-b-2 border-slate-200">
-                <th className="py-3 font-bold text-slate-700">
-                  Nội dung dịch vụ / Sản phẩm
-                </th>
-                <th className="py-3 font-bold text-slate-700 text-right">
-                  Thành tiền
-                </th>
+              <tr className="border-b-2 border-slate-300 bg-slate-50">
+                <th className="py-2.5 px-2 font-bold text-slate-700">Nội dung</th>
+                <th className="py-2.5 px-2 font-bold text-slate-700 text-center w-20">SL</th>
+                <th className="py-2.5 px-2 font-bold text-slate-700 text-right w-32">Đơn giá</th>
+                <th className="py-2.5 px-2 font-bold text-slate-700 text-right w-32">Thành tiền</th>
               </tr>
             </thead>
             <tbody>
-              <tr className="border-b border-slate-100">
-                <td className="py-4 text-slate-700">
-                  Chi phí Khám mắt & Gia công kính (Tổng hợp)
-                </td>
-                <td className="py-4 text-right font-semibold">
-                  {new Intl.NumberFormat("vi-VN", {
-                    style: "currency",
-                    currency: "VND",
-                  }).format(invoiceToPrint?.tongTien || 0)}
-                </td>
-              </tr>
+              {/* NHÓM 1: KHÁM MẮT & DỊCH VỤ */}
+              {invoiceToPrint?.danhSachDichVu && invoiceToPrint.danhSachDichVu.length > 0 && (
+                <>
+                  <tr className="bg-slate-100/50">
+                    <td colSpan={4} className="py-2 px-2 font-bold text-slate-800 text-xs uppercase tracking-wider">
+                      I. Khám mắt & Dịch vụ y tế
+                    </td>
+                  </tr>
+                  {invoiceToPrint.danhSachDichVu.map((dv, idx) => (
+                    <tr key={`dv-${idx}`} className="border-b border-slate-100">
+                      <td className="py-2 px-3 text-slate-700 font-medium">
+                        {dv.tenDichVu}
+                        {dv.ghiChu && <span className="text-[10px] text-slate-400 block italic">({dv.ghiChu})</span>}
+                      </td>
+                      <td className="py-2 px-2 text-center text-slate-600">{dv.soLuong}</td>
+                      <td className="py-2 px-2 text-right text-slate-600 font-mono">
+                        {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(dv.donGia)}
+                      </td>
+                      <td className="py-2 px-2 text-right font-semibold font-mono text-slate-800">
+                        {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(dv.thanhTien)}
+                      </td>
+                    </tr>
+                  ))}
+                </>
+              )}
+
+              {/* NHÓM 2: SẢN PHẨM & MẮT KÍNH */}
+              {invoiceToPrint?.danhSachSanPham && invoiceToPrint.danhSachSanPham.length > 0 && (
+                <>
+                  <tr className="bg-slate-100/50">
+                    <td colSpan={4} className="py-2 px-2 font-bold text-slate-800 text-xs uppercase tracking-wider">
+                      II. Gọng kính, Tròng kính & Sản phẩm khác
+                    </td>
+                  </tr>
+                  {invoiceToPrint.danhSachSanPham.map((sp, idx) => (
+                    <tr key={`sp-${idx}`} className="border-b border-slate-100">
+                      <td className="py-2 px-3 text-slate-700 font-medium">
+                        {sp.tenSanPham}
+                        {sp.maLo && <span className="text-[10px] text-slate-400 block font-mono">Lô: {sp.maLo}</span>}
+                      </td>
+                      <td className="py-2 px-2 text-center text-slate-600">{sp.soLuong}</td>
+                      <td className="py-2 px-2 text-right text-slate-600 font-mono">
+                        {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(sp.donGia)}
+                      </td>
+                      <td className="py-2 px-2 text-right font-semibold font-mono text-slate-800">
+                        {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(sp.thanhTien)}
+                      </td>
+                    </tr>
+                  ))}
+                </>
+              )}
+
+              {/* TRƯỜNG HỢP KHÔNG CÓ CHI TIẾT */}
+              {(!invoiceToPrint?.danhSachDichVu || invoiceToPrint.danhSachDichVu.length === 0) &&
+               (!invoiceToPrint?.danhSachSanPham || invoiceToPrint.danhSachSanPham.length === 0) && (
+                <tr className="border-b border-slate-100">
+                  <td className="py-4 px-2 text-slate-700" colSpan={2}>Chi phí dịch vụ phòng khám (Tổng hợp)</td>
+                  <td className="py-4 px-2 text-right text-slate-600 font-mono">
+                    {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(invoiceToPrint?.tongTien || 0)}
+                  </td>
+                  <td className="py-4 px-2 text-right font-semibold font-mono text-slate-800">
+                    {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(invoiceToPrint?.tongTien || 0)}
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
 

@@ -21,6 +21,11 @@ import com.kada.da.modules.auth.repository.TaiKhoanRepository;
 import com.kada.da.modules.auth.repository.TokenBlacklistRepository;
 import com.kada.da.modules.customer.domain.KhachHang;
 import com.kada.da.modules.customer.repository.KhachHangRepository;
+import com.kada.da.modules.staff.domain.NhanSu;
+import com.kada.da.modules.staff.repository.NhanSuRepository;
+import com.kada.da.modules.auth.dto.ForgotPasswordRequestDTO;
+import com.kada.da.modules.auth.dto.ProfileResponseDTO;
+import com.kada.da.modules.auth.dto.ProfileUpdateRequestDTO;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +37,7 @@ public class AuthServiceImpl implements AuthService {
 
     private final TaiKhoanRepository taiKhoanRepository;
     private final KhachHangRepository khachHangRepository;
+    private final NhanSuRepository nhanSuRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenUtil jwtTokenUtil;
     private final TokenBlacklistRepository tokenBlacklistRepository;
@@ -146,6 +152,20 @@ public class AuthServiceImpl implements AuthService {
                 nextNumber = Integer.parseInt(maxMa.substring(2)) + 1;
             } catch (NumberFormatException e) {
                 log.warn("Không thể parse mã khách hàng: {}", maxMa);
+                List<KhachHang> all = khachHangRepository.findAll();
+                int maxSeq = 0;
+                for (KhachHang kh : all) {
+                    String code = kh.getMaKh();
+                    if (code != null && code.startsWith("KH") && code.length() > 2) {
+                        try {
+                            int num = Integer.parseInt(code.substring(2));
+                            if (num > maxSeq) {
+                                maxSeq = num;
+                            }
+                        } catch (NumberFormatException ignored) {}
+                    }
+                }
+                nextNumber = maxSeq + 1;
             }
         }
         return "KH" + String.format("%03d", nextNumber);
@@ -202,5 +222,91 @@ public class AuthServiceImpl implements AuthService {
 
         tokenBlacklistRepository.save(blacklist);
         log.info("Token đã được đưa vào blacklist: {}", token);
+    }
+
+    @Override
+    @Transactional
+    public void forgotPassword(ForgotPasswordRequestDTO request) {
+        log.info("Khôi phục mật khẩu cho tài khoản: {}", request.getUsername());
+        TaiKhoan taiKhoan = taiKhoanRepository.findByUsername(request.getUsername())
+                .orElseThrow(() -> new BusinessRuleException("Không tìm thấy tài khoản với tên đăng nhập này"));
+
+        String registeredSdt = null;
+        if ("EXTERNAL".equals(taiKhoan.getLoaiTk())) {
+            KhachHang kh = khachHangRepository.findByTaiKhoanUsername(taiKhoan.getUsername())
+                    .orElseThrow(() -> new BusinessRuleException("Không tìm thấy hồ sơ khách hàng"));
+            registeredSdt = kh.getSdt();
+        } else {
+            NhanSu ns = nhanSuRepository.findByTaiKhoanUsername(taiKhoan.getUsername())
+                    .orElseThrow(() -> new BusinessRuleException("Không tìm thấy hồ sơ nhân sự"));
+            registeredSdt = ns.getSdt();
+        }
+
+        if (registeredSdt == null || !registeredSdt.equals(request.getSdt())) {
+            throw new BusinessRuleException("Số điện thoại không khớp với thông tin đăng ký!");
+        }
+
+        taiKhoan.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        taiKhoanRepository.save(taiKhoan);
+        log.info("Khôi phục mật khẩu thành công cho tài khoản: {}", request.getUsername());
+    }
+
+    @Override
+    public ProfileResponseDTO getProfile(String username) {
+        TaiKhoan taiKhoan = taiKhoanRepository.findByUsername(username)
+                .orElseThrow(() -> new BusinessRuleException("Không tìm thấy tài khoản"));
+
+        List<String> roles = taiKhoan.getDanhSachNhom().stream()
+                .map(nhom -> "ROLE_" + nhom.getMaNhom())
+                .collect(Collectors.toList());
+
+        ProfileResponseDTO.ProfileResponseDTOBuilder builder = ProfileResponseDTO.builder()
+                .username(taiKhoan.getUsername())
+                .loaiTk(taiKhoan.getLoaiTk())
+                .roles(roles);
+
+        if ("EXTERNAL".equals(taiKhoan.getLoaiTk())) {
+            KhachHang kh = khachHangRepository.findByTaiKhoanUsername(taiKhoan.getUsername())
+                    .orElseThrow(() -> new BusinessRuleException("Không tìm thấy hồ sơ khách hàng"));
+            builder.hoTen(kh.getHoTen())
+                   .sdt(kh.getSdt())
+                   .diaChi(kh.getDiaChi())
+                   .actorId(kh.getMaKh());
+        } else {
+            NhanSu ns = nhanSuRepository.findByTaiKhoanUsername(taiKhoan.getUsername())
+                    .orElseThrow(() -> new BusinessRuleException("Không tìm thấy hồ sơ nhân viên"));
+            builder.hoTen(ns.getHoTen())
+                   .sdt(ns.getSdt())
+                   .diaChi(ns.getDiaChi())
+                   .actorId(ns.getMaNs());
+        }
+
+        return builder.build();
+    }
+
+    @Override
+    @Transactional
+    public ProfileResponseDTO updateProfile(String username, ProfileUpdateRequestDTO request) {
+        log.info("Cập nhật thông tin cá nhân cho tài khoản: {}", username);
+        TaiKhoan taiKhoan = taiKhoanRepository.findByUsername(username)
+                .orElseThrow(() -> new BusinessRuleException("Không tìm thấy tài khoản"));
+
+        if ("EXTERNAL".equals(taiKhoan.getLoaiTk())) {
+            KhachHang kh = khachHangRepository.findByTaiKhoanUsername(taiKhoan.getUsername())
+                    .orElseThrow(() -> new BusinessRuleException("Không tìm thấy hồ sơ khách hàng"));
+            kh.setHoTen(request.getHoTen());
+            kh.setSdt(request.getSdt());
+            kh.setDiaChi(request.getDiaChi());
+            khachHangRepository.save(kh);
+        } else {
+            NhanSu ns = nhanSuRepository.findByTaiKhoanUsername(taiKhoan.getUsername())
+                    .orElseThrow(() -> new BusinessRuleException("Không tìm thấy hồ sơ nhân viên"));
+            ns.setHoTen(request.getHoTen());
+            ns.setSdt(request.getSdt());
+            ns.setDiaChi(request.getDiaChi());
+            nhanSuRepository.save(ns);
+        }
+
+        return getProfile(username);
     }
 }

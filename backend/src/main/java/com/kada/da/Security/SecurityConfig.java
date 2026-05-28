@@ -67,6 +67,7 @@ public class SecurityConfig {
                         "/webjars/**",
                         "/api/v1/auth/login",
                         "/api/v1/auth/register",
+                        "/api/v1/auth/forgot-password",
                         // 🔥 2 DÒNG NÀY LÀ CHÌA KHÓA MỞ DROPDOWN CHO KHÁCH ĐẶT LỊCH NÀY 🔥
                         "/api/v1/nhan-su/chuc-vu/**",
                         "/api/v1/goi-kham/active"

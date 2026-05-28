@@ -303,7 +303,7 @@ BEGIN
         UPDATE HANG_CHO SET TRANG_THAI = p_trang_thai WHERE MAHC = p_mahc;
         IF v_malh IS NOT NULL THEN
             UPDATE LICH_HEN SET TRANGTHAI = N'Đã khám'
-            WHERE MALH = v_malh AND TRANGTHAI = N'Mới';
+            WHERE MALH = v_malh AND TRANGTHAI != N'Đã hủy';
         END IF;
     ELSE
         RAISE_APPLICATION_ERROR(-20071, 'Không thể chuyển từ ' || v_current_state || ' sang ' || p_trang_thai);

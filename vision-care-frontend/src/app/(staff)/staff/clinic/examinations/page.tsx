@@ -3,7 +3,7 @@
 import "@/app/globals.css";
 import * as React from "react";
 import { Suspense, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { 
@@ -15,13 +15,19 @@ import {
   Sparkles, 
   FileText,
   History,
-  Printer
+  Printer,
+  Trash2,
+  Plus,
+  Stethoscope
 } from "lucide-react";
 import { useSearchParams, useRouter } from "next/navigation"; 
 import { AxiosError } from "axios";
 import { useReactToPrint } from "react-to-print";
 
 import { useCreateHoSoKham, useHangChoHomNay, useLichSuKham } from "@/hooks/useClinic"; 
+import { useKhachHang } from "@/hooks/useCustomer";
+import { useDanhSachSanPham } from "@/hooks/useInventory";
+import { clinicApi } from "@/lib/api/clinic.api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import RecordDiffDialog from "@/components/clinic/RecordDiffDialog";
@@ -71,9 +77,93 @@ const examSchema = z.object({
   ketluan: z.string().min(1, "Vui lòng điền kết luận của bác sĩ"),
   maHoSo: z.string().optional(),
   donKinh: z.string().optional(),
+  danhSachKeDon: z.array(
+    z.object({
+      maSp: z.string().min(1, "Vui lòng chọn sản phẩm"),
+      soLuong: z.number({ message: "Phải là số" }).min(1, "Số lượng phải >= 1"),
+    })
+  ).optional(),
 });
 
 type ExamFormValues = z.infer<typeof examSchema>;
+
+// =========================================================
+// CUSTOMER DETAILS CARD COMPONENT
+// =========================================================
+function CustomerDetailsCard({ customer, isLoading }: { customer: any; isLoading: boolean }) {
+  if (isLoading) {
+    return (
+      <Card className="border-slate-200 shadow-sm overflow-hidden animate-pulse bg-white">
+        <CardContent className="p-5 space-y-4">
+          <div className="h-4 bg-slate-200 rounded w-1/3" />
+          <div className="space-y-2">
+            <div className="h-3 bg-slate-200 rounded w-full" />
+            <div className="h-3 bg-slate-200 rounded w-5/6" />
+            <div className="h-3 bg-slate-200 rounded w-2/3" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!customer) {
+    return (
+      <Card className="border-slate-200 shadow-sm border-dashed p-6 text-center text-slate-400 bg-white/50">
+        <p className="text-xs">Chưa chọn bệnh nhân hoặc không có thông tin cá nhân hiển thị.</p>
+      </Card>
+    );
+  }
+
+  const age = customer.ngaySinh
+    ? new Date().getFullYear() - new Date(customer.ngaySinh).getFullYear()
+    : "N/A";
+
+  return (
+    <Card className="border-slate-200 shadow-md overflow-hidden bg-white/80 backdrop-blur-md">
+      <CardHeader className="bg-gradient-to-r from-blue-50/50 to-indigo-50/50 border-b pb-3.5">
+        <div className="flex justify-between items-start">
+          <div>
+            <CardTitle className="text-base font-bold text-slate-800">{customer.hoTen}</CardTitle>
+            <CardDescription className="text-xs font-mono text-slate-500 mt-1">Mã KH: {customer.maKh}</CardDescription>
+          </div>
+          <span className="px-2.5 py-1 bg-blue-100 text-blue-700 text-[10px] font-bold uppercase rounded-full">
+            {customer.gioiTinh || "Chưa rõ GD"}
+          </span>
+        </div>
+      </CardHeader>
+      <CardContent className="pt-4 grid grid-cols-2 gap-x-4 gap-y-3.5 text-xs">
+        <div className="space-y-0.5">
+          <span className="text-slate-400 font-semibold block text-[10px] uppercase tracking-wider">Số điện thoại</span>
+          <span className="text-slate-800 font-bold">{customer.sdt}</span>
+        </div>
+        <div className="space-y-0.5">
+          <span className="text-slate-400 font-semibold block text-[10px] uppercase tracking-wider">Tuổi (Ngày sinh)</span>
+          <span className="text-slate-800 font-bold">
+            {age} tuổi {customer.ngaySinh ? `(${new Date(customer.ngaySinh).toLocaleDateString("vi-VN")})` : ""}
+          </span>
+        </div>
+        <div className="space-y-0.5">
+          <span className="text-slate-400 font-semibold block text-[10px] uppercase tracking-wider">Số CCCD</span>
+          <span className="text-slate-800 font-semibold">{customer.cccd || "Chưa khai báo"}</span>
+        </div>
+        <div className="space-y-0.5">
+          <span className="text-slate-400 font-semibold block text-[10px] uppercase tracking-wider">Điểm tích lũy</span>
+          <span className="text-emerald-600 font-bold">{customer.diemTichLuy || 0} điểm</span>
+        </div>
+        <div className="col-span-2 space-y-0.5 border-t pt-2.5">
+          <span className="text-slate-400 font-semibold block text-[10px] uppercase tracking-wider">Địa chỉ</span>
+          <span className="text-slate-800 font-medium">{customer.diaChi || "Chưa nhập địa chỉ"}</span>
+        </div>
+        {customer.ghiChu && (
+          <div className="col-span-2 space-y-1 bg-amber-50/80 p-2.5 rounded-xl border border-amber-100/50 text-amber-900 text-xs">
+            <span className="font-bold block text-[10px] uppercase tracking-wider">Ghi chú từ lễ tân</span>
+            <span>{customer.ghiChu}</span>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
 // =========================================================
 // SVG EYE MAP COMPONENT
@@ -96,25 +186,23 @@ function EyeRefractionMap({
   pd: number;
 }) {
   const getEyeGradient = (val: number) => {
-    if (val === 0) return { from: "#ffffff", to: "#f1f5f9" }; // White (Normal)
+    if (val === 0) return { from: "#ffffff", to: "#f1f5f9" }; 
     if (val < 0) {
-      // Myopia (Sky blue to Deep Indigo/Violet) - darker blue for higher absolute value
       const abs = Math.abs(val);
       if (abs <= 3) {
-        return { from: "#93c5fd", to: "#3b82f6" }; // Light Blue
+        return { from: "#93c5fd", to: "#3b82f6" }; 
       } else if (abs <= 6) {
-        return { from: "#3b82f6", to: "#1d4ed8" }; // Medium Blue
+        return { from: "#3b82f6", to: "#1d4ed8" }; 
       } else {
-        return { from: "#1d4ed8", to: "#1e3a8a" }; // Dark Blue / Indigo
+        return { from: "#1d4ed8", to: "#1e3a8a" }; 
       }
     } else {
-      // Hyperopia (Amber/Yellow to Orange/Rose) - darker orange for higher value
       if (val <= 3) {
-        return { from: "#fef08a", to: "#fbbf24" }; // Yellow/Light Amber
+        return { from: "#fef08a", to: "#fbbf24" }; 
       } else if (val <= 6) {
-        return { from: "#fbbf24", to: "#f97316" }; // Orange
+        return { from: "#fbbf24", to: "#f97316" }; 
       } else {
-        return { from: "#ea580c", to: "#b91c1c" }; // Dark Orange/Red
+        return { from: "#ea580c", to: "#b91c1c" }; 
       }
     }
   };
@@ -223,8 +311,14 @@ function ExaminationContent() {
   const patientIdFromUrl = searchParams.get("makh") || "";
 
   const [isManualInput, setIsManualInput] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const { data: queueData } = useHangChoHomNay();
   const queueList = queueData || [];
+
+  const { data: productsData } = useDanhSachSanPham();
+  const productsList = productsData || [];
 
   const form = useForm<ExamFormValues>({
     resolver: zodResolver(examSchema),
@@ -241,7 +335,13 @@ function ExaminationContent() {
       ketluan: "Thị lực ổn định, khúc xạ bình thường",
       maHoSo: "",
       donKinh: "",
+      danhSachKeDon: [],
     },
+  });
+
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "danhSachKeDon",
   });
 
   const matTraiSph = form.watch("matTraiSph") || 0;
@@ -253,12 +353,15 @@ function ExaminationContent() {
   const pd = form.watch("pd") || 60;
   
   const maKhValue = form.watch("maKh") || "";
+
+  // Call useKhachHang for full card rendering
+  const { data: customerDetails, isLoading: isCustomerLoading } = useKhachHang(maKhValue);
   const { data: historyData, isLoading: isHistoryLoading } = useLichSuKham(maKhValue);
   const historyList = historyData?.data || [];
 
   const selectedPatientFromQueue = queueList.find((p: any) => p.maKh === maKhValue);
   const patientNameFromHistory = historyList[0]?.tenKhachHang || "";
-  const patientName = selectedPatientFromQueue?.tenKhach || patientNameFromHistory || "";
+  const patientName = selectedPatientFromQueue?.tenKhach || customerDetails?.hoTen || patientNameFromHistory || "";
 
   const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
   const [selectedOldRecord, setSelectedOldRecord] = useState<any>(null);
@@ -291,6 +394,9 @@ function ExaminationContent() {
         try {
           const user = JSON.parse(userStr);
           form.setValue("maNs", user.username || ""); 
+          if (user.roles?.includes("ROLE_ADMIN") || user.maNhom === "NH04") {
+            setIsAdmin(true);
+          }
         } catch (e) {}
       }
     }
@@ -319,6 +425,7 @@ function ExaminationContent() {
             ketluan: data.ketLuan || "",
             maHoSo: data.maHoSo || "",
             donKinh: data.donKinh || "",
+            danhSachKeDon: [],
           });
           toast.success(`📝 Đã tải dữ liệu hồ sơ ${data.maHoSo} để cập nhật!`);
         })
@@ -341,7 +448,6 @@ function ExaminationContent() {
       let osSph = 0; let osCyl = 0; let osAx = 0;
       let pdVal = 60;
 
-      // Regex parse standard values from file
       const odMatch = text.match(/OD:?\s*SPH?\s*([+-]?\d+\.?\d*)/i) || text.match(/OD\s*([+-]?\d+\.?\d*)/i);
       const osMatch = text.match(/OS:?\s*SPH?\s*([+-]?\d+\.?\d*)/i) || text.match(/OS\s*([+-]?\d+\.?\d*)/i);
       
@@ -373,7 +479,12 @@ function ExaminationContent() {
     reader.readAsText(file);
   };
 
-  const onSubmit = (values: ExamFormValues) => {
+  const onSubmit = async (values: ExamFormValues) => {
+    if (isAdmin) {
+      toast.error("Tài khoản Quản trị viên chỉ có quyền xem, không được ghi hồ sơ khám!");
+      return;
+    }
+
     const payload: HoSoKhamRequest = {
       makh: values.maKh,
       mans: values.maNs,
@@ -389,32 +500,41 @@ function ExaminationContent() {
       donKinh: values.donKinh || undefined,
     };
 
-    const promise = new Promise((resolve, reject) => {
-      mutation.mutate(payload, {
-        onSuccess: (data) => {
-          const res = data as unknown as HoSoKhamResponse;
-          const maHoSo = res?.maHoSo || "HS_NEW"; 
-          resolve(maHoSo);
-        },
-        onError: (err) => {
-          const axiosError = err as AxiosError<JavaErrorResponse>;
-          reject(axiosError.response?.data?.message || "Lỗi lưu hồ sơ khám");
-        }
-      });
-    });
+    setIsSubmitting(true);
+    try {
+      // 1. Lưu hồ sơ khám nhãn khoa
+      const hoSoRes = await mutation.mutateAsync(payload);
+      const newMaHoSo = hoSoRes.maHoSo;
 
-    toast.promise(promise, {
-      loading: "Đang lưu bệnh án & chuyển hướng kê đơn...",
-      success: (maHoSo: any) => {
-        router.push(`/staff/clinic/prescriptions?maHoSo=${maHoSo}&maNs=${values.maNs}`);
-        return "Lưu hồ sơ khám thành công!";
-      },
-      error: (err) => `Thao tác thất bại: ${err}`
-    });
+      // 2. Lưu đơn thuốc/kính nếu có sản phẩm được kê
+      if (values.danhSachKeDon && values.danhSachKeDon.length > 0) {
+        const validItems = values.danhSachKeDon.filter(item => item.maSp !== "");
+        if (validItems.length > 0) {
+          const phieuKeDonPayload = {
+            maHoSo: newMaHoSo,
+            maNs: values.maNs,
+            danhSachKeDon: validItems.map(item => ({
+              maSp: item.maSp,
+              soLuong: Number(item.soLuong) || 1
+            }))
+          };
+          await clinicApi.createPhieuKeDon(phieuKeDonPayload);
+        }
+      }
+
+      toast.success("Lưu hồ sơ khám bệnh và đơn kính/thuốc thành công!");
+      router.push(`/staff/clinic`);
+    } catch (err: any) {
+      const msg = err.response?.data?.message || err.message || "Lỗi lưu hồ sơ hoặc đơn thuốc";
+      toast.error(`Lỗi thực hiện: ${msg}`);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
+      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-6">
         <div className="flex items-center gap-3">
           <div className="p-3.5 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-2xl shadow-lg shadow-blue-500/20">
@@ -449,10 +569,11 @@ function ExaminationContent() {
               id="refractor-upload"
               className="hidden"
               onChange={handleAutoRefractorFile}
+              disabled={isAdmin}
             />
             <label
               htmlFor="refractor-upload"
-              className="h-10 px-4 border border-slate-200 rounded-xl bg-white text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer flex items-center gap-2 text-sm font-semibold shadow-sm"
+              className={`h-10 px-4 border border-slate-200 rounded-xl bg-white text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer flex items-center gap-2 text-sm font-semibold shadow-sm ${isAdmin ? "opacity-50 cursor-not-allowed" : ""}`}
             >
               <Upload className="w-4 h-4 text-slate-500" />
               <span>Nạp tệp đo khúc xạ (.txt)</span>
@@ -460,6 +581,47 @@ function ExaminationContent() {
           </div>
         </div>
       </div>
+
+      {/* Queue selector at the top */}
+      <Card className="shadow-sm border-slate-200/80 overflow-hidden bg-slate-50/50">
+        <CardContent className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-0.5">
+            <h3 className="text-sm font-bold text-slate-800">Danh sách hàng chờ khám hôm nay</h3>
+            <p className="text-xs text-slate-500">Chọn bệnh nhân để tải hồ sơ khúc xạ, lịch sử khám và kê đơn thuốc.</p>
+          </div>
+          <div className="flex items-center gap-3.5">
+            <Select
+              value={isManualInput ? "manual" : maKhValue}
+              onValueChange={(val) => {
+                if (val === "manual") {
+                  setIsManualInput(true);
+                  form.setValue("maKh", "");
+                  router.replace(`/staff/clinic/examinations`);
+                } else {
+                  setIsManualInput(false);
+                  form.setValue("maKh", val);
+                  router.replace(`/staff/clinic/examinations?makh=${val}`);
+                }
+              }}
+            >
+              <SelectTrigger className="w-[300px] bg-white rounded-xl h-11 border-slate-200 text-slate-700 font-medium">
+                <SelectValue placeholder="Chọn bệnh nhân chờ khám..." />
+              </SelectTrigger>
+              <SelectContent className="bg-white max-h-60">
+                <SelectItem value="manual" className="font-semibold text-blue-600">✍️ Tự nhập mã bệnh nhân thủ công</SelectItem>
+                {queueList.map((patient: any) => (
+                  <SelectItem key={patient.maKh + "-" + patient.maHc} value={patient.maKh}>
+                    {patient.maKh} - {patient.tenKhach} (STT: #{patient.soThuTu} | {patient.trangThai === "DANG_KHAM" ? "Đang khám" : "Chờ khám"})
+                  </SelectItem>
+                ))}
+                {queueList.length === 0 && (
+                  <SelectItem value="empty-queue" disabled>Không có bệnh nhân chờ khám</SelectItem>
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         
@@ -477,51 +639,14 @@ function ExaminationContent() {
                   <div className="grid grid-cols-2 gap-4">
                     <FormField control={form.control} name="maKh" render={({ field }) => (
                       <FormItem>
-                        <div className="flex items-center justify-between">
-                          <FormLabel>Mã Bệnh nhân</FormLabel>
-                          {!patientIdFromUrl && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setIsManualInput(!isManualInput);
-                                form.setValue("maKh", "");
-                              }}
-                              className="text-xs text-blue-600 hover:text-blue-700 font-semibold focus:outline-none"
-                            >
-                              {isManualInput ? "Chọn từ hàng chờ" : "Tự nhập mã"}
-                            </button>
-                          )}
-                        </div>
+                        <FormLabel>Mã Bệnh nhân</FormLabel>
                         <FormControl>
-                          {isManualInput || patientIdFromUrl ? (
-                            <Input 
-                              readOnly={!!patientIdFromUrl} 
-                              className={`font-mono h-11 ${patientIdFromUrl ? 'bg-slate-100' : 'bg-white'}`} 
-                              placeholder="Nhập mã bệnh nhân (VD: KH001)"
-                              {...field} 
-                            />
-                          ) : (
-                            <Select 
-                              value={field.value} 
-                              onValueChange={field.onChange}
-                            >
-                              <SelectTrigger className="bg-white rounded-xl h-11 border-slate-200">
-                                <SelectValue placeholder="Chọn bệnh nhân..." />
-                              </SelectTrigger>
-                              <SelectContent className="bg-white/95 backdrop-blur-xl rounded-xl border-slate-100 max-h-60">
-                                {queueList.map((patient: any) => (
-                                  <SelectItem key={patient.maKh + "-" + patient.maHc} value={patient.maKh} className="rounded-lg">
-                                    {patient.maKh} - {patient.tenKhach} (STT #{patient.soThuTu} - {patient.trangThai === "DANG_KHAM" ? "Đang khám" : "Chờ khám"})
-                                  </SelectItem>
-                                ))}
-                                {queueList.length === 0 && (
-                                  <SelectItem value="none" disabled className="text-slate-400">
-                                    Không có bệnh nhân trong hàng chờ
-                                  </SelectItem>
-                                )}
-                              </SelectContent>
-                            </Select>
-                          )}
+                          <Input 
+                            readOnly={!isManualInput || !!patientIdFromUrl} 
+                            className={`font-mono h-11 ${(!isManualInput || patientIdFromUrl) ? 'bg-slate-100' : 'bg-white'}`} 
+                            placeholder="Nhập mã bệnh nhân (VD: KH001)"
+                            {...field} 
+                          />
                         </FormControl>
                         {patientName && (
                           <div className="mt-1 text-xs font-bold text-emerald-600 bg-emerald-50/50 px-2.5 py-1 rounded-lg inline-block">
@@ -559,6 +684,7 @@ function ExaminationContent() {
                                 className="bg-white h-9" 
                                 placeholder="0.00" 
                                 {...field} 
+                                readOnly={isAdmin}
                                 onChange={(e) => field.onChange(e.target.value === "" ? "" : Number(e.target.value))}
                               />
                             </FormControl>
@@ -575,6 +701,7 @@ function ExaminationContent() {
                                 className="bg-white h-9" 
                                 placeholder="0.00" 
                                 {...field} 
+                                readOnly={isAdmin}
                                 onChange={(e) => field.onChange(e.target.value === "" ? "" : Number(e.target.value))}
                               />
                             </FormControl>
@@ -590,6 +717,7 @@ function ExaminationContent() {
                                 className="bg-white h-9" 
                                 placeholder="0" 
                                 {...field} 
+                                readOnly={isAdmin}
                                 onChange={(e) => field.onChange(e.target.value === "" ? "" : Number(e.target.value))}
                               />
                             </FormControl>
@@ -615,6 +743,7 @@ function ExaminationContent() {
                                 className="bg-white h-9" 
                                 placeholder="0.00" 
                                 {...field} 
+                                readOnly={isAdmin}
                                 onChange={(e) => field.onChange(e.target.value === "" ? "" : Number(e.target.value))}
                               />
                             </FormControl>
@@ -631,6 +760,7 @@ function ExaminationContent() {
                                 className="bg-white h-9" 
                                 placeholder="0.00" 
                                 {...field} 
+                                readOnly={isAdmin}
                                 onChange={(e) => field.onChange(e.target.value === "" ? "" : Number(e.target.value))}
                               />
                             </FormControl>
@@ -646,6 +776,7 @@ function ExaminationContent() {
                                 className="bg-white h-9" 
                                 placeholder="0" 
                                 {...field} 
+                                readOnly={isAdmin}
                                 onChange={(e) => field.onChange(e.target.value === "" ? "" : Number(e.target.value))}
                               />
                             </FormControl>
@@ -667,6 +798,7 @@ function ExaminationContent() {
                                 className="bg-white font-mono h-10" 
                                 placeholder="60" 
                                 {...field} 
+                                readOnly={isAdmin}
                                 onChange={(e) => field.onChange(e.target.value === "" ? "" : Number(e.target.value))}
                               />
                             </FormControl>
@@ -683,6 +815,7 @@ function ExaminationContent() {
                                 className="bg-white h-10 font-medium" 
                                 placeholder="Nhập kết luận của bác sĩ..." 
                                 {...field} 
+                                readOnly={isAdmin}
                               />
                             </FormControl>
                             <FormMessage />
@@ -701,6 +834,7 @@ function ExaminationContent() {
                               className="bg-white h-10 font-medium" 
                               placeholder="Ví dụ: Gọng nhựa dẻo, Tròng Essilor 1.60 (ngăn cách bằng dấu phẩy)" 
                               {...field} 
+                              readOnly={isAdmin}
                             />
                           </FormControl>
                           <FormDescription className="text-[10px] text-slate-400">
@@ -712,12 +846,97 @@ function ExaminationContent() {
                     </div>
                   </div>
 
+                  {/* Kê đơn thuốc / Cắt kính */}
+                  <div className="p-5 border border-slate-200 rounded-2xl bg-slate-50/50 space-y-4">
+                    <div className="flex items-center justify-between border-b pb-2">
+                      <h3 className="font-bold flex items-center text-slate-800 uppercase text-xs tracking-wider">
+                        <Stethoscope className="w-4 h-4 mr-2 text-emerald-600" /> Kê đơn thuốc / Mua kính tại quầy (Tích hợp)
+                      </h3>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={isAdmin}
+                        onClick={() => append({ maSp: "", soLuong: 1 })}
+                        className="h-8 text-xs bg-white text-slate-700 shadow-sm border-slate-200"
+                      >
+                        <Plus className="w-3.5 h-3.5 mr-1" /> Thêm sản phẩm
+                      </Button>
+                    </div>
+
+                    {fields.length === 0 ? (
+                      <div className="text-center py-5 text-xs text-slate-400 font-medium italic border border-dashed rounded-xl bg-white/40">
+                        Chưa có sản phẩm nào được kê. Bấm "Thêm sản phẩm" nếu muốn bán kèm thuốc hoặc tròng kính.
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {fields.map((item, index) => (
+                          <div key={item.id} className="flex items-start gap-3 bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
+                            <div className="flex-1">
+                              <FormField control={form.control} name={`danhSachKeDon.${index}.maSp`} render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel className="text-xs font-semibold text-slate-500">Sản phẩm / Thuốc</FormLabel>
+                                  <FormControl>
+                                    <Select
+                                      value={field.value}
+                                      onValueChange={field.onChange}
+                                      disabled={isAdmin}
+                                    >
+                                      <SelectTrigger className="bg-white h-9 border-slate-200 text-xs">
+                                        <SelectValue placeholder="Chọn sản phẩm..." />
+                                      </SelectTrigger>
+                                      <SelectContent className="bg-white max-h-60">
+                                        {productsList.map((prod: any) => (
+                                          <SelectItem key={prod.maSp} value={prod.maSp} className="text-xs">
+                                            {prod.tenSp} ({prod.maSp} - Giá: {prod.giaBan?.toLocaleString("vi-VN")}đ - Tồn: {prod.soLuongTon})
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )} />
+                            </div>
+                            <div className="w-24">
+                              <FormField control={form.control} name={`danhSachKeDon.${index}.soLuong`} render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel className="text-xs font-semibold text-slate-500">Số lượng</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      type="number"
+                                      min="1"
+                                      className="h-9"
+                                      disabled={isAdmin}
+                                      {...field}
+                                      onChange={(e) => field.onChange(e.target.value === "" ? 1 : Number(e.target.value))}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )} />
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              disabled={isAdmin}
+                              onClick={() => remove(index)}
+                              className="mt-6 text-red-500 hover:text-red-700 hover:bg-red-50 p-2 h-9 w-9 rounded-lg"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
                   <div className="flex justify-end pt-4 border-t">
-                    <Button type="submit" disabled={mutation.isPending} className="bg-blue-600 hover:bg-blue-700 min-w-[200px] h-11 rounded-xl">
-                      {mutation.isPending ? (
+                    <Button type="submit" disabled={mutation.isPending || isSubmitting || isAdmin} className="bg-blue-600 hover:bg-blue-700 min-w-[200px] h-11 rounded-xl font-bold shadow-md shadow-blue-500/10">
+                      {mutation.isPending || isSubmitting ? (
                         <Loader2 className="w-4 h-4 animate-spin mr-2" />
                       ) : (
-                        <>Lưu & Sang Kê Đơn <ArrowRight className="ml-2 w-4 h-4" /></>
+                        <span className="flex items-center gap-1.5">Lưu bệnh án & Đơn thuốc <ArrowRight className="w-4.5 h-4.5" /></span>
                       )}
                     </Button>
                   </div>
@@ -727,8 +946,10 @@ function ExaminationContent() {
           </Card>
         </div>
 
-        {/* Right Side: Eyeball Visual Refraction SVG (5 Cols) */}
-        <div className="lg:col-span-5 h-full">
+        {/* Right Side: Visual & Customer Info (5 Cols) */}
+        <div className="lg:col-span-5 space-y-6">
+          <CustomerDetailsCard customer={customerDetails} isLoading={isCustomerLoading} />
+          
           <EyeRefractionMap 
             osSph={Number(matTraiSph) || 0} 
             osCyl={Number(matTraiCyl) || 0}
@@ -739,7 +960,6 @@ function ExaminationContent() {
             pd={Number(pd) || 60} 
           />
         </div>
-
       </div>
 
       {/* HISTORY & COMPARISON DIALOG */}

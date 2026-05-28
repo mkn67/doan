@@ -55,3 +55,16 @@ export const useThanhToan = () => {
     },
   });
 };
+
+export const useDeleteHoaDon = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (maHd: string) => billingApi.deleteHoaDon(maHd),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["hoa-don"] });
+    },
+    onError: (error: AxiosError) => {
+      console.error("Delete invoice error:", error.response?.data || error.message);
+    }
+  });
+};

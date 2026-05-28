@@ -35,6 +35,10 @@ export interface KhachHangResponseDTO {
   email?: string
   diaChi?: string
   ghiChu?: string
+  cccd?: string
+  ngaySinh?: string
+  gioiTinh?: string
+  diemTichLuy?: number
   ngayTao: string
   tongSoLanKham?: number
   tongChiTieu?: number

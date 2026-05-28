@@ -33,7 +33,10 @@ BEGIN
     
     IF DELETING THEN
         BEGIN
-            SELECT 1 INTO v_dummy FROM LICH_HEN WHERE MAKH = :OLD.MAKH AND TRANGTHAI = N'Mới' AND ROWNUM = 1;
+            SELECT 1 INTO v_dummy FROM LICH_HEN 
+            WHERE MAKH = :OLD.MAKH 
+              AND TRANGTHAI IN (N'Mới', N'Chờ xác nhận', N'Đã xác nhận', N'Đã check-in') 
+              AND ROWNUM = 1;
             RAISE_APPLICATION_ERROR(-20050, 'LOI: KH dang co lich hen cho - dung Soft Delete!');
         EXCEPTION WHEN NO_DATA_FOUND THEN NULL; 
         END;
@@ -146,7 +149,17 @@ BEGIN
     END IF;
 
     IF (UPDATING OR DELETING) AND :OLD.TRANGTHAI = N'Đã thanh toán' THEN
-        RAISE_APPLICATION_ERROR(-20007, 'LOI: Hoa don da thanh toan, khong can thiep!');
+        IF UPDATING AND :NEW.TRANGTHAI = N'Đã hủy' THEN
+            -- Cho phép hủy hóa đơn đã thanh toán, nhưng không cho thay đổi thông tin khác
+            IF NVL(:OLD.MAKH, ' ') != NVL(:NEW.MAKH, ' ') OR 
+               NVL(:OLD.MANS, ' ') != NVL(:NEW.MANS, ' ') OR 
+               NVL(:OLD.MAHOSO, ' ') != NVL(:NEW.MAHOSO, ' ') OR 
+               NVL(:OLD.TONGTIEN, 0) != NVL(:NEW.TONGTIEN, 0) THEN
+                RAISE_APPLICATION_ERROR(-20007, 'LOI: Khong duoc thay doi thong tin khac cua hoa don da thanh toan!');
+            END IF;
+        ELSE
+            RAISE_APPLICATION_ERROR(-20007, 'LOI: Hoa don da thanh toan, khong can thiep!');
+        END IF;
     END IF;
 END;
 /
@@ -285,9 +298,10 @@ COMPOUND TRIGGER
     END AFTER EACH ROW;
 
     AFTER STATEMENT IS
-        v_tong_hd NUMBER;
-        v_da_tt   NUMBER;
-        v_makh    VARCHAR2(10);
+        v_tong_hd   NUMBER;
+        v_da_tt     NUMBER;
+        v_makh      VARCHAR2(10);
+        v_diem_cong NUMBER;
     BEGIN
         FOR i IN 1 .. v_idx LOOP
             SELECT NVL(SUM(SOTIEN), 0) INTO v_da_tt
@@ -296,12 +310,26 @@ COMPOUND TRIGGER
             SELECT TONGTIEN, MAKH INTO v_tong_hd, v_makh FROM HOA_DON WHERE MAHD = v_mahd_arr(i);
             
             IF v_da_tt >= v_tong_hd THEN
-                UPDATE HOA_DON SET TRANGTHAI = N'Đã thanh toán' WHERE MAHD = v_mahd_arr(i);
-                
-                IF v_makh IS NOT NULL THEN
-                    UPDATE KHACH_HANG SET DIEMTICHLUY = DIEMTICHLUY + FLOOR(v_tong_hd / 100000)
-                    WHERE MAKH = v_makh;
-                END IF;
+                -- Chỉ cộng điểm nếu hóa đơn chưa ở trạng thái 'Đã thanh toán'
+                DECLARE
+                    v_trangthai_cu NVARCHAR2(50);
+                BEGIN
+                    SELECT TRANGTHAI INTO v_trangthai_cu FROM HOA_DON WHERE MAHD = v_mahd_arr(i);
+                    IF v_trangthai_cu != N'Đã thanh toán' THEN
+                        UPDATE HOA_DON SET TRANGTHAI = N'Đã thanh toán' WHERE MAHD = v_mahd_arr(i);
+                        
+                        IF v_makh IS NOT NULL THEN
+                            v_diem_cong := FLOOR(v_tong_hd / 100000);
+                            IF v_diem_cong > 0 THEN
+                                UPDATE KHACH_HANG SET DIEMTICHLUY = DIEMTICHLUY + v_diem_cong
+                                WHERE MAKH = v_makh;
+                                
+                                INSERT INTO LICH_SU_DIEM(MALSD, MAKH, LOAI, SO_DIEM, LY_DO, MAHD)
+                                VALUES ('LS' || LPAD(SEQ_LICH_SU_DIEM.NEXTVAL, 6, '0'), v_makh, N'Cong', v_diem_cong, N'Tích lũy từ thanh toán hóa đơn: ' || v_mahd_arr(i), v_mahd_arr(i));
+                            END IF;
+                        END IF;
+                    END IF;
+                END;
             END IF;
         END LOOP;
     END AFTER STATEMENT;
@@ -326,9 +354,11 @@ FOR INSERT OR UPDATE ON LO_HANG
 COMPOUND TRIGGER
     BEFORE EACH ROW IS
     BEGIN
-        IF INSERTING THEN :NEW.SOLUONGTON := :NEW.SOLUONGNHAP; END IF;
-        IF :NEW.NGAYHETHAN <= TRUNC(SYSDATE) THEN
-            RAISE_APPLICATION_ERROR(-20029, 'LOI: Lo hang da het han!');
+        IF INSERTING THEN 
+            :NEW.SOLUONGTON := :NEW.SOLUONGNHAP; 
+            IF :NEW.NGAYHETHAN <= TRUNC(SYSDATE) THEN
+                RAISE_APPLICATION_ERROR(-20029, 'LOI: Lo hang da het han!');
+            END IF;
         END IF;
     END BEFORE EACH ROW;
 
@@ -383,6 +413,10 @@ BEGIN
             UPDATE KHACH_HANG 
             SET DIEMTICHLUY = GREATEST(0, DIEMTICHLUY - v_diem_tru)
             WHERE MAKH = :NEW.MAKH;
+
+            -- Ghi nhận lịch sử khấu trừ điểm
+            INSERT INTO LICH_SU_DIEM(MALSD, MAKH, LOAI, SO_DIEM, LY_DO, MAHD)
+            VALUES ('LS' || LPAD(SEQ_LICH_SU_DIEM.NEXTVAL, 6, '0'), :NEW.MAKH, N'Tru', v_diem_tru, N'Khấu trừ tích lũy do hủy hóa đơn: ' || :NEW.MAHD, :NEW.MAHD);
         END IF;
     END IF;
 END;

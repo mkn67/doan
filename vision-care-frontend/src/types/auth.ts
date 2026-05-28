@@ -25,7 +25,25 @@ export interface ChangePasswordRequestDTO {
 }
 
 export interface ForgotPasswordRequestDTO {
-  email: string;
+  username: string;
+  sdt: string;
+  newPassword: string;
+}
+
+export interface ProfileResponseDTO {
+  username: string;
+  hoTen: string;
+  sdt: string;
+  diaChi?: string;
+  loaiTk: string;
+  roles: string[];
+  actorId: string;
+}
+
+export interface ProfileUpdateRequestDTO {
+  hoTen: string;
+  sdt: string;
+  diaChi?: string;
 }
 
 export interface PhanQuyenRequestDTO {

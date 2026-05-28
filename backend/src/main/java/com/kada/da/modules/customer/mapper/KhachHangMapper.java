@@ -36,6 +36,10 @@ public class KhachHangMapper {
                 .sdt(entity.getSdt())
                 .email(email)
                 .diaChi(entity.getDiaChi())
+                .cccd(entity.getCccd())
+                .ngaySinh(entity.getNgaySinh())
+                .gioiTinh(entity.getGioiTinh())
+                .diemTichLuy(entity.getDiemTichLuy())
                 // Các trường thống kê (ngayTao, tongSoLanKham, tongChiTieu, lichHenGanNhat) sẽ
                 // được set trong service
                 .build();

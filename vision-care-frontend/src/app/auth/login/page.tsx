@@ -42,7 +42,7 @@ export default function LoginPage() {
       let data;
       try {
         data = JSON.parse(text);
-      } catch (e) {
+      } catch {
         throw new Error("API không trả JSON (có thể sai URL hoặc lỗi server)");
       }
 
@@ -122,7 +122,12 @@ export default function LoginPage() {
 
             <FormField control={form.control} name="password" render={({ field }) => (
               <FormItem>
-                <FormLabel>Mật khẩu</FormLabel>
+                <div className="flex items-center justify-between gap-2">
+                  <FormLabel>Mật khẩu</FormLabel>
+                  <Link href="/auth/forgot-password" className="text-xs font-medium text-blue-600 hover:underline">
+                    Quên mật khẩu?
+                  </Link>
+                </div>
                 <FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl>
                 <FormMessage />
               </FormItem>

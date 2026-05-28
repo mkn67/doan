@@ -23,4 +23,6 @@ public interface NhanSuRepository extends JpaRepository<NhanSu, String> {
 
     Page<NhanSu> findByHoTenContainingIgnoreCaseAndIsDeleted(String hoTen, Integer isDeleted, Pageable pageable);
 
+    @org.springframework.data.jpa.repository.Query("SELECT n FROM NhanSu n WHERE n.taiKhoan.username = :username")
+    java.util.Optional<NhanSu> findByTaiKhoanUsername(@org.springframework.data.repository.query.Param("username") String username);
 }
