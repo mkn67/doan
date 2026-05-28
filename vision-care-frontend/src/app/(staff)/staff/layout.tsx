@@ -246,8 +246,22 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
         )}
         <div className="p-8 min-h-full flex-1">
           {(() => {
-            const currentMenuItem = staffMenuItems.find(item => pathname.startsWith(item.href));
-            const isAuthorized = !currentMenuItem || hasAccess(currentMenuItem.roles);
+            let allowedRoles: string[] | null = null;
+            if (pathname.startsWith("/staff/admin") || pathname.startsWith("/staff/dashboard")) {
+              allowedRoles = ["ROLE_ADMIN", "NH04"];
+            } else if (pathname.startsWith("/staff/reception")) {
+              allowedRoles = ["ROLE_LE_TAN", "NH06"];
+            } else if (pathname.startsWith("/staff/clinic")) {
+              allowedRoles = ["ROLE_BAC_SI", "NH01"];
+            } else if (pathname.startsWith("/staff/cashier")) {
+              allowedRoles = ["ROLE_THU_NGAN", "NH02"];
+            } else if (pathname.startsWith("/staff/inventory")) {
+              allowedRoles = ["ROLE_THU_KHO", "NH03"];
+            } else if (pathname.startsWith("/staff/workshop")) {
+              allowedRoles = ["ROLE_KY_THUAT", "NH05"];
+            }
+
+            const isAuthorized = allowedRoles === null || hasAccess(allowedRoles);
             if (!isAuthorized) {
               return (
                 <div className="flex flex-col items-center justify-center min-h-[50vh] bg-white rounded-3xl border border-slate-100 shadow-xl p-8 text-center max-w-xl mx-auto mt-10">

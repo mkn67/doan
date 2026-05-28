@@ -4,14 +4,14 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { 
-  Search, Plus, UserCircle, Phone, Loader2, ShieldAlert 
+  Search, Plus, UserCircle, Phone, Loader2, ShieldAlert, Eye, Edit, Mail, MapPin, Calendar
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 
 // Import Hook và Type DTO từ file hook của bạn
-import { useDanhSachKhachHang, useCreateKhachHang } from "@/hooks/useCustomer"; 
+import { useDanhSachKhachHang, useCreateKhachHang, useUpdateKhachHang } from "@/hooks/useCustomer"; 
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,19 +36,27 @@ interface Customer {
   hoTen: string;
   sdt: string;
   cccd?: string;
-  gioiTinh?: string; // Để dấu ? vì DTO có thể không có hoặc tên khác
+  gioiTinh?: string;
   ngaySinh?: string;
   diaChi?: string;
   diemTichLuy?: number;
+  email?: string;
+  ghiChu?: string;
+  ngayTao?: string;
+  tongSoLanKham?: number;
+  tongChiTieu?: number;
+  lichHenGanNhat?: string;
 }
 
 const customerSchema = z.object({
   hoTen: z.string().min(2, "Tên phải có ít nhất 2 ký tự"),
   sdt: z.string().regex(/^(0[3|5|7|8|9])[0-9]{8}$/, "SĐT phải bắt đầu bằng 0 và đủ 10 số"),
-  cccd: z.string().optional(),
+  cccd: z.string().optional().or(z.literal("")),
   gioiTinh: z.string().min(1, "Vui lòng chọn giới tính"),
-  ngaySinh: z.string().optional(),
-  diaChi: z.string().optional(),
+  ngaySinh: z.string().optional().or(z.literal("")),
+  diaChi: z.string().optional().or(z.literal("")),
+  email: z.string().email("Email không hợp lệ").optional().or(z.literal("")),
+  ghiChu: z.string().optional().or(z.literal("")),
 });
 
 type CustomerFormValues = z.infer<typeof customerSchema>;
@@ -59,23 +67,50 @@ export default function CustomersPage() {
   const [isMounted, setIsMounted] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedDetailCustomer, setSelectedDetailCustomer] = useState<Customer | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
 
   const ALLOWED_ROLES = ["ROLE_LE_TAN", "NH06"];
 
   useEffect(() => {
-    setIsMounted(true);
+    setTimeout(() => {
+      setIsMounted(true);
+    }, 0);
   }, []);
 
   // 2. GỌI HOOK API
   const { data: listCustomers, isLoading } = useDanhSachKhachHang();
   const createCustomerMutation = useCreateKhachHang();
+  const updateCustomerMutation = useUpdateKhachHang();
 
   const form = useForm<CustomerFormValues>({
     resolver: zodResolver(customerSchema),
     defaultValues: {
-      hoTen: "", sdt: "", cccd: "", gioiTinh: "", ngaySinh: "", diaChi: "",
+      hoTen: "", sdt: "", cccd: "", gioiTinh: "", ngaySinh: "", diaChi: "", email: "", ghiChu: "",
     },
   });
+
+  const editForm = useForm<CustomerFormValues>({
+    resolver: zodResolver(customerSchema),
+    defaultValues: {
+      hoTen: "", sdt: "", cccd: "", gioiTinh: "", ngaySinh: "", diaChi: "", email: "", ghiChu: "",
+    },
+  });
+
+  useEffect(() => {
+    if (selectedDetailCustomer) {
+      editForm.reset({
+        hoTen: selectedDetailCustomer.hoTen || "",
+        sdt: selectedDetailCustomer.sdt || "",
+        cccd: selectedDetailCustomer.cccd || "",
+        gioiTinh: selectedDetailCustomer.gioiTinh || "",
+        ngaySinh: selectedDetailCustomer.ngaySinh || "",
+        diaChi: selectedDetailCustomer.diaChi || "",
+        email: selectedDetailCustomer.email || "",
+        ghiChu: selectedDetailCustomer.ghiChu || "",
+      });
+    }
+  }, [selectedDetailCustomer, editForm]);
 
   const hasAccess = () => {
     if (!user) return false;
@@ -128,6 +163,28 @@ export default function CustomersPage() {
         alert("Thêm khách hàng thành công!");
         form.reset();
         setIsDialogOpen(false);
+      }
+    });
+  }
+
+  function onEditSubmit(values: CustomerFormValues) {
+    if (isAdmin) {
+      alert("⚠️ Tài khoản Admin đang ở chế độ Chỉ đọc, không thể chỉnh sửa khách hàng!");
+      return;
+    }
+    if (!selectedDetailCustomer) return;
+
+    updateCustomerMutation.mutate({
+      maKh: String(selectedDetailCustomer.maKh),
+      data: values
+    }, {
+      onSuccess: (updatedData) => {
+        alert("Cập nhật thông tin khách hàng thành công!");
+        setIsEditing(false);
+        setSelectedDetailCustomer(updatedData as unknown as Customer);
+      },
+      onError: (err: any) => {
+        alert("Lỗi cập nhật: " + (err.response?.data?.message || err.message));
       }
     });
   }
@@ -190,6 +247,34 @@ export default function CustomersPage() {
                       <FormMessage />
                     </FormItem>
                   )} />
+                  <FormField control={form.control} name="ngaySinh" render={({ field }) => (
+                    <FormItem className="col-span-2 md:col-span-1">
+                      <FormLabel>Ngày sinh</FormLabel>
+                      <FormControl><Input type="date" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="email" render={({ field }) => (
+                    <FormItem className="col-span-2 md:col-span-1">
+                      <FormLabel>Email</FormLabel>
+                      <FormControl><Input type="email" placeholder="VD: customer@gmail.com" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="diaChi" render={({ field }) => (
+                    <FormItem className="col-span-2">
+                      <FormLabel>Địa chỉ</FormLabel>
+                      <FormControl><Input placeholder="Số nhà, Tên đường, Quận/Huyện..." {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="ghiChu" render={({ field }) => (
+                    <FormItem className="col-span-2">
+                      <FormLabel>Ghi chú</FormLabel>
+                      <FormControl><Input placeholder="Tình trạng đặc biệt, yêu cầu riêng..." {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
                 </div>
                 <div className="flex justify-end gap-3 pt-4 border-t">
                   <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Hủy</Button>
@@ -226,12 +311,13 @@ export default function CustomersPage() {
               <TableRow>
                 <TableHead className="font-semibold text-slate-600">Thông tin Khách hàng</TableHead>
                 <TableHead className="font-semibold text-slate-600">Giới tính</TableHead>
-                <TableHead className="text-right font-semibold text-slate-600">Mã KH</TableHead>
+                <TableHead className="font-semibold text-slate-600 text-right">Mã KH</TableHead>
+                <TableHead className="font-semibold text-slate-600 text-center w-36">Thao tác</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={3} className="text-center py-10">Đang tải dữ liệu...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={4} className="text-center py-10">Đang tải dữ liệu...</TableCell></TableRow>
               ) : filteredCustomers.length > 0 ? (
                 filteredCustomers.map((customer) => (
                   <TableRow key={customer.maKh} className="hover:bg-slate-50 transition-colors">
@@ -249,14 +335,25 @@ export default function CustomersPage() {
                       </div>
                     </TableCell>
                     <TableCell className="text-slate-600">{customer.gioiTinh || "Chưa cập nhật"}</TableCell>
-                    <TableCell className="text-right">
-                      <span className="text-sm font-mono text-slate-500">{customer.maKh}</span>
+                    <TableCell className="text-right font-mono text-slate-500 text-sm">
+                      {customer.maKh}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSelectedDetailCustomer(customer)}
+                        className="h-8 text-blue-600 hover:text-blue-800 hover:bg-blue-50 gap-1 rounded-lg font-bold"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        <span>Xem chi tiết</span>
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={3} className="h-24 text-center text-slate-500">
+                  <TableCell colSpan={4} className="h-24 text-center text-slate-500">
                     Không tìm thấy khách hàng nào.
                   </TableCell>
                 </TableRow>
@@ -265,6 +362,205 @@ export default function CustomersPage() {
           </Table>
         </div>
       </div>
+
+      {/* DIALOG CHI TIẾT VÀ CHỈNH SỬA KHÁCH HÀNG */}
+      <Dialog open={!!selectedDetailCustomer} onOpenChange={(open) => {
+        if (!open) {
+          setSelectedDetailCustomer(null);
+          setIsEditing(false);
+        }
+      }}>
+        <DialogContent className="sm:max-w-[650px] bg-white rounded-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader className="border-b pb-3">
+            <DialogTitle className="text-xl font-bold flex items-center gap-2 text-slate-800">
+              <UserCircle className="w-6 h-6 text-blue-600" />
+              {isEditing ? "Chỉnh sửa thông tin khách hàng" : "Thông tin chi tiết khách hàng"}
+            </DialogTitle>
+            <DialogDescription>
+              {isEditing 
+                ? "Cập nhật thông tin hồ sơ của khách hàng trong hệ thống."
+                : "Xem hồ sơ thông tin đầy đủ, lịch sử hoạt động và ghi chú."}
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedDetailCustomer && (
+            <div className="mt-4 space-y-5">
+              {!isEditing ? (
+                // View Mode
+                <div className="space-y-6">
+                  {/* Grid 1: Basic info */}
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-4 text-sm bg-slate-50 p-4 rounded-xl border border-slate-100">
+                    <div className="col-span-2 md:col-span-1 space-y-1">
+                      <span className="text-slate-400 font-bold text-[10px] uppercase tracking-wider">Họ và tên</span>
+                      <p className="text-slate-800 font-extrabold text-base">{selectedDetailCustomer.hoTen}</p>
+                    </div>
+                    <div className="col-span-2 md:col-span-1 space-y-1">
+                      <span className="text-slate-400 font-bold text-[10px] uppercase tracking-wider">Mã Khách Hàng</span>
+                      <p className="text-slate-800 font-mono font-bold text-sm bg-slate-200/60 px-2 py-0.5 rounded w-fit">{selectedDetailCustomer.maKh}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <span className="text-slate-400 font-bold text-[10px] uppercase tracking-wider">Số điện thoại</span>
+                      <p className="text-slate-800 font-bold flex items-center gap-1.5"><Phone className="w-3.5 h-3.5 text-slate-500" /> {selectedDetailCustomer.sdt}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <span className="text-slate-400 font-bold text-[10px] uppercase tracking-wider">Giới tính</span>
+                      <p className="text-slate-800 font-semibold">{selectedDetailCustomer.gioiTinh || "Chưa cập nhật"}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <span className="text-slate-400 font-bold text-[10px] uppercase tracking-wider">Ngày sinh</span>
+                      <p className="text-slate-800 font-semibold">
+                        {selectedDetailCustomer.ngaySinh 
+                          ? new Date(selectedDetailCustomer.ngaySinh).toLocaleDateString("vi-VN") 
+                          : "Chưa cập nhật"}
+                      </p>
+                    </div>
+                    <div className="space-y-1">
+                      <span className="text-slate-400 font-bold text-[10px] uppercase tracking-wider">Số CCCD</span>
+                      <p className="text-slate-800 font-semibold">{selectedDetailCustomer.cccd || "Chưa cập nhật"}</p>
+                    </div>
+                  </div>
+
+                  {/* Grid 2: Contact */}
+                  <div className="space-y-3.5">
+                    <h4 className="text-xs font-bold text-slate-700 uppercase tracking-widest border-b pb-1">Thông tin liên hệ & Ghi chú</h4>
+                    <div className="grid grid-cols-2 gap-y-3 text-sm">
+                      <div className="col-span-2 space-y-1">
+                        <span className="text-slate-400 font-bold text-[10px] uppercase tracking-wider block">Email</span>
+                        <p className="text-slate-800 font-medium flex items-center gap-1.5"><Mail className="w-3.5 h-3.5 text-slate-500" /> {selectedDetailCustomer.email || "Chưa cập nhật"}</p>
+                      </div>
+                      <div className="col-span-2 space-y-1">
+                        <span className="text-slate-400 font-bold text-[10px] uppercase tracking-wider block">Địa chỉ</span>
+                        <p className="text-slate-800 font-medium flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-slate-500" /> {selectedDetailCustomer.diaChi || "Chưa cập nhật"}</p>
+                      </div>
+                      <div className="col-span-2 space-y-1">
+                        <span className="text-slate-400 font-bold text-[10px] uppercase tracking-wider block">Ghi chú</span>
+                        <p className="text-slate-700 font-medium bg-slate-50 p-2.5 rounded-lg border border-slate-100 italic">{selectedDetailCustomer.ghiChu || "Không có ghi chú đặc biệt."}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Grid 3: Stats */}
+                  <div className="space-y-3.5">
+                    <h4 className="text-xs font-bold text-slate-700 uppercase tracking-widest border-b pb-1">Thống kê hoạt động</h4>
+                    <div className="grid grid-cols-3 gap-4 text-center">
+                      <div className="p-3 bg-blue-50/40 border border-blue-100 rounded-xl">
+                        <span className="text-slate-400 font-bold text-[9px] uppercase tracking-wider block">Tổng số lần khám</span>
+                        <span className="text-blue-700 text-lg font-black">{selectedDetailCustomer.tongSoLanKham ?? 0}</span>
+                      </div>
+                      <div className="p-3 bg-emerald-50/40 border border-emerald-100 rounded-xl">
+                        <span className="text-slate-400 font-bold text-[9px] uppercase tracking-wider block">Tổng chi tiêu</span>
+                        <span className="text-emerald-700 text-base font-black">{(selectedDetailCustomer.tongChiTieu ?? 0).toLocaleString("vi-VN")}₫</span>
+                      </div>
+                      <div className="p-3 bg-purple-50/40 border border-purple-100 rounded-xl">
+                        <span className="text-slate-400 font-bold text-[9px] uppercase tracking-wider block">Lịch hẹn gần nhất</span>
+                        <span className="text-purple-700 text-[11px] font-bold block truncate mt-1">
+                          {selectedDetailCustomer.lichHenGanNhat 
+                            ? new Date(selectedDetailCustomer.lichHenGanNhat).toLocaleDateString("vi-VN") 
+                            : "Không có"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Footer actions */}
+                  <div className="flex justify-between items-center pt-4 border-t">
+                    <span className="text-[10px] text-slate-400 font-medium">Hồ sơ lập ngày: {selectedDetailCustomer.ngayTao ? new Date(selectedDetailCustomer.ngayTao).toLocaleDateString("vi-VN") : "N/A"}</span>
+                    <div className="flex gap-2">
+                      <Button variant="outline" onClick={() => setSelectedDetailCustomer(null)}>Đóng</Button>
+                      <Button 
+                        onClick={() => setIsEditing(true)} 
+                        className="bg-blue-600 hover:bg-blue-700 text-white font-semibold"
+                        disabled={isAdmin}
+                      >
+                        <Edit className="w-4 h-4 mr-1.5" /> Chỉnh sửa hồ sơ
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                // Edit Mode
+                <Form {...editForm}>
+                  <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField control={editForm.control} name="hoTen" render={({ field }) => (
+                        <FormItem className="col-span-2 md:col-span-1">
+                          <FormLabel>Họ và tên <span className="text-red-500">*</span></FormLabel>
+                          <FormControl><Input placeholder="VD: Nguyễn Văn A" {...field} /></FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                      <FormField control={editForm.control} name="sdt" render={({ field }) => (
+                        <FormItem className="col-span-2 md:col-span-1">
+                          <FormLabel>Số điện thoại <span className="text-red-500">*</span></FormLabel>
+                          <FormControl><Input placeholder="0987654321" {...field} /></FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                      <FormField control={editForm.control} name="cccd" render={({ field }) => (
+                        <FormItem className="col-span-2 md:col-span-1">
+                          <FormLabel>Số CCCD</FormLabel>
+                          <FormControl><Input placeholder="Gồm 12 chữ số" {...field} /></FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                      <FormField control={editForm.control} name="gioiTinh" render={({ field }) => (
+                        <FormItem className="col-span-2 md:col-span-1">
+                          <FormLabel>Giới tính <span className="text-red-500">*</span></FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl><SelectTrigger><SelectValue placeholder="Chọn giới tính" /></SelectTrigger></FormControl>
+                            <SelectContent className="bg-white">
+                              <SelectItem value="Nam">Nam</SelectItem>
+                              <SelectItem value="Nữ">Nữ</SelectItem>
+                              <SelectItem value="Khác">Khác</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                      <FormField control={editForm.control} name="ngaySinh" render={({ field }) => (
+                        <FormItem className="col-span-2 md:col-span-1">
+                          <FormLabel>Ngày sinh</FormLabel>
+                          <FormControl><Input type="date" {...field} /></FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                      <FormField control={editForm.control} name="email" render={({ field }) => (
+                        <FormItem className="col-span-2 md:col-span-1">
+                          <FormLabel>Email</FormLabel>
+                          <FormControl><Input type="email" placeholder="VD: customer@gmail.com" {...field} /></FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                      <FormField control={editForm.control} name="diaChi" render={({ field }) => (
+                        <FormItem className="col-span-2">
+                          <FormLabel>Địa chỉ</FormLabel>
+                          <FormControl><Input placeholder="Số nhà, Tên đường, Quận/Huyện..." {...field} /></FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                      <FormField control={editForm.control} name="ghiChu" render={({ field }) => (
+                        <FormItem className="col-span-2">
+                          <FormLabel>Ghi chú</FormLabel>
+                          <FormControl><Input placeholder="Ghi chú về khách hàng..." {...field} /></FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                    </div>
+                    
+                    <div className="flex justify-end gap-3 pt-4 border-t">
+                      <Button type="button" variant="outline" onClick={() => setIsEditing(false)}>Hủy bỏ</Button>
+                      <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white" disabled={updateCustomerMutation.isPending}>
+                        {updateCustomerMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                        Lưu thay đổi
+                      </Button>
+                    </div>
+                  </form>
+                </Form>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

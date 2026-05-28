@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { 
   Tv, 
   Clock, 
@@ -20,7 +20,7 @@ export default function TVQueuePage() {
   const [time, setTime] = useState("");
   const [date, setDate] = useState("");
   const [isMuted, setIsMuted] = useState(true);
-  const [prevExaminingIds, setPrevExaminingIds] = useState<string[]>([]);
+  const prevExaminingIdsRef = useRef<string[]>([]);
 
   // Parse queue list
   const queueList: HangChoHomNayDTO[] = data?.content || data || [];
@@ -57,7 +57,7 @@ export default function TVQueuePage() {
   useEffect(() => {
     if (examiningList.length > 0) {
       const currentIds = examiningList.map(item => item.maHc);
-      const newlyAdded = examiningList.filter(item => !prevExaminingIds.includes(item.maHc));
+      const newlyAdded = examiningList.filter(item => !prevExaminingIdsRef.current.includes(item.maHc));
 
       if (newlyAdded.length > 0 && !isMuted) {
         const patient = newlyAdded[0];
@@ -72,9 +72,9 @@ export default function TVQueuePage() {
           window.speechSynthesis.speak(utterance);
         }
       }
-      setPrevExaminingIds(currentIds);
+      prevExaminingIdsRef.current = currentIds;
     }
-  }, [examiningList, prevExaminingIds, isMuted]);
+  }, [examiningList, isMuted]);
 
   return (
     <div className="fixed inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 text-white font-sans overflow-hidden flex flex-col p-6 z-[9999]">

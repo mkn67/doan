@@ -30,9 +30,15 @@ function AuditContent() {
   const [activeMaHoSo, setActiveMaHoSo] = useState(initialMaHoSo);
   const [isMounted, setIsMounted] = useState(false);
 
+  // Set mount status once on client mount
+  useEffect(() => {
+    setTimeout(() => {
+      setIsMounted(true);
+    }, 0);
+  }, []);
+
   // Sync state với URL khi URL thay đổi
   useEffect(() => {
-    setIsMounted(true);
     const code = searchParams.get("maHoSo") || "";
     setMaHoSoInput(code);
     setActiveMaHoSo(code);

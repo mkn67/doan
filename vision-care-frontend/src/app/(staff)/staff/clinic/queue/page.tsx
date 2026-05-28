@@ -35,8 +35,28 @@ export default function QueuePage() {
   const [ticketToPrint, setTicketToPrint] = useState<HangChoHomNayDTO | null>(null);
   const ticketPrintRef = React.useRef<HTMLDivElement>(null);
 
+  // Unconditional React hooks (placed before early returns)
+  const handlePrintTicket = useReactToPrint({
+    contentRef: ticketPrintRef,
+    documentTitle: `PhieuSTT_VisionCare_${ticketToPrint?.maHc || "New"}`,
+    onAfterPrint: () => setTicketToPrint(null),
+  });
+
+  // Fetch patient queue data
+  const { data, isLoading, refetch, isRefetching } = useHangChoHomNay();
+  
+  // Mutation hooks
+  const goiKhamMutation = useGoiVaoKham();
+  const ketThucMutation = useKetThucKham();
+
+  // State to track current dragging item and hovered column target
+  const [draggingItem, setDraggingItem] = useState<HangChoHomNayDTO | null>(null);
+  const [activeOverColumn, setActiveOverColumn] = useState<string | null>(null); // "waiting" | "examining" | "completed" | "skipped"
+
   React.useEffect(() => {
-    setIsMounted(true);
+    setTimeout(() => {
+      setIsMounted(true);
+    }, 0);
   }, []);
 
   const ALLOWED_ROLES = ["ROLE_BAC_SI", "NH01"];
@@ -46,7 +66,10 @@ export default function QueuePage() {
     const userGroup = user?.maNhom ? user.maNhom : null;
     return ALLOWED_ROLES.some(role => userRoles.includes(role) || role === userGroup);
   };
-  
+
+  const isAccessAllowed = hasAccess();
+
+  // Early returns (placed after all hook declarations)
   if (!isMounted || authLoading) {
     return (
       <div className="flex h-[calc(100vh-4rem)] items-center justify-center text-blue-600 font-medium">
@@ -55,7 +78,7 @@ export default function QueuePage() {
     );
   }
 
-  if (!hasAccess()) {
+  if (!isAccessAllowed) {
     return (
       <div className="flex h-[calc(100vh-4rem)] flex-col items-center justify-center bg-slate-50/50 rounded-2xl border-2 border-dashed border-slate-200 m-6">
         <ShieldAlert className="w-16 h-16 text-rose-500 mb-4 animate-bounce" />
@@ -70,29 +93,12 @@ export default function QueuePage() {
     );
   }
 
-  const handlePrintTicket = useReactToPrint({
-    contentRef: ticketPrintRef,
-    documentTitle: `PhieuSTT_VisionCare_${ticketToPrint?.maHc || "New"}`,
-    onAfterPrint: () => setTicketToPrint(null),
-  });
-
   const triggerPrintTicket = (item: HangChoHomNayDTO) => {
     setTicketToPrint(item);
     setTimeout(() => {
       handlePrintTicket();
     }, 100);
   };
-  
-  // Fetch patient queue data
-  const { data, isLoading, refetch, isRefetching } = useHangChoHomNay();
-  
-  // Mutation hooks
-  const goiKhamMutation = useGoiVaoKham();
-  const ketThucMutation = useKetThucKham();
-
-  // State to track current dragging item and hovered column target
-  const [draggingItem, setDraggingItem] = useState<HangChoHomNayDTO | null>(null);
-  const [activeOverColumn, setActiveOverColumn] = useState<string | null>(null); // "waiting" | "examining" | "completed" | "skipped"
 
   // Handle API wrappers/pagination variations
   const queueList: HangChoHomNayDTO[] = data?.content || data || [];
@@ -113,15 +119,16 @@ export default function QueuePage() {
           resolve("Gọi khám thành công!");
           router.push(`/staff/clinic/examinations?makh=${maKh}&mahc=${maHc}`);
         },
-        onError: (err: any) => {
-          reject(err?.response?.data?.message || "Không thể gọi khám.");
+        onError: (err: unknown) => {
+          const errorResponse = err as { response?: { data?: { message?: string } }; message?: string };
+          reject(errorResponse?.response?.data?.message || "Không thể gọi khám.");
         }
       });
     });
 
     toast.promise(promise, {
       loading: "Đang gọi khám & chuyển hướng...",
-      success: (data: any) => `${data}`,
+      success: (data: unknown) => `${data}`,
       error: (err) => `Lỗi: ${err}`
     });
   };
@@ -133,15 +140,16 @@ export default function QueuePage() {
         onSuccess: () => {
           resolve(`${actionName} thành công!`);
         },
-        onError: (err: any) => {
-          reject(err?.response?.data?.message || "Thao tác thất bại.");
+        onError: (err: unknown) => {
+          const errorResponse = err as { response?: { data?: { message?: string } }; message?: string };
+          reject(errorResponse?.response?.data?.message || "Thao tác thất bại.");
         }
       });
     });
 
     toast.promise(promise, {
       loading: `Đang cập nhật trạng thái...`,
-      success: (data: any) => `${data}`,
+      success: (data: unknown) => `${data}`,
       error: (err) => `Lỗi: ${err}`
     });
   };

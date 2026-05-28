@@ -541,7 +541,7 @@ export default function AppointmentsPage() {
                   
                   <TableCell className="text-right pr-6">
                     <div className="flex items-center justify-end gap-2">
-                      {item.trangThai === "CHUA_XAC_NHAN" && (
+                      {(item.trangThai === "CHUA_XAC_NHAN" || item.trangThai === "CHO_XAC_NHAN") && (
                         <Button
                           size="sm"
                           onClick={() => handleUpdateStatus(item.maLh, "DA_XAC_NHAN")}
@@ -563,7 +563,7 @@ export default function AppointmentsPage() {
                         </Button>
                       )}
 
-                      {item.trangThai !== "CHUA_XAC_NHAN" && (item.trangThai === "DA_HUY" || item.trangThai === "DA_DEN") && (
+                      {item.trangThai !== "CHUA_XAC_NHAN" && item.trangThai !== "CHO_XAC_NHAN" && (item.trangThai === "DA_HUY" || item.trangThai === "DA_DEN") && (
                         <span className="text-xs text-slate-400 italic font-semibold">Không có thao tác</span>
                       )}
                     </div>
@@ -583,6 +583,7 @@ export default function AppointmentsPage() {
 function StatusBadge({ status }: { status: string }) {
   const configs: Record<string, { label: string; icon: React.ReactNode; class: string }> = {
     "CHUA_XAC_NHAN": { label: "Chờ duyệt", icon: <Timer className="w-3 h-3 mr-1" />, class: "bg-amber-100 text-amber-700 border-amber-200" },
+    "CHO_XAC_NHAN": { label: "Chờ duyệt", icon: <Timer className="w-3 h-3 mr-1" />, class: "bg-amber-100 text-amber-700 border-amber-200" },
     "DA_XAC_NHAN": { label: "Đã xác nhận", icon: <CheckCircle2 className="w-3 h-3 mr-1" />, class: "bg-blue-100 text-blue-700 border-blue-200" },
     "DA_DEN": { label: "Đã đến", icon: <CheckCircle2 className="w-3 h-3 mr-1" />, class: "bg-emerald-100 text-emerald-700 border-emerald-200" },
     "DA_HUY": { label: "Đã hủy", icon: <XCircle className="w-3 h-3 mr-1" />, class: "bg-red-100 text-red-700 border-red-200" },

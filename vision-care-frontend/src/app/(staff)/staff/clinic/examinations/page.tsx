@@ -13,7 +13,6 @@ import {
   Loader2, 
   Upload, 
   Sparkles, 
-  FileText,
   History,
   Printer,
   Trash2,
@@ -22,7 +21,6 @@ import {
   ShieldAlert
 } from "lucide-react";
 import { useSearchParams, useRouter } from "next/navigation"; 
-import { AxiosError } from "axios";
 import { useReactToPrint } from "react-to-print";
 
 import { useAuth } from "@/hooks/useAuth";
@@ -50,10 +48,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { HoSoKhamRequest, HoSoKhamResponse } from "@/types/clinic";
+import { HoSoKhamRequest, HoSoKhamResponse, ChiTietThiLuc } from "@/types/clinic";
+import { KhachHangResponseDTO } from "@/types/customer";
+import { SanPhamResponse } from "@/types/inventory";
+import { HangChoHomNayDTO } from "@/types/staff";
 import { toast } from "sonner";
 
-interface JavaErrorResponse { message?: string; }
+
 
 const examSchema = z.object({
   maKh: z.string().min(1, "Vui lòng nhập mã khách hàng"),
@@ -92,7 +93,7 @@ type ExamFormValues = z.infer<typeof examSchema>;
 // =========================================================
 // CUSTOMER DETAILS CARD COMPONENT
 // =========================================================
-function CustomerDetailsCard({ customer, isLoading }: { customer: any; isLoading: boolean }) {
+function CustomerDetailsCard({ customer, isLoading }: { customer?: KhachHangResponseDTO | null; isLoading: boolean }) {
   if (isLoading) {
     return (
       <Card className="border-slate-200 shadow-sm overflow-hidden animate-pulse bg-white">
@@ -327,28 +328,7 @@ function ExaminationContent() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  if (!isMounted || authLoading) {
-    return (
-      <div className="flex h-[calc(100vh-4rem)] items-center justify-center text-blue-600 font-medium">
-        Đang kiểm tra quyền truy cập...
-      </div>
-    );
-  }
 
-  if (!hasAccess()) {
-    return (
-      <div className="flex h-[calc(100vh-4rem)] flex-col items-center justify-center bg-slate-50/50 rounded-2xl border-2 border-dashed border-slate-200 m-6">
-        <ShieldAlert className="w-16 h-16 text-rose-500 mb-4 animate-bounce" />
-        <h2 className="text-2xl font-bold text-slate-800">Truy Cập Bị Từ Chối</h2>
-        <p className="text-slate-500 mt-2 max-w-md text-center">
-          Tài khoản của bạn không có nghiệp vụ Bác sĩ. Vui lòng quay lại!
-        </p>
-        <Button onClick={() => router.back()} className="mt-6 bg-slate-800 hover:bg-slate-900">
-          Quay lại trang trước
-        </Button>
-      </div>
-    );
-  }
 
   const { data: queueData } = useHangChoHomNay();
   const queueList = queueData || [];
@@ -380,32 +360,32 @@ function ExaminationContent() {
     name: "danhSachKeDon",
   });
 
-  const matTraiSph = form.watch("matTraiSph") || 0;
-  const matTraiCyl = form.watch("matTraiCyl") || 0;
-  const matTraiAx = form.watch("matTraiAx") || 0;
-  const matPhaiSph = form.watch("matPhaiSph") || 0;
-  const matPhaiCyl = form.watch("matPhaiCyl") || 0;
-  const matPhaiAx = form.watch("matPhaiAx") || 0;
-  const pd = form.watch("pd") || 60;
+  const [
+    matTraiSph, matTraiCyl, matTraiAx,
+    matPhaiSph, matPhaiCyl, matPhaiAx,
+    pd, maKhValue
+  ] = form.watch([
+    "matTraiSph", "matTraiCyl", "matTraiAx",
+    "matPhaiSph", "matPhaiCyl", "matPhaiAx",
+    "pd", "maKh"
+  ]);
   
-  const maKhValue = form.watch("maKh") || "";
-
   // Call useKhachHang for full card rendering
   const { data: customerDetails, isLoading: isCustomerLoading } = useKhachHang(maKhValue);
   const { data: historyData, isLoading: isHistoryLoading } = useLichSuKham(maKhValue);
   const historyList = historyData?.data || [];
 
-  const selectedPatientFromQueue = queueList.find((p: any) => p.maKh === maKhValue);
+  const selectedPatientFromQueue = queueList.find((p: HangChoHomNayDTO) => p.maKh === maKhValue);
   const patientNameFromHistory = historyList[0]?.tenKhachHang || "";
   const patientName = selectedPatientFromQueue?.tenKhach || customerDetails?.hoTen || patientNameFromHistory || "";
 
   const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
-  const [selectedOldRecord, setSelectedOldRecord] = useState<any>(null);
-  const [selectedNewRecord, setSelectedNewRecord] = useState<any>(null);
+  const [selectedOldRecord, setSelectedOldRecord] = useState<HoSoKhamResponse | null>(null);
+  const [selectedNewRecord, setSelectedNewRecord] = useState<HoSoKhamResponse | null>(null);
   const [isDiffOpen, setIsDiffOpen] = useState(false);
 
   // Print support
-  const [recordToPrint, setRecordToPrint] = useState<any>(null);
+  const [recordToPrint, setRecordToPrint] = useState<HoSoKhamResponse | null>(null);
   const printRecordRef = React.useRef<HTMLDivElement>(null);
 
   const handlePrintRecord = useReactToPrint({
@@ -414,7 +394,7 @@ function ExaminationContent() {
     onAfterPrint: () => setRecordToPrint(null),
   });
 
-  const triggerPrintRecord = (record: any) => {
+  const triggerPrintRecord = (record: HoSoKhamResponse) => {
     setRecordToPrint(record);
     setTimeout(() => {
       handlePrintRecord();
@@ -433,7 +413,7 @@ function ExaminationContent() {
           if (user.roles?.includes("ROLE_ADMIN") || user.maNhom === "NH04") {
             setIsAdmin(true);
           }
-        } catch (e) {}
+        } catch {}
       }
     }
   }, [form]);
@@ -446,18 +426,18 @@ function ExaminationContent() {
           throw new Error("Lỗi tải hồ sơ");
         })
         .then((data: HoSoKhamResponse) => {
-          const od: any = data.danhSachThiLuc?.find((ct: any) => ct.loaiMat === "P") || {};
-          const os: any = data.danhSachThiLuc?.find((ct: any) => ct.loaiMat === "T") || {};
+          const od = data.danhSachThiLuc?.find((ct: ChiTietThiLuc) => ct.loaiMat === "P");
+          const os = data.danhSachThiLuc?.find((ct: ChiTietThiLuc) => ct.loaiMat === "T");
           form.reset({
             maKh: data.maKh || "",
             maNs: form.getValues("maNs") || data.tenBacSi || "",
-            matTraiSph: os.sph ?? 0,
-            matTraiCyl: os.cyl ?? 0,
-            matTraiAx: os.axis ?? 0,
-            matPhaiSph: od.sph ?? 0,
-            matPhaiCyl: od.cyl ?? 0,
-            matPhaiAx: od.axis ?? 0,
-            pd: os.pd || od.pd || 60,
+            matTraiSph: os?.sph ?? 0,
+            matTraiCyl: os?.cyl ?? 0,
+            matTraiAx: os?.axis ?? 0,
+            matPhaiSph: od?.sph ?? 0,
+            matPhaiCyl: od?.cyl ?? 0,
+            matPhaiAx: od?.axis ?? 0,
+            pd: os?.pd || od?.pd || 60,
             ketluan: data.ketLuan || "",
             maHoSo: data.maHoSo || "",
             donKinh: data.donKinh || "",
@@ -470,6 +450,29 @@ function ExaminationContent() {
         });
     }
   }, [maHoSoFromUrl, form]);
+
+  if (!isMounted || authLoading) {
+    return (
+      <div className="flex h-[calc(100vh-4rem)] items-center justify-center text-blue-600 font-medium">
+        Đang kiểm tra quyền truy cập...
+      </div>
+    );
+  }
+
+  if (!hasAccess()) {
+    return (
+      <div className="flex h-[calc(100vh-4rem)] flex-col items-center justify-center bg-slate-50/50 rounded-2xl border-2 border-dashed border-slate-200 m-6">
+        <ShieldAlert className="w-16 h-16 text-rose-500 mb-4 animate-bounce" />
+        <h2 className="text-2xl font-bold text-slate-800">Truy Cập Bị Từ Chối</h2>
+        <p className="text-slate-505 mt-2 max-w-md text-center text-sm text-slate-500">
+          Tài khoản của bạn không có nghiệp vụ Bác sĩ. Vui lòng quay lại!
+        </p>
+        <Button onClick={() => router.back()} className="mt-6 bg-slate-800 hover:bg-slate-900">
+          Quay lại trang trước
+        </Button>
+      </div>
+    );
+  }
 
   // Auto-refractor file reader
   const handleAutoRefractorFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -560,8 +563,9 @@ function ExaminationContent() {
 
       toast.success("Lưu hồ sơ khám bệnh và đơn kính/thuốc thành công!");
       router.push(`/staff/clinic`);
-    } catch (err: any) {
-      const msg = err.response?.data?.message || err.message || "Lỗi lưu hồ sơ hoặc đơn thuốc";
+    } catch (err: unknown) {
+      const errorResponse = err as { response?: { data?: { message?: string } }; message?: string };
+      const msg = errorResponse.response?.data?.message || errorResponse.message || "Lỗi lưu hồ sơ hoặc đơn thuốc";
       toast.error(`Lỗi thực hiện: ${msg}`);
     } finally {
       setIsSubmitting(false);
@@ -645,7 +649,7 @@ function ExaminationContent() {
               </SelectTrigger>
               <SelectContent className="bg-white max-h-60">
                 <SelectItem value="manual" className="font-semibold text-blue-600">✍️ Tự nhập mã bệnh nhân thủ công</SelectItem>
-                {queueList.map((patient: any) => (
+                {queueList.map((patient: HangChoHomNayDTO) => (
                   <SelectItem key={patient.maKh + "-" + patient.maHc} value={patient.maKh}>
                     {patient.maKh} - {patient.tenKhach} (STT: #{patient.soThuTu} | {patient.trangThai === "DANG_KHAM" ? "Đang khám" : "Chờ khám"})
                   </SelectItem>
@@ -874,7 +878,7 @@ function ExaminationContent() {
                             />
                           </FormControl>
                           <FormDescription className="text-[10px] text-slate-400">
-                            Hệ thống sẽ tự động liên kết và cập nhật trạng thái "Chờ gia công" tại xưởng khi nhập gọng và tròng.
+                            Hệ thống sẽ tự động liên kết và cập nhật trạng thái &quot;Chờ gia công&quot; tại xưởng khi nhập gọng và tròng.
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
@@ -902,7 +906,7 @@ function ExaminationContent() {
 
                     {fields.length === 0 ? (
                       <div className="text-center py-5 text-xs text-slate-400 font-medium italic border border-dashed rounded-xl bg-white/40">
-                        Chưa có sản phẩm nào được kê. Bấm "Thêm sản phẩm" nếu muốn bán kèm thuốc hoặc tròng kính.
+                        Chưa có sản phẩm nào được kê. Bấm &quot;Thêm sản phẩm&quot; nếu muốn bán kèm thuốc hoặc tròng kính.
                       </div>
                     ) : (
                       <div className="space-y-3">
@@ -922,9 +926,9 @@ function ExaminationContent() {
                                         <SelectValue placeholder="Chọn sản phẩm..." />
                                       </SelectTrigger>
                                       <SelectContent className="bg-white max-h-60">
-                                        {productsList.map((prod: any) => (
+                                        {productsList.map((prod: SanPhamResponse) => (
                                           <SelectItem key={prod.maSp} value={prod.maSp} className="text-xs">
-                                            {prod.tenSp} ({prod.maSp} - Giá: {prod.giaBan?.toLocaleString("vi-VN")}đ - Tồn: {prod.soLuongTon})
+                                            {prod.tenSp} ({prod.maSp} - Giá: {prod.giaBan?.toLocaleString("vi-VN")}đ - Tồn: {prod.tongTonKho})
                                           </SelectItem>
                                         ))}
                                       </SelectContent>
@@ -1036,7 +1040,7 @@ function ExaminationContent() {
               </div>
 
               <div className="space-y-3">
-                {historyList.map((item: any) => {
+                {historyList.map((item: HoSoKhamResponse) => {
                   const isCheckedOld = selectedOldRecord?.maHoSo === item.maHoSo;
                   const isCheckedNew = selectedNewRecord?.maHoSo === item.maHoSo;
 
@@ -1120,16 +1124,16 @@ function ExaminationContent() {
                           </span>
                           <span>
                             SPH:{" "}
-                            {item.danhSachThiLuc?.find((ct: any) => ct.loaiMat === "P")?.sph ||
+                            {item.danhSachThiLuc?.find((ct: ChiTietThiLuc) => ct.loaiMat === "P")?.sph ||
                               "0.00"}{" "}
                             | CYL:{" "}
-                            {item.danhSachThiLuc?.find((ct: any) => ct.loaiMat === "P")?.cyl ||
+                            {item.danhSachThiLuc?.find((ct: ChiTietThiLuc) => ct.loaiMat === "P")?.cyl ||
                               "0.00"}{" "}
                             | AXIS:{" "}
-                            {item.danhSachThiLuc?.find((ct: any) => ct.loaiMat === "P")?.axis ||
+                            {item.danhSachThiLuc?.find((ct: ChiTietThiLuc) => ct.loaiMat === "P")?.axis ||
                               "0"}{" "}
                             | VA:{" "}
-                            {item.danhSachThiLuc?.find((ct: any) => ct.loaiMat === "P")?.va ||
+                            {item.danhSachThiLuc?.find((ct: ChiTietThiLuc) => ct.loaiMat === "P")?.va ||
                               "10/10"}
                           </span>
                         </div>
@@ -1139,16 +1143,16 @@ function ExaminationContent() {
                           </span>
                           <span>
                             SPH:{" "}
-                            {item.danhSachThiLuc?.find((ct: any) => ct.loaiMat === "T")?.sph ||
+                            {item.danhSachThiLuc?.find((ct: ChiTietThiLuc) => ct.loaiMat === "T")?.sph ||
                               "0.00"}{" "}
                             | CYL:{" "}
-                            {item.danhSachThiLuc?.find((ct: any) => ct.loaiMat === "T")?.cyl ||
+                            {item.danhSachThiLuc?.find((ct: ChiTietThiLuc) => ct.loaiMat === "T")?.cyl ||
                               "0.00"}{" "}
                             | AXIS:{" "}
-                            {item.danhSachThiLuc?.find((ct: any) => ct.loaiMat === "T")?.axis ||
+                            {item.danhSachThiLuc?.find((ct: ChiTietThiLuc) => ct.loaiMat === "T")?.axis ||
                               "0"}{" "}
                             | VA:{" "}
-                            {item.danhSachThiLuc?.find((ct: any) => ct.loaiMat === "T")?.va ||
+                            {item.danhSachThiLuc?.find((ct: ChiTietThiLuc) => ct.loaiMat === "T")?.va ||
                               "10/10"}
                           </span>
                         </div>
