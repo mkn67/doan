@@ -18,12 +18,14 @@ import {
   Printer,
   Trash2,
   Plus,
-  Stethoscope
+  Stethoscope,
+  ShieldAlert
 } from "lucide-react";
 import { useSearchParams, useRouter } from "next/navigation"; 
 import { AxiosError } from "axios";
 import { useReactToPrint } from "react-to-print";
 
+import { useAuth } from "@/hooks/useAuth";
 import { useCreateHoSoKham, useHangChoHomNay, useLichSuKham } from "@/hooks/useClinic"; 
 import { useKhachHang } from "@/hooks/useCustomer";
 import { useDanhSachSanPham } from "@/hooks/useInventory";
@@ -145,10 +147,6 @@ function CustomerDetailsCard({ customer, isLoading }: { customer: any; isLoading
         <div className="space-y-0.5">
           <span className="text-slate-400 font-semibold block text-[10px] uppercase tracking-wider">Số CCCD</span>
           <span className="text-slate-800 font-semibold">{customer.cccd || "Chưa khai báo"}</span>
-        </div>
-        <div className="space-y-0.5">
-          <span className="text-slate-400 font-semibold block text-[10px] uppercase tracking-wider">Điểm tích lũy</span>
-          <span className="text-emerald-600 font-bold">{customer.diemTichLuy || 0} điểm</span>
         </div>
         <div className="col-span-2 space-y-0.5 border-t pt-2.5">
           <span className="text-slate-400 font-semibold block text-[10px] uppercase tracking-wider">Địa chỉ</span>
@@ -305,6 +303,21 @@ function EyeRefractionMap({
 // MAIN EXAMINATION CONTENT
 // =========================================================
 function ExaminationContent() {
+  const { user, loading: authLoading } = useAuth();
+  const [isMounted, setIsMounted] = React.useState(false);
+  
+  React.useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  const ALLOWED_ROLES = ["ROLE_BAC_SI", "NH01"];
+  const hasAccess = () => {
+    if (!user) return false;
+    const userRoles = user?.roles || [];
+    const userGroup = user?.maNhom ? user.maNhom : null;
+    return ALLOWED_ROLES.some(role => userRoles.includes(role) || role === userGroup);
+  };
+
   const mutation = useCreateHoSoKham();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -313,6 +326,29 @@ function ExaminationContent() {
   const [isManualInput, setIsManualInput] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  if (!isMounted || authLoading) {
+    return (
+      <div className="flex h-[calc(100vh-4rem)] items-center justify-center text-blue-600 font-medium">
+        Đang kiểm tra quyền truy cập...
+      </div>
+    );
+  }
+
+  if (!hasAccess()) {
+    return (
+      <div className="flex h-[calc(100vh-4rem)] flex-col items-center justify-center bg-slate-50/50 rounded-2xl border-2 border-dashed border-slate-200 m-6">
+        <ShieldAlert className="w-16 h-16 text-rose-500 mb-4 animate-bounce" />
+        <h2 className="text-2xl font-bold text-slate-800">Truy Cập Bị Từ Chối</h2>
+        <p className="text-slate-500 mt-2 max-w-md text-center">
+          Tài khoản của bạn không có nghiệp vụ Bác sĩ. Vui lòng quay lại!
+        </p>
+        <Button onClick={() => router.back()} className="mt-6 bg-slate-800 hover:bg-slate-900">
+          Quay lại trang trước
+        </Button>
+      </div>
+    );
+  }
 
   const { data: queueData } = useHangChoHomNay();
   const queueList = queueData || [];

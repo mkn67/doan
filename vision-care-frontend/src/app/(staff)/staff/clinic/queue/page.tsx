@@ -22,16 +22,53 @@ import { useReactToPrint } from "react-to-print";
 import { QRCodeSVG } from "qrcode.react";
 
 import { useHangChoHomNay, useGoiVaoKham, useKetThucKham } from "@/hooks/useClinic"; 
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { HangChoHomNayDTO } from "@/types/staff";
+import { ShieldAlert } from "lucide-react";
 
 export default function QueuePage() {
   const router = useRouter();
-  
-  // Printing Ticket STT State & Ref
+  const { user, loading: authLoading } = useAuth();
+  const [isMounted, setIsMounted] = useState(false);
   const [ticketToPrint, setTicketToPrint] = useState<HangChoHomNayDTO | null>(null);
   const ticketPrintRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  const ALLOWED_ROLES = ["ROLE_BAC_SI", "NH01"];
+  const hasAccess = () => {
+    if (!user) return false;
+    const userRoles = user?.roles || [];
+    const userGroup = user?.maNhom ? user.maNhom : null;
+    return ALLOWED_ROLES.some(role => userRoles.includes(role) || role === userGroup);
+  };
+  
+  if (!isMounted || authLoading) {
+    return (
+      <div className="flex h-[calc(100vh-4rem)] items-center justify-center text-blue-600 font-medium">
+        Đang kiểm tra quyền truy cập...
+      </div>
+    );
+  }
+
+  if (!hasAccess()) {
+    return (
+      <div className="flex h-[calc(100vh-4rem)] flex-col items-center justify-center bg-slate-50/50 rounded-2xl border-2 border-dashed border-slate-200 m-6">
+        <ShieldAlert className="w-16 h-16 text-rose-500 mb-4 animate-bounce" />
+        <h2 className="text-2xl font-bold text-slate-800">Truy Cập Bị Từ Chối</h2>
+        <p className="text-slate-500 mt-2 max-w-md text-center">
+          Tài khoản của bạn không có nghiệp vụ Bác sĩ. Vui lòng quay lại!
+        </p>
+        <Button onClick={() => router.back()} className="mt-6 bg-slate-800 hover:bg-slate-900">
+          Quay lại trang trước
+        </Button>
+      </div>
+    );
+  }
 
   const handlePrintTicket = useReactToPrint({
     contentRef: ticketPrintRef,

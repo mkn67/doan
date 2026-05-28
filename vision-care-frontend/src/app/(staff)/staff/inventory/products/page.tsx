@@ -3,11 +3,12 @@
 import "@/app/globals.css";
 import { useState } from "react";
 // Giả định m đã viết hook useDeleteSanPham, tớ import luôn vào đây nhé!
-import { useDanhSachSanPham, useCreateSanPham, useDeleteSanPham } from "@/hooks/useInventory";
+import { useDanhSachSanPham, useCreateSanPham, useDeleteSanPham, useDanhSachLoaiSanPham } from "@/hooks/useInventory";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
-import { Package, Plus, Box, DollarSign, Layers, Tag, AlertTriangle, Pill, CheckCircle2, Trash2, Search } from "lucide-react";
+import { Package, Plus, Box, DollarSign, Layers, Tag, AlertTriangle, Pill, CheckCircle2, Trash2, Search, ShieldAlert, ChevronDown } from "lucide-react";
 
 interface SanPham {
   maSp: string;
@@ -21,10 +22,20 @@ interface SanPham {
 }
 
 export default function ProductsPage() {
+  const router = useRouter();
   const { user } = useAuth();
   const isAdmin = user?.roles?.includes("ROLE_ADMIN") || user?.maNhom === "NH04";
 
+  const ALLOWED_ROLES = ["ROLE_THU_KHO", "NH03"];
+  const hasAccess = () => {
+    if (!user) return false;
+    const userRoles = user?.roles || [];
+    const userGroup = user?.maNhom ? user.maNhom : null;
+    return ALLOWED_ROLES.some(role => userRoles.includes(role) || role === userGroup);
+  };
+
   const { data } = useDanhSachSanPham();
+  const { data: categories } = useDanhSachLoaiSanPham();
   const createMutation = useCreateSanPham();
   const deleteMutation = useDeleteSanPham(); // Thêm hook Xóa
 
@@ -38,6 +49,21 @@ export default function ProductsPage() {
     tonKhoToiThieu: 10,
     laThuoc: false,
   });
+
+  if (!hasAccess()) {
+    return (
+      <div className="flex h-[calc(100vh-4rem)] flex-col items-center justify-center bg-slate-50/50 rounded-2xl border-2 border-dashed border-slate-200 m-6 p-8 text-center">
+        <ShieldAlert className="w-16 h-16 text-rose-500 mb-4 animate-bounce mx-auto" />
+        <h2 className="text-2xl font-bold text-slate-800">Truy Cập Bị Từ Chối</h2>
+        <p className="text-slate-500 mt-2 max-w-md mx-auto">
+          Tài khoản của bạn không có nghiệp vụ Thủ kho. Vui lòng quay lại!
+        </p>
+        <Button onClick={() => router.back()} className="mt-6 bg-slate-800 hover:bg-slate-900 rounded-xl px-5 h-11 font-bold">
+          Quay lại trang trước
+        </Button>
+      </div>
+    );
+  }
 
   const handleSubmit = () => {
     // 🔥 1. CHẶN ĐỨNG HÀNH VI GỬI DỮ LIỆU RỖNG BẰNG VALIDATION
@@ -131,18 +157,25 @@ export default function ProductsPage() {
             </div>
           </div>
 
-          {/* Mã Loại */}
+          {/* Phân loại sản phẩm (Dropdown) */}
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Mã loại (ID) <span className="text-red-500 font-bold">*</span></label>
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Loại sản phẩm <span className="text-red-500 font-bold">*</span></label>
             <div className="relative focus-within:text-blue-600 text-slate-400">
-              <Tag className="absolute left-3.5 top-3.5 h-4.5 w-4.5 transition-colors" />
-              <Input 
-                className="pl-10 bg-slate-50/50 border-slate-200 hover:border-slate-300 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 rounded-xl h-11 transition-all text-sm font-semibold text-slate-800"
-                placeholder="VD: L01..." 
+              <Tag className="absolute left-3.5 top-3.5 h-4.5 w-4.5 transition-colors pointer-events-none" />
+              <select 
+                className="w-full pl-10 pr-10 bg-slate-50/50 border border-slate-200 hover:border-slate-300 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 rounded-xl h-11 transition-all text-sm font-semibold text-slate-800 appearance-none focus:outline-none"
                 value={form.maLoai}
                 onChange={(e) => setForm({ ...form, maLoai: e.target.value })} 
                 disabled={isAdmin}
-              />
+              >
+                <option value="">Chọn loại...</option>
+                {categories?.map((cat: { maLoai: string; tenLoai: string }) => (
+                  <option key={cat.maLoai} value={cat.maLoai}>
+                    {cat.tenLoai}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-3.5 top-3.5 h-4.5 w-4.5 text-slate-400 pointer-events-none" />
             </div>
           </div>
 

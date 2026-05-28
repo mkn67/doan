@@ -58,6 +58,7 @@ export default function BookingPage() {
         gioHen: gioHenFull,
       });
       alert("Đặt lịch thành công!");
+      router.push("/profile/appointments");
     } catch {
       alert("Đặt lịch thất bại!");
     }

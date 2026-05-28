@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { 
-  Search, Plus, UserCircle, Phone, Award, Loader2, ShieldAlert 
+  Search, Plus, UserCircle, Phone, Loader2, ShieldAlert 
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -60,7 +60,7 @@ export default function CustomersPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const ALLOWED_ROLES = ["ROLE_LE_TAN", "ROLE_ADMIN", "NH06", "NH04"];
+  const ALLOWED_ROLES = ["ROLE_LE_TAN", "NH06"];
 
   useEffect(() => {
     setIsMounted(true);
@@ -226,13 +226,12 @@ export default function CustomersPage() {
               <TableRow>
                 <TableHead className="font-semibold text-slate-600">Thông tin Khách hàng</TableHead>
                 <TableHead className="font-semibold text-slate-600">Giới tính</TableHead>
-                <TableHead className="font-semibold text-slate-600">Điểm tích lũy</TableHead>
                 <TableHead className="text-right font-semibold text-slate-600">Mã KH</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={4} className="text-center py-10">Đang tải dữ liệu...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={3} className="text-center py-10">Đang tải dữ liệu...</TableCell></TableRow>
               ) : filteredCustomers.length > 0 ? (
                 filteredCustomers.map((customer) => (
                   <TableRow key={customer.maKh} className="hover:bg-slate-50 transition-colors">
@@ -250,11 +249,6 @@ export default function CustomersPage() {
                       </div>
                     </TableCell>
                     <TableCell className="text-slate-600">{customer.gioiTinh || "Chưa cập nhật"}</TableCell>
-                    <TableCell>
-                      <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-bold bg-amber-50 text-amber-600 border border-amber-200">
-                        <Award className="w-3 h-3 mr-1" /> {customer.diemTichLuy || 0} điểm
-                      </span>
-                    </TableCell>
                     <TableCell className="text-right">
                       <span className="text-sm font-mono text-slate-500">{customer.maKh}</span>
                     </TableCell>
@@ -262,7 +256,7 @@ export default function CustomersPage() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={4} className="h-24 text-center text-slate-500">
+                  <TableCell colSpan={3} className="h-24 text-center text-slate-500">
                     Không tìm thấy khách hàng nào.
                   </TableCell>
                 </TableRow>

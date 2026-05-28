@@ -4,7 +4,7 @@ import * as React from "react";
 import { useState, useEffect } from "react";
 import {
   User, Phone, Mail, MapPin, Calendar,
-  Fingerprint, Award, Save, Camera
+  Fingerprint, Save, Camera
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -94,39 +94,6 @@ export default function ProfilePage() {
     );
   }
 
-  const points = customerDetails?.diemTichLuy || user?.diemTichLuy || 0;
-  let rankName = "Hạng thành viên Đồng";
-  let nextRankName = "Bạc";
-  let progress = 0;
-  let pointsNeeded = 100 - points;
-  let rankBadgeColor = "text-amber-600";
-
-  if (points >= 1000) {
-    rankName = "Hạng thành viên Bạch Kim";
-    nextRankName = "";
-    progress = 100;
-    pointsNeeded = 0;
-    rankBadgeColor = "text-indigo-600";
-  } else if (points >= 500) {
-    rankName = "Hạng thành viên Vàng";
-    nextRankName = "Bạch Kim";
-    progress = Math.min(100, Math.max(0, ((points - 500) / 500) * 100));
-    pointsNeeded = 1000 - points;
-    rankBadgeColor = "text-yellow-600";
-  } else if (points >= 100) {
-    rankName = "Hạng thành viên Bạc";
-    nextRankName = "Vàng";
-    progress = Math.min(100, Math.max(0, ((points - 100) / 400) * 100));
-    pointsNeeded = 500 - points;
-    rankBadgeColor = "text-slate-500";
-  } else {
-    rankName = "Hạng thành viên Đồng";
-    nextRankName = "Bạc";
-    progress = Math.min(100, Math.max(0, (points / 100) * 100));
-    pointsNeeded = 100 - points;
-    rankBadgeColor = "text-orange-600";
-  }
-
   if (loading || customerLoading) return <div className="flex justify-center p-8">Đang tải...</div>;
 
   return (
@@ -147,22 +114,6 @@ export default function ProfilePage() {
             </div>
             <h2 className="mt-4 text-xl font-bold text-slate-900">{customerDetails?.hoTen || user?.hoTen || "Chưa cập nhật"}</h2>
             <p className="text-sm text-slate-500">{customerDetails?.sdt || user?.sdt}</p>
-
-            <div className="mt-8 p-4 bg-white rounded-2xl border border-blue-100 shadow-sm">
-              <div className={`flex items-center justify-center gap-2 ${rankBadgeColor} mb-1`}>
-                <Award className="w-5 h-5 fill-current" />
-                <span className="font-bold text-lg">{points} điểm</span>
-              </div>
-              <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400">{rankName}</p>
-              <div className="w-full bg-slate-100 h-1.5 rounded-full mt-3 overflow-hidden">
-                <div className="bg-amber-400 h-full rounded-full" style={{ width: `${progress}%` }} />
-              </div>
-              {pointsNeeded > 0 ? (
-                <p className="text-[10px] text-slate-400 mt-2">Cần thêm {pointsNeeded} điểm để lên hạng {nextRankName}</p>
-              ) : (
-                <p className="text-[10px] text-emerald-500 mt-2 font-bold">Bạn đã đạt hạng cao nhất!</p>
-              )}
-            </div>
           </CardContent>
         </Card>
 

@@ -66,31 +66,44 @@ export default function StaffGeneralDashboard() {
         if (userRoles.includes("ROLE_ADMIN") || userGroup === "NH04") {
           rName = "Quản trị viên";
           setRoleCode("ADMIN");
-        } else if (userRoles.includes("ROLE_BAC_SI")) {
+          router.replace("/staff/dashboard");
+          return;
+        } else if (userRoles.includes("ROLE_BAC_SI") || userGroup === "NH01") {
           rName = "Bác sĩ Chuyên khoa";
           setRoleCode("BAC_SI");
-        } else if (userRoles.includes("ROLE_LE_TAN")) {
+          router.replace("/staff/clinic/examinations");
+          return;
+        } else if (userRoles.includes("ROLE_LE_TAN") || userGroup === "NH06") {
           rName = "Lễ tân Điều phối";
           setRoleCode("LE_TAN");
-        } else if (userRoles.includes("ROLE_THU_KHO")) {
+          router.replace("/staff/reception/appointments");
+          return;
+        } else if (userRoles.includes("ROLE_THU_KHO") || userGroup === "NH03") {
           rName = "Thủ kho kiểm hàng";
           setRoleCode("THU_KHO");
-        } else if (userRoles.includes("ROLE_THU_NGAN")) {
+          router.replace("/staff/inventory/products");
+          return;
+        } else if (userRoles.includes("ROLE_THU_NGAN") || userGroup === "NH02") {
           rName = "Thu ngân";
           setRoleCode("THU_NGAN");
-        } else if (userRoles.includes("ROLE_KY_THUAT")) {
+          router.replace("/staff/cashier/payments");
+          return;
+        } else if (userRoles.includes("ROLE_KY_THUAT") || userGroup === "NH05") {
           rName = "Kỹ thuật viên mài lắp";
           setRoleCode("KY_THUAT");
+          router.replace("/staff/workshop/glasses");
+          return;
         }
         setRoleName(rName);
         setIsMounted(true);
       } catch (e) {
         console.error("Lỗi parse user: ", e);
+        setIsMounted(true);
       }
     } else {
       setIsMounted(true);
     }
-  }, []);
+  }, [router]);
 
   if (!isMounted) return null;
 

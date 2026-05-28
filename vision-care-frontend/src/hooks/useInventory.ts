@@ -17,6 +17,14 @@ export const useDanhSachSanPham = () => {
   });
 };
 
+export const useDanhSachLoaiSanPham = () => {
+  return useQuery({
+    queryKey: ["loai-san-pham"],
+    queryFn: () => inventoryApi.getCategories(),
+    staleTime: 30 * 60 * 1000,
+  });
+};
+
 export const useCreateSanPham = () => {
   const queryClient = useQueryClient();
   return useMutation({

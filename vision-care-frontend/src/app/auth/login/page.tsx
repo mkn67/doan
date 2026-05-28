@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import "@/app/globals.css"
 import * as React from "react"
@@ -74,7 +74,7 @@ export default function LoginPage() {
             router.push('/staff/reception/appointments');
             break;
           case 'ROLE_BAC_SI': 
-            router.push('/staff/clinic');
+            router.push('/staff/clinic/examinations');
             break;
           case 'ROLE_THU_KHO': 
             router.push('/staff/inventory/products');
@@ -83,7 +83,7 @@ export default function LoginPage() {
             router.push('/staff/workshop/glasses');
             break;
           case 'ROLE_THU_NGAN':
-            router.push('/staff/cashier');
+            router.push('/staff/cashier/payments');
             break;
           default: // Nếu nhân viên chưa gán quyền cụ thể
             router.push('/staff/dashboard');

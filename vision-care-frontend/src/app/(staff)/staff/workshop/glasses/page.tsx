@@ -279,12 +279,12 @@ function WorkshopContent() {
 
   if (!isMounted) return null;
 
-  if (isWarehouse) {
+  if (!isTechnician) {
     return (
-      <div className="p-10 text-center flex flex-col items-center justify-center space-y-4 min-h-[60vh] bg-white text-slate-900 rounded-2xl border border-slate-200 shadow-sm">
+      <div className="p-10 text-center flex flex-col items-center justify-center space-y-4 min-h-[60vh] bg-white text-slate-900 rounded-2xl border border-slate-200 shadow-sm m-6">
         <AlertTriangle className="w-12 h-12 text-rose-500 animate-bounce" />
-        <h2 className="text-xl font-bold text-slate-800">Không có quyền truy cập</h2>
-        <p className="text-slate-500">Bạn đăng nhập bằng tài khoản Thủ kho (Warehouse), không được phép vào quản trị Xưởng mài lắp kính!</p>
+        <h2 className="text-xl font-bold text-slate-800">Truy Cập Bị Từ Chối</h2>
+        <p className="text-slate-500">Tài khoản của bạn không có nghiệp vụ Kỹ thuật viên mài lắp kính. Vui lòng quay lại!</p>
       </div>
     );
   }

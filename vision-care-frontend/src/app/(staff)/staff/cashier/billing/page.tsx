@@ -1,13 +1,14 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Receipt, FilePlus, Loader2, Info, ArrowLeft } from "lucide-react";
+import { Receipt, FilePlus, Loader2, Info, ArrowLeft, ShieldAlert } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useRouter } from "next/navigation";
 
 import { useCreateHoaDonJson } from "@/hooks/useBilling"; 
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
@@ -25,9 +26,18 @@ type BillingFormValues = z.infer<typeof billingSchema>;
 
 export default function BillingPage() {
   const router = useRouter();
+  const { user, loading } = useAuth();
   const createMutation = useCreateHoaDonJson();
   const [isMounted, setIsMounted] = useState(false);
   const [maNs, setMaNs] = useState("");
+
+  const ALLOWED_ROLES = ["ROLE_THU_NGAN", "NH02"];
+  const hasAccess = () => {
+    if (!user) return false;
+    const userRoles = user?.roles || [];
+    const userGroup = user?.maNhom ? user.maNhom : null;
+    return ALLOWED_ROLES.some(role => userRoles.includes(role) || role === userGroup);
+  };
 
   const form = useForm<BillingFormValues>({
     resolver: zodResolver(billingSchema),
@@ -75,7 +85,28 @@ export default function BillingPage() {
     });
   };
 
-  if (!isMounted) return null;
+  if (!isMounted || loading) {
+    return (
+      <div className="flex h-[calc(100vh-4rem)] items-center justify-center text-blue-600 font-medium">
+        Đang kiểm tra quyền truy cập...
+      </div>
+    );
+  }
+
+  if (!hasAccess()) {
+    return (
+      <div className="flex h-[calc(100vh-4rem)] flex-col items-center justify-center bg-slate-50/50 rounded-2xl border-2 border-dashed border-slate-200 m-6 p-8 text-center">
+        <ShieldAlert className="w-16 h-16 text-rose-500 mb-4 animate-bounce mx-auto" />
+        <h2 className="text-2xl font-bold text-slate-800">Truy Cập Bị Từ Chối</h2>
+        <p className="text-slate-500 mt-2 max-w-md mx-auto">
+          Tài khoản của bạn không có nghiệp vụ Thu ngân. Vui lòng quay lại!
+        </p>
+        <Button onClick={() => router.back()} className="mt-6 bg-slate-800 hover:bg-slate-900 rounded-xl px-5 h-11 font-bold">
+          Quay lại trang trước
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 md:p-8 space-y-6 bg-slate-50 min-h-[calc(100vh-4rem)]">

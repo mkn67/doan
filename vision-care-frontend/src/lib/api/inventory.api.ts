@@ -25,6 +25,10 @@ export const inventoryApi = {
     const response = await axiosClient.delete(`/san-pham/${maSp}`);
     return response.data;
   },
+  getCategories: async (): Promise<{ maLoai: string; tenLoai: string }[]> => {
+    const response = await axiosClient.get<{ maLoai: string; tenLoai: string }[]>('/san-pham/categories');
+    return response.data;
+  },
 
   // --- LÔ HÀNG & PHIẾU NHẬP ---
   createLoHang: async (data: LoHangRequest): Promise<LoHangResponse> => {

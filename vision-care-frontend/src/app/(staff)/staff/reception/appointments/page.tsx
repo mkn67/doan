@@ -64,8 +64,8 @@ const bookingSchema = z.object({
 
 type BookingFormValues = z.infer<typeof bookingSchema>;
 
-// Allowed roles for this page: Receptionist & Admin
-const ALLOWED_ROLES = ["ROLE_LE_TAN", "ROLE_ADMIN", "NH06", "NH04"];
+// Allowed roles for this page: Receptionist Only
+const ALLOWED_ROLES = ["ROLE_LE_TAN", "NH06"];
 
 export default function AppointmentsPage() {
   const queryClient = useQueryClient();
@@ -540,36 +540,33 @@ export default function AppointmentsPage() {
                   <TableCell><StatusBadge status={item.trangThai} /></TableCell>
                   
                   <TableCell className="text-right pr-6">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-slate-200/50" disabled={isAdmin}>
-                          <MoreHorizontal className="h-4.5 w-4.5" />
+                    <div className="flex items-center justify-end gap-2">
+                      {item.trangThai === "CHUA_XAC_NHAN" && (
+                        <Button
+                          size="sm"
+                          onClick={() => handleUpdateStatus(item.maLh, "DA_XAC_NHAN")}
+                          className="h-8 px-2.5 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg gap-1 transition-colors"
+                          disabled={isAdmin}
+                        >
+                          <Check className="w-3.5 h-3.5" /> Duyệt
                         </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="bg-white rounded-xl shadow-lg border border-slate-100 p-1">
-                        <DropdownMenuLabel className="text-xs">Hành động</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        
-                        {item.trangThai === "CHUA_XAC_NHAN" && (
-                          <DropdownMenuItem onClick={() => handleUpdateStatus(item.maLh, "DA_XAC_NHAN")} className="text-emerald-600 rounded-lg cursor-pointer font-medium py-2 text-xs">
-                            <Check className="mr-2 h-4 w-4" /> Xác nhận lịch
-                          </DropdownMenuItem>
-                        )}
-                        
-                        {item.trangThai !== "DA_HUY" && item.trangThai !== "DA_DEN" && (
-                          <DropdownMenuItem onClick={() => handleUpdateStatus(item.maLh, "DA_HUY")} className="text-red-600 rounded-lg cursor-pointer font-medium py-2 text-xs">
-                            <X className="mr-2 h-4 w-4" /> Hủy lịch hẹn
-                          </DropdownMenuItem>
-                        )}
+                      )}
+                      
+                      {item.trangThai !== "DA_HUY" && item.trangThai !== "DA_DEN" && (
+                        <Button
+                          size="sm"
+                          onClick={() => handleUpdateStatus(item.maLh, "DA_HUY")}
+                          className="h-8 px-2.5 text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg gap-1 transition-colors"
+                          disabled={isAdmin}
+                        >
+                          <X className="w-3.5 h-3.5" /> Hủy
+                        </Button>
+                      )}
 
-                        {/* Block medical recording option for receptionist, only show for doctor or admin */}
-                        {!user?.roles?.includes("ROLE_LE_TAN") && user?.maNhom !== "NH06" && (
-                          <DropdownMenuItem onClick={() => router.push(`/staff/clinic/examinations?makh=${item.maKh}`)} className="rounded-lg cursor-pointer py-2 text-xs">
-                             Ghi hồ sơ khám
-                          </DropdownMenuItem>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                      {item.trangThai !== "CHUA_XAC_NHAN" && (item.trangThai === "DA_HUY" || item.trangThai === "DA_DEN") && (
+                        <span className="text-xs text-slate-400 italic font-semibold">Không có thao tác</span>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))

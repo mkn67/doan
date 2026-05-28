@@ -11,6 +11,7 @@ import {
   Printer,
   ReceiptText,
   ArrowLeft,
+  ShieldAlert,
 } from "lucide-react";
 import { useReactToPrint } from "react-to-print";
 import { QRCodeSVG } from "qrcode.react";
@@ -58,6 +59,14 @@ export default function PaymentsPage() {
   const { user } = useAuth();
   const isAdmin = user?.roles?.includes("ROLE_ADMIN") || user?.maNhom === "NH04";
   
+  const ALLOWED_ROLES = ["ROLE_THU_NGAN", "NH02"];
+  const hasAccess = () => {
+    if (!user) return false;
+    const userRoles = user?.roles || [];
+    const userGroup = user?.maNhom ? user.maNhom : null;
+    return ALLOWED_ROLES.some(role => userRoles.includes(role) || role === userGroup);
+  };
+
   const { data: listHoaDon, isLoading } = useDanhSachHoaDon();
   const thanhToanMutation = useThanhToan();
   const deleteMutation = useDeleteHoaDon();
@@ -71,6 +80,21 @@ export default function PaymentsPage() {
   const [selectedInvoice, setSelectedInvoice] =
     useState<HoaDonResponseDTO | null>(null);
   const [phuongThuc, setPhuongThuc] = useState("Tiền mặt");
+
+  if (!hasAccess()) {
+    return (
+      <div className="flex h-[calc(100vh-4rem)] flex-col items-center justify-center bg-slate-50/50 rounded-2xl border-2 border-dashed border-slate-200 m-6 p-8 text-center">
+        <ShieldAlert className="w-16 h-16 text-rose-500 mb-4 animate-bounce mx-auto" />
+        <h2 className="text-2xl font-bold text-slate-800">Truy Cập Bị Từ Chối</h2>
+        <p className="text-slate-500 mt-2 max-w-md mx-auto">
+          Tài khoản của bạn không có nghiệp vụ Thu ngân. Vui lòng quay lại!
+        </p>
+        <Button onClick={() => router.back()} className="mt-6 bg-slate-800 hover:bg-slate-900 rounded-xl px-5 h-11 font-bold">
+          Quay lại trang trước
+        </Button>
+      </div>
+    );
+  }
 
   // ==========================================
   // STATE & LOGIC: IN HÓA ĐƠN PDF

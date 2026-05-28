@@ -17,8 +17,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 
-// Định nghĩa role được phép truy cập trang này (Bác sĩ & Admin)
-const ALLOWED_ROLES = ["ROLE_BAC_SI", "ROLE_ADMIN", "NH01", "NH04"];
+// Định nghĩa role được phép truy cập trang này (Bác sĩ)
+const ALLOWED_ROLES = ["ROLE_BAC_SI", "NH01"];
 
 function AuditContent() {
   const router = useRouter();
