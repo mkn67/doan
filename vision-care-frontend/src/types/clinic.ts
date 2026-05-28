@@ -21,6 +21,8 @@ export interface HoSoKhamRequest {
   doCongPhai?: number;
 
   pd?: number;
+  maHoSo?: string;
+  donKinh?: string;
 }
 
 export interface CtKeDonRequest {
@@ -109,6 +111,7 @@ export interface ChiTietThiLuc {
 export interface HoSoKhamResponse {
   maHoSo: string;
   maKh: string;
+  maNs?: string;
   tenKhachHang: string;
   tenBacSi: string;
   ngayKham: string;
@@ -118,6 +121,8 @@ export interface HoSoKhamResponse {
 
   danhSachThiLuc: ChiTietThiLuc[];
   maDonThuoc?: string;
+  donKinh?: string;
+  donThuocList?: string[];
 }
 
 export interface CtKeDonResponse {
@@ -164,6 +169,7 @@ export interface GoiKhamResponse {
 
 export interface DanhGiaResponse {
   maDg: string;
+  maHoSo?: string;
   tenKhachHang: string;
   sdtKhachHang: string;
   tenBacSi: string;

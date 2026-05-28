@@ -186,6 +186,7 @@ public class DanhGiaServiceImpl implements DanhGiaService {
     private DanhGiaResponseDTO convertToResponse(DanhGia entity) {
         return DanhGiaResponseDTO.builder()
                 .maDg(entity.getMaDg())
+                .maHoSo(entity.getHoSoThiLuc() != null ? entity.getHoSoThiLuc().getMaHoSo() : null)
                 .tenKhachHang(entity.getKhachHang() != null ? entity.getKhachHang().getHoTen() : "Khách ẩn danh")
                 .sdtKhachHang(entity.getKhachHang() != null ? entity.getKhachHang().getSdt() : "Không có SĐT")
                 .tenBacSi(entity.getNhanSu() != null ? entity.getNhanSu().getHoTen() : "Chưa phân công")

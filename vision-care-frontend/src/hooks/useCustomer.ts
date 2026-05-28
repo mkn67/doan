@@ -18,6 +18,15 @@ export const useDanhSachKhachHang = (filters?: KhachHangFilterDTO) => {
 };
 
 // ========== THÊM HOOK CẬP NHẬT KHÁCH HÀNG ==========
+export const useKhachHang = (maKh: string) => {
+  return useQuery({
+    queryKey: ["khach-hang", maKh],
+    queryFn: () => customerApi.getKhachHang(maKh),
+    enabled: !!maKh,
+    staleTime: 2 * 60 * 1000,
+  });
+};
+
 export const useUpdateKhachHang = () => {
   const queryClient = useQueryClient();
   return useMutation({

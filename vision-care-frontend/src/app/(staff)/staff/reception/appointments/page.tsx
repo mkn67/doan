@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import * as React from "react";
 import { useState, useEffect } from "react";
@@ -246,6 +246,7 @@ export default function AppointmentsPage() {
             <TableRow>
               <TableHead>Thời gian</TableHead>
               <TableHead>Khách hàng</TableHead>
+              <TableHead>Bác sĩ</TableHead>
               <TableHead>Dịch vụ</TableHead>
               <TableHead>Trạng thái</TableHead>
               <TableHead className="text-right">Thao tác</TableHead>
@@ -253,7 +254,7 @@ export default function AppointmentsPage() {
           </TableHeader>
           <TableBody>
             {loadingLich ? (
-              <TableRow><TableCell colSpan={5} className="text-center py-10"><Loader2 className="animate-spin mx-auto" /></TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} className="text-center py-10"><Loader2 className="animate-spin mx-auto" /></TableCell></TableRow>
             ) : arrLichHen.length > 0 ? (
               arrLichHen.map((item) => (
                 <TableRow key={item.maLh}>
@@ -261,6 +262,7 @@ export default function AppointmentsPage() {
                     <div className="text-sm"><p className="font-bold">{item.gioHen}</p><p className="text-slate-500">{item.ngayHen}</p></div>
                   </TableCell>
                   <TableCell className="font-medium">{item.tenKhachHang || item.maKh}</TableCell>
+                  <TableCell className="text-sm font-semibold text-blue-600">{item.tenBacSi || "Chưa phân công"}</TableCell>
                   <TableCell className="text-sm">{item.tenGoiKham || item.tenDv}</TableCell>
                   <TableCell><StatusBadge status={item.trangThai} /></TableCell>
                   <TableCell className="text-right">

@@ -58,7 +58,12 @@ export const clinicApi = {
 
   // --- ĐÁNH GIÁ ---
   createDanhGia: async (data: DanhGiaRequest): Promise<DanhGiaResponse> => {
-    const response = await axiosClient.post(`/danh-gia`, data);
+    const response = await axiosClient.post('/danh-gia', data);
+    return response.data;
+  },
+
+  getDanhGiaByKh: async (maKh: string): Promise<DanhGiaResponse[]> => {
+    const response = await axiosClient.get(`/danh-gia/khach-hang/${maKh}`);
     return response.data;
   },
 

@@ -157,13 +157,48 @@ export const PrintA4Record = React.forwardRef<HTMLDivElement, PrintA4RecordProps
         </div>
 
         {/* CONCLUSION */}
-        <div className="border border-blue-100 rounded-2xl p-6 bg-blue-50/20 mb-12">
+        <div className="border border-blue-100 rounded-2xl p-6 bg-blue-50/20 mb-6">
           <h4 className="text-sm font-black text-blue-800 uppercase tracking-wider mb-2 flex items-center gap-2">
             <ShieldCheck className="w-5 h-5 text-blue-600" /> Kết luận & Lời khuyên của chuyên gia
           </h4>
           <p className="text-sm text-slate-700 font-semibold leading-relaxed">
             {record.ketLuan || "Chưa có kết luận chi tiết từ chuyên viên khúc xạ."}
           </p>
+        </div>
+
+        {/* DON KINH GIA CONG & DON THUOC NHO MAT */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          {/* Lens processing order */}
+          <div className="border border-slate-200 rounded-2xl p-5 bg-slate-50/30">
+            <h4 className="text-xs font-black text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+              👓 Chỉ định đơn kính gia công
+            </h4>
+            {record.donKinh ? (
+              <div className="text-sm font-bold text-slate-800 bg-white p-3 rounded-xl border border-slate-100 shadow-sm leading-relaxed whitespace-pre-wrap">
+                {record.donKinh}
+              </div>
+            ) : (
+              <p className="text-xs text-slate-400 italic">Không có chỉ định gia công kính.</p>
+            )}
+          </div>
+
+          {/* Eye drops prescription */}
+          <div className="border border-slate-200 rounded-2xl p-5 bg-slate-50/30">
+            <h4 className="text-xs font-black text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+              💧 Đơn thuốc nhỏ mắt
+            </h4>
+            {record.donThuocList && record.donThuocList.length > 0 ? (
+              <ul className="space-y-2">
+                {record.donThuocList.map((item, idx) => (
+                  <li key={idx} className="text-sm font-semibold text-slate-800 bg-white p-2.5 rounded-xl border border-slate-100 shadow-sm leading-relaxed break-words whitespace-pre-wrap">
+                    {idx + 1}. {item}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-xs text-slate-400 italic">Không có đơn thuốc nhỏ mắt kèm theo.</p>
+            )}
+          </div>
         </div>
 
         {/* SIGNATURES */}

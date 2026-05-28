@@ -42,23 +42,35 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { HoSoKhamRequest } from "@/types/clinic";
+import { HoSoKhamRequest, HoSoKhamResponse } from "@/types/clinic";
 import { toast } from "sonner";
 
 interface JavaErrorResponse { message?: string; }
-interface HoSoKhamResponse { maHoSo: string; }
 
 const examSchema = z.object({
   maKh: z.string().min(1, "Vui lòng nhập mã khách hàng"),
   maNs: z.string().min(1, "Vui lòng nhập mã bác sĩ"),
   matTraiSph: z.any(),
   matTraiCyl: z.any().optional(),
-  matTraiAx: z.any().optional(),
+  matTraiAx: z.any().optional().refine(val => {
+    if (val === undefined || val === "" || val === null) return true;
+    const num = Number(val);
+    return !isNaN(num) && num >= 0 && num <= 180;
+  }, "Trục Axis OS phải từ 0° đến 180°"),
   matPhaiSph: z.any(),
   matPhaiCyl: z.any().optional(),
-  matPhaiAx: z.any().optional(),
-  pd: z.any(),
+  matPhaiAx: z.any().optional().refine(val => {
+    if (val === undefined || val === "" || val === null) return true;
+    const num = Number(val);
+    return !isNaN(num) && num >= 0 && num <= 180;
+  }, "Trục Axis OD phải từ 0° đến 180°"),
+  pd: z.any().refine(val => {
+    const num = Number(val);
+    return !isNaN(num) && num > 0;
+  }, "PD phải lớn hơn 0"),
   ketluan: z.string().min(1, "Vui lòng điền kết luận của bác sĩ"),
+  maHoSo: z.string().optional(),
+  donKinh: z.string().optional(),
 });
 
 type ExamFormValues = z.infer<typeof examSchema>;
@@ -66,30 +78,61 @@ type ExamFormValues = z.infer<typeof examSchema>;
 // =========================================================
 // SVG EYE MAP COMPONENT
 // =========================================================
-function EyeRefractionMap({ os, od, pd }: { os: number; od: number; pd: number }) {
+function EyeRefractionMap({
+  osSph,
+  osCyl,
+  osAx,
+  odSph,
+  odCyl,
+  odAx,
+  pd,
+}: {
+  osSph: number;
+  osCyl: number;
+  osAx: number;
+  odSph: number;
+  odCyl: number;
+  odAx: number;
+  pd: number;
+}) {
   const getEyeGradient = (val: number) => {
-    if (val === 0) return { from: "#059669", to: "#10b981" }; // Emerald (Normal)
+    if (val === 0) return { from: "#ffffff", to: "#f1f5f9" }; // White (Normal)
     if (val < 0) {
-      // Myopia (Sky blue to Deep Indigo/Violet)
-      return val > -3 
-        ? { from: "#38bdf8", to: "#0284c7" } 
-        : { from: "#818cf8", to: "#4f46e5" }; 
+      // Myopia (Sky blue to Deep Indigo/Violet) - darker blue for higher absolute value
+      const abs = Math.abs(val);
+      if (abs <= 3) {
+        return { from: "#93c5fd", to: "#3b82f6" }; // Light Blue
+      } else if (abs <= 6) {
+        return { from: "#3b82f6", to: "#1d4ed8" }; // Medium Blue
+      } else {
+        return { from: "#1d4ed8", to: "#1e3a8a" }; // Dark Blue / Indigo
+      }
     } else {
-      // Hyperopia (Amber to Rose Red)
-      return val < 3 
-        ? { from: "#fbbf24", to: "#d97706" } 
-        : { from: "#f87171", to: "#dc2626" }; 
+      // Hyperopia (Amber/Yellow to Orange/Rose) - darker orange for higher value
+      if (val <= 3) {
+        return { from: "#fef08a", to: "#fbbf24" }; // Yellow/Light Amber
+      } else if (val <= 6) {
+        return { from: "#fbbf24", to: "#f97316" }; // Orange
+      } else {
+        return { from: "#ea580c", to: "#b91c1c" }; // Dark Orange/Red
+      }
     }
   };
 
-  const leftGrad = getEyeGradient(os);
-  const rightGrad = getEyeGradient(od);
+  const leftGrad = getEyeGradient(osSph);
+  const rightGrad = getEyeGradient(odSph);
 
   const getPupilRadius = (val: number) => {
     const base = 15;
     const change = Math.max(-6, Math.min(6, val));
     return base + change;
   };
+
+  const odShowAxis = Math.abs(odCyl) > 0;
+  const odStrokeWidth = Math.max(1.5, Math.min(6, Math.abs(odCyl) * 1.5));
+
+  const osShowAxis = Math.abs(osCyl) > 0;
+  const osStrokeWidth = Math.max(1.5, Math.min(6, Math.abs(osCyl) * 1.5));
 
   return (
     <div className="flex flex-col items-center justify-center p-6 bg-slate-900 border border-slate-800 rounded-2xl shadow-inner text-white h-full min-h-[350px] relative overflow-hidden">
@@ -117,15 +160,18 @@ function EyeRefractionMap({ os, od, pd }: { os: number; od: number; pd: number }
             </defs>
             <ellipse cx="50" cy="50" rx="46" ry="30" fill="url(#sclera-grad)" stroke="#475569" strokeWidth="1.5" />
             <circle cx="50" cy="50" r="22" fill="url(#grad-od)" stroke="#334155" strokeWidth="1" />
-            <circle cx="50" cy="50" r={getPupilRadius(od)} fill="#090d16" />
+            {odShowAxis && (
+              <line x1="50" y1="28" x2="50" y2="72" stroke="#ef4444" strokeWidth={odStrokeWidth} transform={`rotate(${-odAx}, 50, 50)`} strokeLinecap="round" />
+            )}
+            <circle cx="50" cy="50" r={getPupilRadius(odSph)} fill="#090d16" />
             <circle cx="43" cy="43" r="3" fill="#ffffff" opacity="0.8" />
             <circle cx="46" cy="46" r="1.5" fill="#ffffff" opacity="0.6" />
           </svg>
           <div className="text-center mt-1">
             <span className={`text-base font-black font-mono px-3 py-1 rounded-lg ${
-              od === 0 ? "text-emerald-400 bg-emerald-950/40" : od < 0 ? "text-sky-400 bg-sky-950/40" : "text-amber-400 bg-amber-950/40"
+              odSph === 0 ? "text-emerald-400 bg-emerald-950/40" : odSph < 0 ? "text-sky-400 bg-sky-950/40" : "text-amber-400 bg-amber-950/40"
             }`}>
-              {od > 0 ? `+${Number(od).toFixed(2)}` : Number(od).toFixed(2)} D
+              {odSph > 0 ? `+${Number(odSph).toFixed(2)}` : Number(odSph).toFixed(2)} D
             </span>
           </div>
         </div>
@@ -142,15 +188,18 @@ function EyeRefractionMap({ os, od, pd }: { os: number; od: number; pd: number }
             </defs>
             <ellipse cx="50" cy="50" rx="46" ry="30" fill="url(#sclera-grad)" stroke="#475569" strokeWidth="1.5" />
             <circle cx="50" cy="50" r="22" fill="url(#grad-os)" stroke="#334155" strokeWidth="1" />
-            <circle cx="50" cy="50" r={getPupilRadius(leftGrad.from === "#059669" ? 0 : os)} fill="#090d16" />
+            {osShowAxis && (
+              <line x1="50" y1="28" x2="50" y2="72" stroke="#ef4444" strokeWidth={osStrokeWidth} transform={`rotate(${-osAx}, 50, 50)`} strokeLinecap="round" />
+            )}
+            <circle cx="50" cy="50" r={getPupilRadius(osSph)} fill="#090d16" />
             <circle cx="43" cy="43" r="3" fill="#ffffff" opacity="0.8" />
             <circle cx="46" cy="46" r="1.5" fill="#ffffff" opacity="0.6" />
           </svg>
           <div className="text-center mt-1">
             <span className={`text-base font-black font-mono px-3 py-1 rounded-lg ${
-              os === 0 ? "text-emerald-400 bg-emerald-950/40" : os < 0 ? "text-sky-400 bg-sky-950/40" : "text-amber-400 bg-amber-950/40"
+              osSph === 0 ? "text-emerald-400 bg-emerald-950/40" : osSph < 0 ? "text-sky-400 bg-sky-950/40" : "text-amber-400 bg-amber-950/40"
             }`}>
-              {os > 0 ? `+${Number(os).toFixed(2)}` : Number(os).toFixed(2)} D
+              {osSph > 0 ? `+${Number(osSph).toFixed(2)}` : Number(osSph).toFixed(2)} D
             </span>
           </div>
         </div>
@@ -190,16 +239,26 @@ function ExaminationContent() {
       matPhaiAx: 0,
       pd: 60,
       ketluan: "Thị lực ổn định, khúc xạ bình thường",
+      maHoSo: "",
+      donKinh: "",
     },
   });
 
   const matTraiSph = form.watch("matTraiSph") || 0;
+  const matTraiCyl = form.watch("matTraiCyl") || 0;
+  const matTraiAx = form.watch("matTraiAx") || 0;
   const matPhaiSph = form.watch("matPhaiSph") || 0;
+  const matPhaiCyl = form.watch("matPhaiCyl") || 0;
+  const matPhaiAx = form.watch("matPhaiAx") || 0;
   const pd = form.watch("pd") || 60;
   
   const maKhValue = form.watch("maKh") || "";
   const { data: historyData, isLoading: isHistoryLoading } = useLichSuKham(maKhValue);
   const historyList = historyData?.data || [];
+
+  const selectedPatientFromQueue = queueList.find((p: any) => p.maKh === maKhValue);
+  const patientNameFromHistory = historyList[0]?.tenKhachHang || "";
+  const patientName = selectedPatientFromQueue?.tenKhach || patientNameFromHistory || "";
 
   const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
   const [selectedOldRecord, setSelectedOldRecord] = useState<any>(null);
@@ -223,6 +282,8 @@ function ExaminationContent() {
     }, 150);
   };
 
+  const maHoSoFromUrl = searchParams.get("maHoSo") || "";
+
   React.useEffect(() => {
     if (typeof window !== "undefined") {
       const userStr = localStorage.getItem("user");
@@ -234,6 +295,38 @@ function ExaminationContent() {
       }
     }
   }, [form]);
+
+  React.useEffect(() => {
+    if (maHoSoFromUrl) {
+      fetch(`/api/v1/examinations/${maHoSoFromUrl}`)
+        .then((res) => {
+          if (res.ok) return res.json();
+          throw new Error("Lỗi tải hồ sơ");
+        })
+        .then((data: HoSoKhamResponse) => {
+          const od: any = data.danhSachThiLuc?.find((ct: any) => ct.loaiMat === "P") || {};
+          const os: any = data.danhSachThiLuc?.find((ct: any) => ct.loaiMat === "T") || {};
+          form.reset({
+            maKh: data.maKh || "",
+            maNs: form.getValues("maNs") || data.tenBacSi || "",
+            matTraiSph: os.sph ?? 0,
+            matTraiCyl: os.cyl ?? 0,
+            matTraiAx: os.axis ?? 0,
+            matPhaiSph: od.sph ?? 0,
+            matPhaiCyl: od.cyl ?? 0,
+            matPhaiAx: od.axis ?? 0,
+            pd: os.pd || od.pd || 60,
+            ketluan: data.ketLuan || "",
+            maHoSo: data.maHoSo || "",
+            donKinh: data.donKinh || "",
+          });
+          toast.success(`📝 Đã tải dữ liệu hồ sơ ${data.maHoSo} để cập nhật!`);
+        })
+        .catch(() => {
+          toast.error("Không thể tải hồ sơ cần chỉnh sửa");
+        });
+    }
+  }, [maHoSoFromUrl, form]);
 
   // Auto-refractor file reader
   const handleAutoRefractorFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -292,6 +385,8 @@ function ExaminationContent() {
       matPhaiAx: Number(values.matPhaiAx) || 0,
       pd: Number(values.pd) || 60,
       ketluan: values.ketluan,
+      maHoSo: values.maHoSo || undefined,
+      donKinh: values.donKinh || undefined,
     };
 
     const promise = new Promise((resolve, reject) => {
@@ -326,7 +421,9 @@ function ExaminationContent() {
             <Activity className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Hồ sơ khám bệnh nhãn khoa</h1>
+            <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
+              Hồ sơ khám bệnh nhãn khoa{patientName ? ` - BN: ${patientName}` : ""}
+            </h1>
             <p className="text-slate-500 text-sm mt-0.5">Lập hồ sơ khúc xạ & lưu kết quả khám lâm sàng</p>
           </div>
         </div>
@@ -426,6 +523,11 @@ function ExaminationContent() {
                             </Select>
                           )}
                         </FormControl>
+                        {patientName && (
+                          <div className="mt-1 text-xs font-bold text-emerald-600 bg-emerald-50/50 px-2.5 py-1 rounded-lg inline-block">
+                            Họ tên: {patientName}
+                          </div>
+                        )}
                         <FormMessage />
                       </FormItem>
                     )} />
@@ -588,6 +690,26 @@ function ExaminationContent() {
                         )} />
                       </div>
                     </div>
+
+                    {/* Đơn kính gia công */}
+                    <div className="pt-2">
+                      <FormField control={form.control} name="donKinh" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="font-semibold text-xs text-slate-700">Đơn kính gia công (Tự động liên kết xưởng)</FormLabel>
+                          <FormControl>
+                            <Input 
+                              className="bg-white h-10 font-medium" 
+                              placeholder="Ví dụ: Gọng nhựa dẻo, Tròng Essilor 1.60 (ngăn cách bằng dấu phẩy)" 
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormDescription className="text-[10px] text-slate-400">
+                            Hệ thống sẽ tự động liên kết và cập nhật trạng thái "Chờ gia công" tại xưởng khi nhập gọng và tròng.
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                    </div>
                   </div>
 
                   <div className="flex justify-end pt-4 border-t">
@@ -608,8 +730,12 @@ function ExaminationContent() {
         {/* Right Side: Eyeball Visual Refraction SVG (5 Cols) */}
         <div className="lg:col-span-5 h-full">
           <EyeRefractionMap 
-            os={Number(matTraiSph) || 0} 
-            od={Number(matPhaiSph) || 0} 
+            osSph={Number(matTraiSph) || 0} 
+            osCyl={Number(matTraiCyl) || 0}
+            osAx={Number(matTraiAx) || 0}
+            odSph={Number(matPhaiSph) || 0} 
+            odCyl={Number(matPhaiCyl) || 0}
+            odAx={Number(matPhaiAx) || 0}
             pd={Number(pd) || 60} 
           />
         </div>
@@ -713,6 +839,9 @@ function ExaminationContent() {
                               {item.ngayKham
                                 ? new Date(item.ngayKham).toLocaleDateString("vi-VN")
                                 : "N/A"}
+                            </span>
+                            <span className="text-xs font-semibold text-blue-600 bg-blue-50/50 px-2 py-0.5 rounded ml-2">
+                              BS: {item.tenBacSi || "Không rõ"}
                             </span>
                           </div>
                         </div>

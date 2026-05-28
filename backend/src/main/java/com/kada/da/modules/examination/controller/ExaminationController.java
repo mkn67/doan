@@ -7,6 +7,7 @@ import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -15,69 +16,49 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.kada.da.modules.examination.dto.HoSoKhamRequestDTO;
+import com.kada.da.modules.examination.service.ClinicService;
 
+import org.springframework.jdbc.core.JdbcTemplate;
+import lombok.extern.slf4j.Slf4j;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.ParameterMode;
-import jakarta.persistence.StoredProcedureQuery;
 import lombok.RequiredArgsConstructor;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/v1/examinations")
 @RequiredArgsConstructor
 public class ExaminationController {
 
     private final EntityManager em;
+    private final JdbcTemplate jdbcTemplate;
+    private final ClinicService clinicService;
 
     @PostMapping("/save")
-    @Transactional // BẮT BUỘC vì SP này có INSERT dữ liệu
+    @Transactional // BẮT BUỘC vì nghiệp vụ này có INSERT/UPDATE dữ liệu
     @PreAuthorize("hasRole('BAC_SI') or hasRole('ADMIN')")
     public ResponseEntity<?> saveExamination(@RequestBody HoSoKhamRequestDTO req) {
-        StoredProcedureQuery sp = em.createStoredProcedureQuery("SP_LUU_HOSO_KHAM_BENH");
+        try {
+            Map<String, Object> result = clinicService.saveExamination(req);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            log.error("Lỗi khi lưu kết quả khám: {}", e.getMessage(), e);
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
 
-        // Đăng ký tham số khớp 100% với Oracle
-        sp.registerStoredProcedureParameter("p_mahoso", String.class, ParameterMode.INOUT);
-        sp.registerStoredProcedureParameter("p_makh", String.class, ParameterMode.IN);
-        sp.registerStoredProcedureParameter("p_mans", String.class, ParameterMode.IN);
-        sp.registerStoredProcedureParameter("p_ketluan", String.class, ParameterMode.IN);
-        sp.registerStoredProcedureParameter("p_mat_trai_sph", Double.class, ParameterMode.IN);
-        sp.registerStoredProcedureParameter("p_mat_trai_cyl", Double.class, ParameterMode.IN);
-        sp.registerStoredProcedureParameter("p_mat_trai_ax", Integer.class, ParameterMode.IN);
-        sp.registerStoredProcedureParameter("p_docong_trai", Double.class, ParameterMode.IN);
-        sp.registerStoredProcedureParameter("p_mat_phai_sph", Double.class, ParameterMode.IN);
-        sp.registerStoredProcedureParameter("p_mat_phai_cyl", Double.class, ParameterMode.IN);
-        sp.registerStoredProcedureParameter("p_mat_phai_ax", Integer.class, ParameterMode.IN);
-        sp.registerStoredProcedureParameter("p_docong_phai", Double.class, ParameterMode.IN);
-        sp.registerStoredProcedureParameter("p_pd", Double.class, ParameterMode.IN);
-        sp.registerStoredProcedureParameter("p_madon_out", String.class, ParameterMode.OUT);
-
-        // Gán giá trị (ép kiểu về Double để tương thích với NUMBER trong SP, thêm null check để tránh NullPointerException)
-        sp.setParameter("p_mahoso", null); // Trigger sẽ tự sinh mã HS
-        sp.setParameter("p_makh", req.getMakh());
-        sp.setParameter("p_mans", req.getMans());
-        sp.setParameter("p_ketluan", req.getKetluan() != null ? req.getKetluan() : "Bình thường");
-        sp.setParameter("p_mat_trai_sph", req.getMatTraiSph() != null ? req.getMatTraiSph().doubleValue() : 0.0);
-        sp.setParameter("p_mat_trai_cyl", req.getMatTraiCyl() != null ? req.getMatTraiCyl().doubleValue() : 0.0);
-        sp.setParameter("p_mat_trai_ax", req.getMatTraiAx() != null ? req.getMatTraiAx() : 0);
-        sp.setParameter("p_docong_trai", req.getDoCongTrai() != null ? req.getDoCongTrai().doubleValue() : null);
-        sp.setParameter("p_mat_phai_sph", req.getMatPhaiSph() != null ? req.getMatPhaiSph().doubleValue() : 0.0);
-        sp.setParameter("p_mat_phai_cyl", req.getMatPhaiCyl() != null ? req.getMatPhaiCyl().doubleValue() : 0.0);
-        sp.setParameter("p_mat_phai_ax", req.getMatPhaiAx() != null ? req.getMatPhaiAx() : 0);
-        sp.setParameter("p_docong_phai", req.getDoCongPhai() != null ? req.getDoCongPhai().doubleValue() : null);
-        sp.setParameter("p_pd", req.getPd() != null ? req.getPd().doubleValue() : 60.0);
-
-        // Thực thi
-        sp.execute();
-
-        // Lấy giá trị trả về từ tham số OUT
-        String maHoSoMoi = (String) sp.getOutputParameterValue("p_mahoso");
-        String maDonThuocMoi = (String) sp.getOutputParameterValue("p_madon_out");
-
-        Map<String, String> response = new HashMap<>();
-        response.put("message", "Lưu hồ sơ và tạo đơn thuốc thành công!");
-        response.put("maHoSo", maHoSoMoi);
-        response.put("maDonThuoc", maDonThuocMoi);
-
-        return ResponseEntity.ok(response);
+    @DeleteMapping("/{maHoSo}")
+    @Transactional
+    @PreAuthorize("hasRole('BAC_SI') or hasRole('ADMIN')")
+    public ResponseEntity<?> deleteExamination(@PathVariable("maHoSo") String maHoSo,
+                                               org.springframework.security.core.Authentication auth) {
+        try {
+            String username = auth != null ? auth.getName() : "system";
+            clinicService.deleteExamination(maHoSo, username);
+            return ResponseEntity.ok(Map.of("message", "Xóa hồ sơ khám bệnh thành công!"));
+        } catch (Exception e) {
+            log.error("Lỗi khi xóa hồ sơ khám bệnh: {}", e.getMessage(), e);
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
     }
 
     // =========================================================
@@ -123,15 +104,43 @@ public class ExaminationController {
                         .getResultList();
                 String maDonThuoc = prescriptions.isEmpty() ? null : prescriptions.get(0);
 
+                // Lấy thông tin đơn kính từ xưởng
+                String donKinh = null;
+                if (maDonThuoc != null) {
+                    List<String> list = jdbcTemplate.query(
+                        "SELECT GHI_CHU FROM XU_LY_KINH WHERE MADON = ?",
+                        (rs, rowNum) -> rs.getString("GHI_CHU"),
+                        maDonThuoc
+                    );
+                    if (!list.isEmpty()) {
+                        donKinh = list.get(0);
+                    }
+                }
+
+                // Lấy danh sách thuốc nhỏ mắt
+                List<String> donThuocList = new java.util.ArrayList<>();
+                if (maDonThuoc != null) {
+                    donThuocList = jdbcTemplate.query(
+                        "SELECT sp.TENSP, ct.SOLUONG, ct.LIEUDUNG, ct.CACHDUNG " +
+                        "FROM CT_KE_DON ct JOIN SAN_PHAM sp ON ct.MASP = sp.MASP " +
+                        "WHERE ct.MADON = ?",
+                        (rs, rowNum) -> rs.getString("TENSP") + " (SL: " + rs.getInt("SOLUONG") + ") - Hướng dẫn: " + rs.getString("LIEUDUNG") + " " + rs.getString("CACHDUNG"),
+                        maDonThuoc
+                    );
+                }
+
                 dtoList.add(com.kada.da.modules.examination.dto.HoSoKhamResponseDTO.builder()
                         .maHoSo(hoSo.getMaHoSo())
                         .maKh(hoSo.getKhachHang() != null ? hoSo.getKhachHang().getMaKh() : null)
+                        .maNs(hoSo.getNhanSu() != null ? hoSo.getNhanSu().getMaNs() : null)
                         .tenKhachHang(hoSo.getKhachHang() != null ? hoSo.getKhachHang().getHoTen() : null)
                         .tenBacSi(hoSo.getNhanSu() != null ? hoSo.getNhanSu().getHoTen() : null)
                         .ngayKham(hoSo.getNgayKham() != null ? hoSo.getNgayKham().atStartOfDay() : null)
                         .ketLuan(hoSo.getKetLuan())
                         .danhSachThiLuc(listDto)
                         .maDonThuoc(maDonThuoc)
+                        .donKinh(donKinh)
+                        .donThuocList(donThuocList)
                         .build());
             }
 
@@ -176,15 +185,43 @@ public class ExaminationController {
                     .getResultList();
             String maDonThuoc = prescriptions.isEmpty() ? null : prescriptions.get(0);
 
+            // Lấy thông tin đơn kính từ xưởng
+            String donKinh = null;
+            if (maDonThuoc != null) {
+                List<String> list = jdbcTemplate.query(
+                    "SELECT GHI_CHU FROM XU_LY_KINH WHERE MADON = ?",
+                    (rs, rowNum) -> rs.getString("GHI_CHU"),
+                    maDonThuoc
+                );
+                if (!list.isEmpty()) {
+                    donKinh = list.get(0);
+                }
+            }
+
+            // Lấy danh sách thuốc nhỏ mắt
+            List<String> donThuocList = new java.util.ArrayList<>();
+            if (maDonThuoc != null) {
+                donThuocList = jdbcTemplate.query(
+                    "SELECT sp.TENSP, ct.SOLUONG, ct.LIEUDUNG, ct.CACHDUNG " +
+                    "FROM CT_KE_DON ct JOIN SAN_PHAM sp ON ct.MASP = sp.MASP " +
+                    "WHERE ct.MADON = ?",
+                    (rs, rowNum) -> rs.getString("TENSP") + " (SL: " + rs.getInt("SOLUONG") + ") - Hướng dẫn: " + rs.getString("LIEUDUNG") + " " + rs.getString("CACHDUNG"),
+                    maDonThuoc
+                );
+            }
+
             com.kada.da.modules.examination.dto.HoSoKhamResponseDTO response = com.kada.da.modules.examination.dto.HoSoKhamResponseDTO.builder()
                     .maHoSo(hoSo.getMaHoSo())
                     .maKh(hoSo.getKhachHang() != null ? hoSo.getKhachHang().getMaKh() : null)
+                    .maNs(hoSo.getNhanSu() != null ? hoSo.getNhanSu().getMaNs() : null)
                     .tenKhachHang(hoSo.getKhachHang() != null ? hoSo.getKhachHang().getHoTen() : null)
                     .tenBacSi(hoSo.getNhanSu() != null ? hoSo.getNhanSu().getHoTen() : null)
                     .ngayKham(hoSo.getNgayKham() != null ? hoSo.getNgayKham().atStartOfDay() : null)
                     .ketLuan(hoSo.getKetLuan())
                     .danhSachThiLuc(listDto)
                     .maDonThuoc(maDonThuoc)
+                    .donKinh(donKinh)
+                    .donThuocList(donThuocList)
                     .build();
 
             return ResponseEntity.ok(response);

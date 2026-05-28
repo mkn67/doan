@@ -37,7 +37,7 @@ public class DanhGiaController {
      * Tạo đánh giá mới (khách hàng đánh giá sau khi khám)
      */
     @PostMapping
-    @PreAuthorize("hasAnyRole('LE_TAN', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('LE_TAN', 'ADMIN', 'CUSTOMER')")
     public ResponseEntity<DanhGiaResponseDTO> createDanhGia(
             @Valid @RequestBody DanhGiaRequestDTO request) {
         log.info("API: Tạo đánh giá mới cho hồ sơ: {}", request.getMaHoSo());

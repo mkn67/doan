@@ -60,25 +60,109 @@ export default function CustomerHistoryPage() {
                     </span>
                   </div>
                   
-                  <div className="p-5 md:p-6 space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-5 md:p-6 space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-1">
                         <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                          <Stethoscope className="w-3 h-3"/> Bác sĩ phụ trách
+                          <Stethoscope className="w-4 h-4 text-emerald-500"/> Bác sĩ phụ trách
                         </p>
-                        <p className="font-medium text-slate-800">{item.nhanSu?.hoTen || "Chưa rõ"}</p>
+                        <p className="font-bold text-slate-800 text-sm">{item.tenBacSi || "Chưa rõ"}</p>
                       </div>
                       <div className="space-y-1">
                         <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                          <Eye className="w-3 h-3"/> Khách hàng
+                          <Eye className="w-4 h-4 text-emerald-500"/> Khách hàng
                         </p>
-                        <p className="font-medium text-slate-800">{item.khachHang?.hoTen || user?.hoTen || "N/A"}</p>
+                        <p className="font-bold text-slate-800 text-sm">{item.tenKhachHang || user?.hoTen || "N/A"}</p>
                       </div>
                     </div>
 
-                    <div className="p-4 bg-emerald-50/50 rounded-xl border border-emerald-100">
-                      <p className="text-xs font-semibold text-emerald-600 uppercase tracking-wider mb-1">Kết luận của bác sĩ</p>
-                      <p className="text-sm text-slate-700 font-medium leading-relaxed">{item.ketLuan || "Không có kết luận chi tiết"}</p>
+                    {/* Ophthalmic parameters table */}
+                    {item.danhSachThiLuc && item.danhSachThiLuc.length > 0 && (
+                      <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+                        <table className="w-full text-xs text-left">
+                          <thead className="bg-slate-100 text-slate-600 uppercase font-bold text-[10px] tracking-wider border-b border-slate-200">
+                            <tr>
+                              <th className="px-4 py-2">Mắt (Eye)</th>
+                              <th className="px-4 py-2 text-center">Độ Cầu (SPH)</th>
+                              <th className="px-4 py-2 text-center">Độ Loạn (CYL)</th>
+                              <th className="px-4 py-2 text-center">Trục (AXIS)</th>
+                              <th className="px-4 py-2 text-center">Thị lực (VA)</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 text-slate-700 font-semibold">
+                            {/* OD - Mắt Phải */}
+                            {(() => {
+                              const od = item.danhSachThiLuc.find((ct: any) => ct.loaiMat === "P") || {};
+                              return (
+                                <tr className="hover:bg-slate-50">
+                                  <td className="px-4 py-2.5 font-bold text-blue-600">Phải (OD)</td>
+                                  <td className="px-4 py-2.5 text-center font-mono">{od.sph !== undefined && od.sph > 0 ? `+${od.sph.toFixed(2)}` : od.sph?.toFixed(2) || "0.00"} D</td>
+                                  <td className="px-4 py-2.5 text-center font-mono">{od.cyl !== undefined && od.cyl > 0 ? `+${od.cyl.toFixed(2)}` : od.cyl?.toFixed(2) || "0.00"} D</td>
+                                  <td className="px-4 py-2.5 text-center font-mono">{od.axis || "0"}°</td>
+                                  <td className="px-4 py-2.5 text-center font-mono">{od.va || "10/10"}</td>
+                                </tr>
+                              );
+                            })()}
+                            {/* OS - Mắt Trái */}
+                            {(() => {
+                              const os = item.danhSachThiLuc.find((ct: any) => ct.loaiMat === "T") || {};
+                              return (
+                                <tr className="hover:bg-slate-50">
+                                  <td className="px-4 py-2.5 font-bold text-indigo-600">Trái (OS)</td>
+                                  <td className="px-4 py-2.5 text-center font-mono">{os.sph !== undefined && os.sph > 0 ? `+${os.sph.toFixed(2)}` : os.sph?.toFixed(2) || "0.00"} D</td>
+                                  <td className="px-4 py-2.5 text-center font-mono">{os.cyl !== undefined && os.cyl > 0 ? `+${os.cyl.toFixed(2)}` : os.cyl?.toFixed(2) || "0.00"} D</td>
+                                  <td className="px-4 py-2.5 text-center font-mono">{os.axis || "0"}°</td>
+                                  <td className="px-4 py-2.5 text-center font-mono">{os.va || "10/10"}</td>
+                                </tr>
+                              );
+                            })()}
+                          </tbody>
+                        </table>
+                        <div className="bg-slate-50 px-4 py-2 border-t border-slate-200 flex justify-between items-center text-xs font-semibold text-slate-500">
+                          <span>Khoảng cách đồng tử (PD):</span>
+                          <span className="font-mono text-emerald-600 text-sm font-bold">{(item.danhSachThiLuc[0]?.pd || item.danhSachThiLuc[1]?.pd || 60)} mm</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Diagnosis / Conclusion */}
+                    <div className="p-4 bg-emerald-50/40 rounded-xl border border-emerald-100/80">
+                      <p className="text-xs font-black text-emerald-700 uppercase tracking-wider mb-1 flex items-center gap-1">
+                        📋 Kết luận chẩn đoán
+                      </p>
+                      <p className="text-sm text-slate-700 font-semibold leading-relaxed">
+                        {item.ketLuan || "Không có kết luận chi tiết từ chuyên viên."}
+                      </p>
+                    </div>
+
+                    {/* Processing order & eye drops */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/20">
+                        <p className="text-xs font-black text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1">
+                          👓 Yêu cầu mài lắp kính gia công
+                        </p>
+                        {item.donKinh ? (
+                          <p className="text-sm font-bold text-slate-800">{item.donKinh}</p>
+                        ) : (
+                          <p className="text-xs text-slate-400 italic">Không có chỉ định gia công kính.</p>
+                        )}
+                      </div>
+                      <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/20">
+                        <p className="text-xs font-black text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1">
+                          💧 Thuốc nhỏ mắt chỉ định
+                        </p>
+                        {item.donThuocList && item.donThuocList.length > 0 ? (
+                          <ul className="space-y-1.5 list-decimal pl-4">
+                            {item.donThuocList.map((med: string, i: number) => (
+                              <li key={i} className="text-xs font-semibold text-slate-800 break-words leading-relaxed">
+                                {med}
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="text-xs text-slate-400 italic">Không có thuốc nhỏ mắt chỉ định.</p>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </CardContent>

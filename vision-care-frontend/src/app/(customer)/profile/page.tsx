@@ -9,7 +9,7 @@ import {
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useUpdateKhachHang } from "@/hooks/useCustomer";
+import { useUpdateKhachHang, useKhachHang } from "@/hooks/useCustomer";
 import { useAuth, AuthUser } from "@/hooks/useAuth";
 
 import { Button } from "@/components/ui/button";
@@ -40,6 +40,8 @@ type ProfileFormValues = z.infer<typeof profileSchema>;
 export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const { user, setUser, loading } = useAuth();
+  const maKh = user?.maKh || "";
+  const { data: customerDetails, isLoading: customerLoading } = useKhachHang(maKh);
   const updateMutation = useUpdateKhachHang();
 
   const form = useForm<ProfileFormValues>({
@@ -49,20 +51,21 @@ export default function ProfilePage() {
     }
   });
 
-  // Reset form khi user data thay đổi
+  // Reset form khi customerDetails hoặc user thay đổi
   useEffect(() => {
-    if (user) {
+    const details = customerDetails || user;
+    if (details) {
       form.reset({
-        hoTen: user.hoTen || "",
-        sdt: user.sdt || "",
-        email: user.email || "",
-        cccd: user.cccd || "",
-        gioiTinh: user.gioiTinh || "Nam",
-        ngaySinh: user.ngaySinh || "",
-        diaChi: user.diaChi || ""
+        hoTen: details.hoTen || "",
+        sdt: details.sdt || "",
+        email: details.email || "",
+        cccd: details.cccd || "",
+        gioiTinh: details.gioiTinh || "Nam",
+        ngaySinh: details.ngaySinh || "",
+        diaChi: details.diaChi || ""
       });
     }
-  }, [user, form]);
+  }, [customerDetails, user, form]);
 
   function onSubmit(values: ProfileFormValues) {
     if (!user?.maKh) {
@@ -75,8 +78,11 @@ export default function ProfilePage() {
       {
         onSuccess: (updatedUser) => {
           alert("✅ Cập nhật thông tin thành công!");
-          // updatedUser có kiểu KhachHangResponseDTO, ép về AuthUser
-          const updated = updatedUser as unknown as AuthUser;
+          // Trộn với user hiện tại để giữ token và loaiTk
+          const updated = {
+            ...user,
+            ...updatedUser
+          } as unknown as AuthUser;
           localStorage.setItem("user", JSON.stringify(updated));
           setUser(updated);
           setIsEditing(false);
@@ -88,7 +94,40 @@ export default function ProfilePage() {
     );
   }
 
-  if (loading) return <div className="flex justify-center p-8">Đang tải...</div>;
+  const points = customerDetails?.diemTichLuy || user?.diemTichLuy || 0;
+  let rankName = "Hạng thành viên Đồng";
+  let nextRankName = "Bạc";
+  let progress = 0;
+  let pointsNeeded = 100 - points;
+  let rankBadgeColor = "text-amber-600";
+
+  if (points >= 1000) {
+    rankName = "Hạng thành viên Bạch Kim";
+    nextRankName = "";
+    progress = 100;
+    pointsNeeded = 0;
+    rankBadgeColor = "text-indigo-600";
+  } else if (points >= 500) {
+    rankName = "Hạng thành viên Vàng";
+    nextRankName = "Bạch Kim";
+    progress = Math.min(100, Math.max(0, ((points - 500) / 500) * 100));
+    pointsNeeded = 1000 - points;
+    rankBadgeColor = "text-yellow-600";
+  } else if (points >= 100) {
+    rankName = "Hạng thành viên Bạc";
+    nextRankName = "Vàng";
+    progress = Math.min(100, Math.max(0, ((points - 100) / 400) * 100));
+    pointsNeeded = 500 - points;
+    rankBadgeColor = "text-slate-500";
+  } else {
+    rankName = "Hạng thành viên Đồng";
+    nextRankName = "Bạc";
+    progress = Math.min(100, Math.max(0, (points / 100) * 100));
+    pointsNeeded = 100 - points;
+    rankBadgeColor = "text-orange-600";
+  }
+
+  if (loading || customerLoading) return <div className="flex justify-center p-8">Đang tải...</div>;
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -97,7 +136,7 @@ export default function ProfilePage() {
           <CardContent className="pt-6 text-center">
             <div className="relative inline-block">
               <div className="w-32 h-32 rounded-full bg-blue-100 border-4 border-white shadow-xl flex items-center justify-center text-4xl font-black text-blue-600 mx-auto">
-                {user?.hoTen?.charAt(0) || "U"}
+                {(customerDetails?.hoTen || user?.hoTen)?.charAt(0) || "U"}
               </div>
               <button
                 className="absolute bottom-0 right-0 p-2 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-transform active:scale-90"
@@ -106,19 +145,23 @@ export default function ProfilePage() {
                 <Camera className="w-4 h-4" />
               </button>
             </div>
-            <h2 className="mt-4 text-xl font-bold text-slate-900">{user?.hoTen}</h2>
-            <p className="text-sm text-slate-500">{user?.sdt}</p>
+            <h2 className="mt-4 text-xl font-bold text-slate-900">{customerDetails?.hoTen || user?.hoTen || "Chưa cập nhật"}</h2>
+            <p className="text-sm text-slate-500">{customerDetails?.sdt || user?.sdt}</p>
 
             <div className="mt-8 p-4 bg-white rounded-2xl border border-blue-100 shadow-sm">
-              <div className="flex items-center justify-center gap-2 text-amber-500 mb-1">
+              <div className={`flex items-center justify-center gap-2 ${rankBadgeColor} mb-1`}>
                 <Award className="w-5 h-5 fill-current" />
-                <span className="font-bold text-lg">{user?.diemTichLuy || 0} điểm</span>
+                <span className="font-bold text-lg">{points} điểm</span>
               </div>
-              <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400">Hạng thành viên Bạc</p>
+              <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400">{rankName}</p>
               <div className="w-full bg-slate-100 h-1.5 rounded-full mt-3 overflow-hidden">
-                <div className="bg-amber-400 h-full w-[40%] rounded-full" />
+                <div className="bg-amber-400 h-full rounded-full" style={{ width: `${progress}%` }} />
               </div>
-              <p className="text-[10px] text-slate-400 mt-2">Cần thêm 600 điểm để lên hạng Vàng</p>
+              {pointsNeeded > 0 ? (
+                <p className="text-[10px] text-slate-400 mt-2">Cần thêm {pointsNeeded} điểm để lên hạng {nextRankName}</p>
+              ) : (
+                <p className="text-[10px] text-emerald-500 mt-2 font-bold">Bạn đã đạt hạng cao nhất!</p>
+              )}
             </div>
           </CardContent>
         </Card>

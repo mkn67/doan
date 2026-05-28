@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { 
   User, Calendar, History, Receipt, Star, LogOut 
 } from "lucide-react"; // Xóa Loader2
+import { useKhachHang } from "@/hooks/useCustomer";
 
 const sidebarItems = [
   { name: "Thông tin cá nhân", href: "/profile", icon: User },
@@ -18,6 +19,7 @@ const sidebarItems = [
 interface UserProfile {
   hoTen?: string;
   email?: string;
+  maKh?: string;
 }
 
 export default function ProfileLayout({ children }: { children: React.ReactNode }) {
@@ -26,6 +28,9 @@ export default function ProfileLayout({ children }: { children: React.ReactNode 
   
   const [user, setUser] = useState<UserProfile | null>(null);
   const [mounted, setMounted] = useState(false);
+
+  // Gọi hook lấy thông tin từ backend
+  const { data: customerDetails } = useKhachHang(user?.maKh || "");
 
   useEffect(() => {
     // Trì hoãn một nhịp để tránh lỗi cascading renders
@@ -58,7 +63,7 @@ export default function ProfileLayout({ children }: { children: React.ReactNode 
           <div className="p-5 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl text-white mb-6 shadow-lg shadow-blue-200">
             <p className="text-xs opacity-80 font-medium uppercase tracking-wider">Xin chào,</p>
             <p className="text-xl font-bold truncate">
-              {user?.hoTen || "Khách hàng"}
+              {customerDetails?.hoTen || user?.hoTen || "Khách hàng"}
             </p>
           </div>
           

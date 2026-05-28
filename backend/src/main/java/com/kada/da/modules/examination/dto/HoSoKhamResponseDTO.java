@@ -15,6 +15,7 @@ import java.util.List;
 public class HoSoKhamResponseDTO {
     private String maHoSo;
     private String maKh;
+    private String maNs;
     private String tenKhachHang;
     private String tenBacSi;
     private LocalDateTime ngayKham;
@@ -25,4 +26,6 @@ public class HoSoKhamResponseDTO {
     private List<ChiTietThiLucDTO> danhSachThiLuc;
 
     private String maDonThuoc;
+    private String donKinh;
+    private List<String> donThuocList;
 }

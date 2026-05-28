@@ -8,6 +8,8 @@ import {
   DatLichRequest, 
   DatLichResponse,
   AuditHosoThiluc,
+  DanhGiaRequest,
+  DanhGiaResponse
 } from "@/types/clinic";
 
 export const useDanhSachDichVu = () => {
@@ -157,5 +159,24 @@ export const useHangChoHomNay = (maNs?: string) => {
     queryKey: ["hang-cho-hom-nay", maNs],
     queryFn: () => clinicApi.getHangChoHomNay(maNs),
     refetchInterval: 30000, // Tự động load lại sau 30s
+  });
+};
+
+export const useDanhGiaByKh = (maKh: string) => {
+  return useQuery({
+    queryKey: ["danh-gia-kh", maKh],
+    queryFn: () => clinicApi.getDanhGiaByKh(maKh),
+    enabled: !!maKh,
+    staleTime: 2 * 60 * 1000,
+  });
+};
+
+export const useCreateDanhGia = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: DanhGiaRequest) => clinicApi.createDanhGia(data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["danh-gia-kh", variables.maKh] });
+    },
   });
 };
