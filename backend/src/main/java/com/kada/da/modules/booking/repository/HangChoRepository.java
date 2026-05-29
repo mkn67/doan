@@ -10,6 +10,8 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import java.util.List;
 
+import java.time.LocalDateTime;
+
 @Repository
 public interface HangChoRepository extends JpaRepository<HangCho, String> {
 
@@ -26,7 +28,6 @@ public interface HangChoRepository extends JpaRepository<HangCho, String> {
     // LẤY DANH SÁCH HÀNG CHỜ TRONG NGÀY HÔM NAY
     // =========================================================
     @EntityGraph(attributePaths = { "khachHang", "nhanSuPhanCong", "lichHen", "lichHen.goiKham" })
-    // SỬA DÒNG NÀY: Dùng CAST để ép Timestamp về Date, so sánh với ngày hiện tại
-    @Query("SELECT hc FROM HangCho hc WHERE CAST(hc.gioDangKy AS date) = CURRENT_DATE")
-    List<HangCho> findHangChoToday();
+    @Query("SELECT hc FROM HangCho hc WHERE hc.gioDangKy >= :start AND hc.gioDangKy <= :end")
+    List<HangCho> findHangChoToday(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 }

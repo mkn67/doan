@@ -34,7 +34,6 @@ public class ExaminationController {
     private final ClinicService clinicService;
 
     @PostMapping("/save")
-    @Transactional // BẮT BUỘC vì nghiệp vụ này có INSERT/UPDATE dữ liệu
     @PreAuthorize("hasRole('BAC_SI') or hasRole('ADMIN')")
     public ResponseEntity<?> saveExamination(@RequestBody HoSoKhamRequestDTO req) {
         try {
@@ -227,6 +226,38 @@ public class ExaminationController {
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Lỗi khi lấy hồ sơ khám: " + e.getMessage());
+        }
+    }
+
+    // =========================================================
+    // API LẤY LỊCH SỬ KHÁM BỆNH CỦA 1 BÁC SĨ (DÀNH CHO CLINIC/AUDIT)
+    // =========================================================
+    @GetMapping("/bac-si/{maNs}")
+    public ResponseEntity<?> getDanhSachHoSoCuaBacSi(@PathVariable("maNs") String maNs) {
+        try {
+            String jpql = "SELECT h FROM HoSoThiLuc h WHERE h.nhanSu.maNs = :maNs ORDER BY h.maHoSo DESC";
+            List<com.kada.da.modules.examination.domain.HoSoThiLuc> lichSu = em.createQuery(jpql, com.kada.da.modules.examination.domain.HoSoThiLuc.class)
+                    .setParameter("maNs", maNs)
+                    .getResultList();
+
+            List<com.kada.da.modules.examination.dto.HoSoKhamResponseDTO> dtoList = new java.util.ArrayList<>();
+            for (com.kada.da.modules.examination.domain.HoSoThiLuc hoSo : lichSu) {
+                dtoList.add(com.kada.da.modules.examination.dto.HoSoKhamResponseDTO.builder()
+                        .maHoSo(hoSo.getMaHoSo())
+                        .maKh(hoSo.getKhachHang() != null ? hoSo.getKhachHang().getMaKh() : null)
+                        .maNs(hoSo.getNhanSu() != null ? hoSo.getNhanSu().getMaNs() : null)
+                        .tenKhachHang(hoSo.getKhachHang() != null ? hoSo.getKhachHang().getHoTen() : null)
+                        .tenBacSi(hoSo.getNhanSu() != null ? hoSo.getNhanSu().getHoTen() : null)
+                        .ngayKham(hoSo.getNgayKham() != null ? hoSo.getNgayKham().atStartOfDay() : null)
+                        .ketLuan(hoSo.getKetLuan())
+                        .build());
+            }
+
+            return ResponseEntity.ok(Map.of(
+                    "message", "Lấy danh sách hồ sơ khám của bác sĩ thành công!",
+                    "data", dtoList));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Lỗi khi lấy danh sách hồ sơ khám: " + e.getMessage());
         }
     }
 }

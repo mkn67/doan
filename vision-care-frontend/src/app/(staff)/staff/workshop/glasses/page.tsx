@@ -48,6 +48,7 @@ interface UserData {
   username?: string;
   roles?: string[];
   maNhom?: string;
+  maNs?: string;
 }
 
 type FilterType = "all" | "Chờ xử lý" | "Đang xử lý" | "Lỗi gia công" | "Hoàn thành";
@@ -76,6 +77,7 @@ function WorkshopContent() {
   const isAdmin = userData.roles?.includes("NH04") || userData.maNhom === "NH04" || userData.roles?.includes("ROLE_ADMIN");
   const isWarehouse = userData.roles?.includes("NH03") || userData.maNhom === "NH03" || userData.roles?.includes("ROLE_THU_KHO") || userData.maNhom === "ROLE_THU_KHO";
   const currentUsername = userData.username || "";
+  const currentMaNs = userData.maNs || "";
 
   // Custom dialog state for note updates (failures / cancellations)
   const [showNoteModal, setShowNoteModal] = useState<{
@@ -118,7 +120,7 @@ function WorkshopContent() {
           try {
             const parsedUser = JSON.parse(userStr);
             setUserData(parsedUser);
-            form.setValue("maNsKyThuat", parsedUser.username || ""); 
+            form.setValue("maNsKyThuat", parsedUser.maNs || ""); 
           } catch (e) {
             console.error("Lỗi lấy thông tin nhân sự", e);
           }
@@ -151,7 +153,7 @@ function WorkshopContent() {
           resolve("Đã cập nhật trạng thái gia công!");
           form.reset({
             maDon: "",
-            maNsKyThuat: currentUsername,
+            maNsKyThuat: currentMaNs,
             trangThai: "Chờ xử lý",
             ngayHoanThanh: new Date().toISOString().split('T')[0],
             ghiChu: "",
@@ -177,7 +179,7 @@ function WorkshopContent() {
   const triggerBatDau = (maXl: string) => {
     if (isWarehouse) return;
     const promise = new Promise((resolve, reject) => {
-      batDauMutation.mutate({ maXl, maKyThuat: currentUsername }, {
+      batDauMutation.mutate({ maXl, maKyThuat: currentMaNs }, {
         onSuccess: () => {
           updateTrangThaiMutation.mutate({ maXl, trangThai: "Đang xử lý" }, {
             onSuccess: () => {

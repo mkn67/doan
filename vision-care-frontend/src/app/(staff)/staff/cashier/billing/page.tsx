@@ -53,7 +53,7 @@ export default function BillingPage() {
       if (userStr) {
         try {
           const user = JSON.parse(userStr);
-          setMaNs(user.username || "NS000"); 
+          setMaNs(user.maNs || "NS000"); 
         } catch (error) {
           console.error("Lỗi đọc dữ liệu người dùng:", error);
         }

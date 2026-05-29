@@ -80,5 +80,13 @@ export const billingApi = {
       }
     });
     return response.data;
+  },
+
+  // 8. Tải file PDF hóa đơn từ backend
+  exportPdf: async (maHd: string): Promise<Blob> => {
+    const response = await axiosClient.get(`/billing/${maHd}/export-pdf`, {
+      responseType: 'blob',
+    });
+    return response.data;
   }
 };

@@ -12,7 +12,9 @@ import {
   ReceiptText,
   ArrowLeft,
   ShieldAlert,
+  Download,
 } from "lucide-react";
+import { billingApi } from "@/lib/api/billing.api";
 import { useReactToPrint } from "react-to-print";
 import { QRCodeSVG } from "qrcode.react";
 import { useRouter } from "next/navigation";
@@ -57,8 +59,35 @@ interface PageResponseDTO {
 export default function PaymentsPage() {
   const router = useRouter();
   const { user } = useAuth();
+
+  // Move all hooks to the top level, before any conditional returns
+  const { data: listHoaDon, isLoading } = useDanhSachHoaDon();
+  const thanhToanMutation = useThanhToan();
+  const deleteMutation = useDeleteHoaDon();
+
+  const [searchTerm, setSearchTerm] = useState("");
+  const [scanTerm, setScanTerm] = useState("");
+
+  const [isOpen, setIsOpen] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] =
+    useState<HoaDonResponseDTO | null>(null);
+  const [phuongThuc, setPhuongThuc] = useState("Tiền mặt");
+
+  const printRef = useRef<HTMLDivElement>(null);
+  const [invoiceToPrint, setInvoiceToPrint] =
+    useState<HoaDonResponseDTO | null>(null);
+
   const isAdmin = user?.roles?.includes("ROLE_ADMIN") || user?.maNhom === "NH04";
-  
+
+  // ==========================================
+  // STATE & LOGIC: IN HÓA ĐƠN PDF
+  // ==========================================
+  const handlePrint = useReactToPrint({
+    contentRef: printRef,
+    documentTitle: `HoaDon_VisionCare_${invoiceToPrint?.maHd || "New"}`,
+    onAfterPrint: () => setInvoiceToPrint(null),
+  });
+
   const ALLOWED_ROLES = ["ROLE_THU_NGAN", "NH02"];
   const hasAccess = () => {
     if (!user) return false;
@@ -66,20 +95,6 @@ export default function PaymentsPage() {
     const userGroup = user?.maNhom ? user.maNhom : null;
     return ALLOWED_ROLES.some(role => userRoles.includes(role) || role === userGroup);
   };
-
-  const { data: listHoaDon, isLoading } = useDanhSachHoaDon();
-  const thanhToanMutation = useThanhToan();
-  const deleteMutation = useDeleteHoaDon();
-  const [searchTerm, setSearchTerm] = useState("");
-  const [scanTerm, setScanTerm] = useState("");
-
-  // ==========================================
-  // STATE: THANH TOÁN
-  // ==========================================
-  const [isOpen, setIsOpen] = useState(false);
-  const [selectedInvoice, setSelectedInvoice] =
-    useState<HoaDonResponseDTO | null>(null);
-  const [phuongThuc, setPhuongThuc] = useState("Tiền mặt");
 
   if (!hasAccess()) {
     return (
@@ -96,24 +111,30 @@ export default function PaymentsPage() {
     );
   }
 
-  // ==========================================
-  // STATE & LOGIC: IN HÓA ĐƠN PDF
-  // ==========================================
-  const printRef = useRef<HTMLDivElement>(null);
-  const [invoiceToPrint, setInvoiceToPrint] =
-    useState<HoaDonResponseDTO | null>(null);
-
-  const handlePrint = useReactToPrint({
-    contentRef: printRef,
-    documentTitle: `HoaDon_VisionCare_${invoiceToPrint?.maHd || "New"}`,
-    onAfterPrint: () => setInvoiceToPrint(null),
-  });
-
   const triggerPrint = (invoice: HoaDonResponseDTO) => {
     setInvoiceToPrint(invoice);
     setTimeout(() => {
       handlePrint();
     }, 100);
+  };
+
+  const handleDownloadPdf = async (maHd: string) => {
+    const toastId = toast.loading("Đang tạo file PDF...");
+    try {
+      const blob = await billingApi.exportPdf(maHd);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `HoaDon_${maHd}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast.success("Tải PDF hóa đơn thành công!", { id: toastId });
+    } catch (error) {
+      console.error("Error downloading PDF:", error);
+      toast.error("Không thể tải file PDF hóa đơn!", { id: toastId });
+    }
   };
 
   // ==========================================
@@ -356,14 +377,24 @@ export default function PaymentsPage() {
                         </Button>
                       </div>
                     ) : (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="border-blue-200 text-blue-600 hover:bg-blue-50 w-full rounded-lg transition-all"
-                        onClick={() => triggerPrint(hd)}
-                      >
-                        <Printer className="w-4 h-4 mr-1.5" /> In Bill
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-blue-200 text-blue-600 hover:bg-blue-50 flex-1 rounded-lg transition-all"
+                          onClick={() => triggerPrint(hd)}
+                        >
+                          <Printer className="w-3.5 h-3.5 mr-1" /> In Bill
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-slate-300 text-slate-650 hover:bg-slate-50 flex-1 rounded-lg transition-all"
+                          onClick={() => handleDownloadPdf(hd.maHd)}
+                        >
+                          <Download className="w-3.5 h-3.5 mr-1" /> PDF
+                        </Button>
+                      </div>
                     )}
                   </TableCell>
                 </TableRow>

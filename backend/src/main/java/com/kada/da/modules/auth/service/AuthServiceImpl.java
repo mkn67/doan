@@ -110,15 +110,36 @@ public class AuthServiceImpl implements AuthService {
         List<String> roles = taiKhoan.getDanhSachNhom().stream()
                 .map(nhom -> "ROLE_" + nhom.getMaNhom())
                 .collect(Collectors.toList());
+        if ("EXTERNAL".equals(taiKhoan.getLoaiTk())) {
+            roles.add("ROLE_CUSTOMER");
+        }
 
         String token = jwtTokenUtil.generateToken(taiKhoan.getUsername(), roles); // Dùng username thay password để làm
         // subject JWT
 
         String maKh = null;
+        String maNs = null;
+        String hoTen = null;
+        String sdt = null;
+        String maNhom = null;
+
+        if (taiKhoan.getDanhSachNhom() != null && !taiKhoan.getDanhSachNhom().isEmpty()) {
+            maNhom = taiKhoan.getDanhSachNhom().get(0).getMaNhom();
+        }
+
         if ("EXTERNAL".equals(taiKhoan.getLoaiTk())) {
             java.util.Optional<com.kada.da.modules.customer.domain.KhachHang> khOpt = khachHangRepository.findByTaiKhoanUsername(taiKhoan.getUsername());
             if (khOpt.isPresent()) {
                 maKh = khOpt.get().getMaKh();
+                hoTen = khOpt.get().getHoTen();
+                sdt = khOpt.get().getSdt();
+            }
+        } else {
+            java.util.Optional<com.kada.da.modules.staff.domain.NhanSu> nsOpt = nhanSuRepository.findByTaiKhoanUsername(taiKhoan.getUsername());
+            if (nsOpt.isPresent()) {
+                maNs = nsOpt.get().getMaNs();
+                hoTen = nsOpt.get().getHoTen();
+                sdt = nsOpt.get().getSdt();
             }
         }
 
@@ -127,7 +148,11 @@ public class AuthServiceImpl implements AuthService {
                 .username(taiKhoan.getUsername())
                 .loaiTk(taiKhoan.getLoaiTk())
                 .roles(roles)
+                .maNhom(maNhom)
                 .maKh(maKh)
+                .maNs(maNs)
+                .hoTen(hoTen)
+                .sdt(sdt)
                 .build();
     }
 
@@ -250,6 +275,9 @@ public class AuthServiceImpl implements AuthService {
         List<String> roles = taiKhoan.getDanhSachNhom().stream()
                 .map(nhom -> "ROLE_" + nhom.getMaNhom())
                 .collect(Collectors.toList());
+        if ("EXTERNAL".equals(taiKhoan.getLoaiTk())) {
+            roles.add("ROLE_CUSTOMER");
+        }
 
         ProfileResponseDTO.ProfileResponseDTOBuilder builder = ProfileResponseDTO.builder()
                 .username(taiKhoan.getUsername())

@@ -106,7 +106,7 @@ public class CustomerController {
 
     // 2. Lấy thông tin chi tiết 1 khách hàng (Trả về Entity hoặc DTO tùy ông giáo)
     @GetMapping("/{maKh}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'LE_TAN') or (hasRole('CUSTOMER') and #maKh.equalsIgnoreCase(authentication.name))")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LE_TAN', 'BAC_SI') or (hasRole('CUSTOMER') and @khachHangService.timKhachHangTheoId(#maKh).taiKhoan != null and @khachHangService.timKhachHangTheoId(#maKh).taiKhoan.username.equalsIgnoreCase(authentication.name))")
     public ResponseEntity<KhachHangResponseDTO> layKhachHangTheoId(@PathVariable("maKh") String maKh) {
         KhachHang kh = khachHangService.timKhachHangTheoId(maKh);
         return ResponseEntity.ok(mapToResponseDTO(kh));

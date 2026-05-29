@@ -4,7 +4,8 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { 
   Package, AlertTriangle, Truck, ClipboardList, 
-  ArrowRight, ShieldAlert, Layers, Box, FileText 
+  ArrowRight, ShieldAlert, Layers, Box, FileText,
+  Clock, AlertCircle, Calendar
 } from "lucide-react";
 
 import { useAuth } from "@/hooks/useAuth";
@@ -13,7 +14,8 @@ import {
   useDanhSachSanPham, 
   useCanhBaoTonKho, 
   useDanhSachNhaCungCap, 
-  useDanhSachPhieuNhap 
+  useDanhSachPhieuNhap,
+  useCanhBaoHetHan
 } from "@/hooks/useInventory";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -23,6 +25,18 @@ import { Button } from "@/components/ui/button";
 interface PageResponseDTO {
   content?: unknown[];
   data?: unknown[];
+}
+
+interface CanhBaoHetHan {
+  maLo: string;
+  maSp: string;
+  tenSp: string;
+  donViTinh: string;
+  ngayHetHan: string;
+  soNgayConLai: number;
+  tonKho: number;
+  mucDo: string;
+  nhaCungCap: string;
 }
 
 // 1. ROLE ĐƯỢC PHÉP TRUY CẬP (Thủ kho & Quản lý) - ROLE_THU_KHO, ROLE_ADMIN
@@ -38,12 +52,14 @@ export default function InventoryOverviewPage() {
   const { data: dataCanhBao } = useCanhBaoTonKho();
   const { data: dataNcc } = useDanhSachNhaCungCap();
   const { data: dataPn } = useDanhSachPhieuNhap();
+  const { data: dataHetHan } = useCanhBaoHetHan();
 
   // Xử lý chống phân trang (Chuẩn TypeScript không xài any)
   const spList = Array.isArray(dataSp) ? dataSp : (dataSp as unknown as PageResponseDTO)?.content || [];
   const canhBaoList = Array.isArray(dataCanhBao) ? dataCanhBao : (dataCanhBao as unknown as PageResponseDTO)?.content || [];
   const nccList = Array.isArray(dataNcc) ? dataNcc : (dataNcc as unknown as PageResponseDTO)?.content || [];
   const pnList = Array.isArray(dataPn) ? dataPn : (dataPn as unknown as PageResponseDTO)?.content || [];
+  const hetHanList: CanhBaoHetHan[] = Array.isArray(dataHetHan) ? dataHetHan : [];
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -217,6 +233,148 @@ export default function InventoryOverviewPage() {
         </Card>
       </div>
 
+      {/* BẢNG CẢNH BÁO VẬN HÀNH KHO (FEFO & TỒN KHO) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* FEFO Hết Hạn Lô Hàng */}
+        <Card className="shadow-md border-slate-200/80 rounded-3xl overflow-hidden bg-white">
+          <CardHeader className="border-b border-slate-100 bg-slate-50/50 pb-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-lg font-extrabold flex items-center gap-2 text-slate-800">
+                  <Clock className="w-5 h-5 text-rose-500 animate-pulse" />
+                  Cảnh Báo Hạn Dùng Lô Hàng (FEFO)
+                </CardTitle>
+                <CardDescription className="text-xs text-slate-500 mt-1">
+                  Ưu tiên xuất kho các lô hàng cận hạn dùng theo nguyên tắc First Expired, First Out.
+                </CardDescription>
+              </div>
+              {hetHanList.length > 0 && (
+                <span className="px-2.5 py-1 bg-rose-500 text-white text-[11px] font-black rounded-full animate-bounce">
+                  {hetHanList.length} lô cận hạn
+                </span>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent className="p-0 max-h-[380px] overflow-y-auto divide-y divide-slate-100">
+            {hetHanList.length > 0 ? (
+              hetHanList.map((item, idx) => {
+                let badgeClass = "bg-blue-50 text-blue-700 border-blue-200";
+                let iconClass = "text-blue-500 bg-blue-50";
+                if (item.soNgayConLai <= 15) {
+                  badgeClass = "bg-rose-50 text-rose-700 border-rose-200 animate-pulse";
+                  iconClass = "text-rose-500 bg-rose-50";
+                } else if (item.soNgayConLai <= 30) {
+                  badgeClass = "bg-amber-50 text-amber-700 border-amber-200";
+                  iconClass = "text-amber-500 bg-amber-50";
+                }
+
+                return (
+                  <div key={item.maLo || idx} className="flex gap-4 p-5 hover:bg-slate-50 transition-colors">
+                    <div className={`p-3 rounded-xl flex-shrink-0 self-start ${iconClass}`}>
+                      <AlertCircle className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <p className="text-sm font-bold text-slate-800 truncate">{item.tenSp}</p>
+                          <p className="text-xs text-slate-400 mt-0.5">
+                            Mã lô: <span className="font-mono font-bold text-slate-600">{item.maLo}</span> • SP: {item.maSp}
+                          </p>
+                        </div>
+                        <span className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-full border flex-shrink-0 ${badgeClass}`}>
+                          {item.soNgayConLai <= 0 ? "Đã hết hạn" : `Còn ${item.soNgayConLai} ngày`}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between mt-3 text-xs">
+                        <span className="text-slate-500 flex items-center gap-1">
+                          <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                          HSD: <span className="font-bold text-slate-700">{item.ngayHetHan}</span>
+                        </span>
+                        <span className="font-bold text-slate-800 bg-slate-100 px-2 py-0.5 rounded">
+                          Tồn: <span className="text-rose-600 font-extrabold">{item.tonKho}</span> {item.donViTinh || "cái"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="flex flex-col items-center justify-center py-20 text-center px-4">
+                <div className="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center mb-4">
+                  <Layers className="w-7 h-7 text-emerald-500" />
+                </div>
+                <p className="text-sm font-bold text-slate-800">Không có lô hàng cận hạn dùng</p>
+                <p className="text-xs text-slate-400 mt-1">Toàn bộ lô hàng trong kho đều có thời hạn sử dụng an toàn.</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Cảnh Báo Tồn Kho Thấp */}
+        <Card className="shadow-md border-slate-200/80 rounded-3xl overflow-hidden bg-white">
+          <CardHeader className="border-b border-slate-100 bg-slate-50/50 pb-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-lg font-extrabold flex items-center gap-2 text-slate-800">
+                  <AlertTriangle className="w-5 h-5 text-amber-500" />
+                  Cảnh Báo Tồn Kho Thấp (Định Mức)
+                </CardTitle>
+                <CardDescription className="text-xs text-slate-500 mt-1">
+                  Danh sách sản phẩm có số lượng tồn kho giảm dưới ngưỡng tối thiểu an toàn.
+                </CardDescription>
+              </div>
+              {canhBaoList.length > 0 && (
+                <span className="px-2.5 py-1 bg-amber-500 text-white text-[11px] font-black rounded-full">
+                  {canhBaoList.length} mặt hàng
+                </span>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent className="p-0 max-h-[380px] overflow-y-auto divide-y divide-slate-100">
+            {canhBaoList.length > 0 ? (
+              canhBaoList.map((item: any, idx: number) => {
+                const isOutOfStock = item.tongTon <= 0;
+                return (
+                  <div key={item.maSp || idx} className="flex gap-4 p-5 hover:bg-slate-50 transition-colors">
+                    <div className={`p-3 rounded-xl flex-shrink-0 self-start ${isOutOfStock ? "text-red-500 bg-red-50" : "text-amber-500 bg-amber-50"}`}>
+                      <Box className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <p className="text-sm font-bold text-slate-800 truncate">{item.tenSp}</p>
+                          <p className="text-xs text-slate-400 mt-0.5">
+                            Mã SP: <span className="font-mono font-bold text-slate-600">{item.maSp}</span>
+                          </p>
+                        </div>
+                        <span className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-full border ${isOutOfStock ? "bg-red-50 text-red-700 border-red-200" : "bg-amber-50 text-amber-700 border-amber-200"}`}>
+                          {isOutOfStock ? "Hết hàng" : "Tồn kho thấp"}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between mt-3 text-xs">
+                        <span className="text-slate-500">
+                          Ngưỡng tối thiểu: <span className="font-bold">{item.tonKhoToiThieu}</span>
+                        </span>
+                        <span className={`font-bold px-2 py-0.5 rounded ${isOutOfStock ? "text-red-700 bg-red-50" : "text-slate-800 bg-slate-100"}`}>
+                          Tồn hiện tại: <span className={`font-extrabold ${isOutOfStock ? "text-red-600" : "text-amber-600"}`}>{item.tongTon}</span> {item.donViTinh || "cái"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="flex flex-col items-center justify-center py-20 text-center px-4">
+                <div className="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center mb-4">
+                  <Package className="w-7 h-7 text-emerald-500" />
+                </div>
+                <p className="text-sm font-bold text-slate-800">Tồn kho ở mức an toàn</p>
+                <p className="text-xs text-slate-400 mt-1">Không có sản phẩm nào có số lượng dưới ngưỡng tối thiểu.</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

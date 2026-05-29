@@ -299,7 +299,32 @@ BEGIN
         WHERE MAHC = p_mahc;
     ELSIF v_current_state = N'Đang chờ' AND p_trang_thai = N'Bỏ về' THEN
         UPDATE HANG_CHO SET TRANG_THAI = p_trang_thai WHERE MAHC = p_mahc;
-    ELSIF v_current_state = N'Đang khám' AND p_trang_thai IN (N'Hoàn thành', N'Bỏ về') THEN
+    ELSIF v_current_state = N'Đang khám' AND p_trang_thai = N'Bỏ về' THEN
+        UPDATE HANG_CHO SET TRANG_THAI = p_trang_thai WHERE MAHC = p_mahc;
+        IF v_malh IS NOT NULL THEN
+            UPDATE LICH_HEN SET TRANGTHAI = N'Đã khám'
+            WHERE MALH = v_malh AND TRANGTHAI != N'Đã hủy';
+        END IF;
+    ELSIF v_current_state = N'Đang khám' AND p_trang_thai = N'Hoàn thành' THEN
+        -- Kiểm tra xem bệnh nhân đã được nhập hồ sơ khám bệnh ngày hôm nay chưa
+        DECLARE
+            v_makh HANG_CHO.MAKH%TYPE;
+            v_has_hoso NUMBER;
+        BEGIN
+            SELECT MAKH INTO v_makh FROM HANG_CHO WHERE MAHC = p_mahc;
+            
+            IF v_makh IS NULL THEN
+                RAISE_APPLICATION_ERROR(-20073, 'LOI: Khach hang chua dang ky ho so ca nhan, khong the hoan thanh!');
+            END IF;
+
+            SELECT COUNT(*) INTO v_has_hoso FROM HO_SO_THI_LUC
+            WHERE MAKH = v_makh AND TRUNC(NGAYKHAM) = TRUNC(SYSDATE);
+
+            IF v_has_hoso = 0 THEN
+                RAISE_APPLICATION_ERROR(-20074, 'LOI: Benh nhan chua duoc nhap ho so kham benh ngay hom nay!');
+            END IF;
+        END;
+
         UPDATE HANG_CHO SET TRANG_THAI = p_trang_thai WHERE MAHC = p_mahc;
         IF v_malh IS NOT NULL THEN
             UPDATE LICH_HEN SET TRANGTHAI = N'Đã khám'
@@ -454,7 +479,7 @@ BEGIN
             IF v_magoi IS NOT NULL THEN
                 FOR rec IN (
                     SELECT cg.MADV, d.GIA
-                    FROM CT_GOI cg
+                    FROM CT_GOI_KHAM cg
                     JOIN DICH_VU_KHAM d ON cg.MADV = d.MADV
                     WHERE cg.MAGOI = v_magoi
                 ) LOOP

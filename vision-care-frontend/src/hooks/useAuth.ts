@@ -24,6 +24,7 @@ export interface AuthUser {
   loaiTk?: string;   // "INTERNAL" (Nhân viên) hoặc "EXTERNAL" (Khách)
   maNhom?: string;   // VD: "NH04"
   roles?: string[];  // VD: ["ROLE_NH04"]
+  maNs?: string;
 }
 
 export const useForgotPassword = () => {

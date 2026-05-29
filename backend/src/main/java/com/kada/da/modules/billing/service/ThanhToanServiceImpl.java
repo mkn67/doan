@@ -27,6 +27,7 @@ public class ThanhToanServiceImpl implements ThanhToanService {
     private final ThanhToanRepository thanhToanRepository;
     private final HoaDonRepository hoaDonRepository;
     private final NhanSuRepository nhanSuRepository;
+    private final jakarta.persistence.EntityManager entityManager;
 
     @Override
     @Transactional
@@ -85,9 +86,17 @@ public class ThanhToanServiceImpl implements ThanhToanService {
         HoaDon hoaDon = hoaDonRepository.findById(request.getMaHd())
                 .orElseThrow(() -> new RuntimeException("KHÔNG TÌM THẤY HÓA ĐƠN: " + request.getMaHd()));
 
-        // 2. Tìm Nhân sự (Chỗ này hay chết nhất nếu gửi username lên thay vì maNs)
-        NhanSu nhanSu = nhanSuRepository.findById(request.getMaNs())
-                .orElseThrow(() -> new RuntimeException("KHÔNG TÌM THẤY NHÂN VIÊN MÃ: " + request.getMaNs()));
+        // 2. Tìm Nhân sự (Hỗ trợ cả maNs lẫn username để tuyệt đối không lỗi)
+        NhanSu nhanSu = null;
+        if (request.getMaNs() != null) {
+            nhanSu = nhanSuRepository.findById(request.getMaNs()).orElse(null);
+            if (nhanSu == null) {
+                nhanSu = nhanSuRepository.findByTaiKhoanUsername(request.getMaNs()).orElse(null);
+            }
+        }
+        if (nhanSu == null) {
+            throw new RuntimeException("KHÔNG TÌM THẤY NHÂN VIÊN MÃ HOẶC USERNAME: " + request.getMaNs());
+        }
 
         // 3. Tạo mã TT mới
         String newMaTt = generateMaTt();
@@ -103,10 +112,8 @@ public class ThanhToanServiceImpl implements ThanhToanService {
                 .build();
 
         thanhToanRepository.save(tt);
-
-        // 4. Cập nhật trạng thái Hóa đơn
-        hoaDon.setTrangThai(com.kada.da.modules.billing.Enum.TrangThaiHoaDon.DA_THANH_TOAN);
-        hoaDonRepository.save(hoaDon);
+        thanhToanRepository.flush();
+        entityManager.refresh(hoaDon);
 
         log.info("Thanh toán thành công! Mã giao dịch: {}", newMaTt);
 

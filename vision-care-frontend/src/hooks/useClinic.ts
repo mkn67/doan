@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { AxiosError } from "axios";
 import { clinicApi } from "@/lib/api/clinic.api";
 import {
-  HoSoKhamRequest,
+  HoSoKhamRequest, HoSoKhamResponse,
   DichVuKhamRequest,
   GoiKhamRequest,
   DatLichRequest, 
@@ -178,5 +178,14 @@ export const useCreateDanhGia = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["danh-gia-kh", variables.maKh] });
     },
+  });
+};
+
+export const useHoSoKhamByBacSi = (maNs: string) => {
+  return useQuery({
+    queryKey: ["ho-so-kham-bac-si", maNs],
+    queryFn: () => clinicApi.getHoSoKhamByBacSi(maNs),
+    enabled: !!maNs,
+    staleTime: 2 * 60 * 1000,
   });
 };

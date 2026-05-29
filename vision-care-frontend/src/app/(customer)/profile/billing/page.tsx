@@ -1,9 +1,10 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useEffect } from "react";
 import { Receipt, CreditCard, CheckCircle2, Clock, Loader2, Download } from "lucide-react";
 import { useDanhSachHoaDon } from "@/hooks/useBilling"; 
 import { HoaDonResponseDTO } from "@/types/billing";
+import { billingApi } from "@/lib/api/billing.api";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,27 @@ export default function CustomerBillingPage() {
   const { data: listHoaDon, isLoading } = useDanhSachHoaDon();
   const [isMounted, setIsMounted] = useState(false);
   const [currentUser, setCurrentUser] = useState<UserInfo | null>(null);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+
+  const handleDownloadPdf = async (maHd: string) => {
+    setDownloadingId(maHd);
+    try {
+      const blob = await billingApi.exportPdf(maHd);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `HoaDon_${maHd}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Error downloading PDF:", error);
+      alert("Không thể tải file PDF hóa đơn!");
+    } finally {
+      setDownloadingId(null);
+    }
+  };
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -99,8 +121,19 @@ export default function CustomerBillingPage() {
                       {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(hd.tongTien || 0)}
                     </p>
                   </div>
-                  <Button variant="outline" size="sm" className="w-full sm:w-auto text-slate-600 border-slate-300">
-                    <Download className="w-4 h-4 mr-2" /> Tải PDF
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full sm:w-auto text-slate-600 border-slate-300"
+                    onClick={() => handleDownloadPdf(hd.maHd)}
+                    disabled={downloadingId === hd.maHd}
+                  >
+                    {downloadingId === hd.maHd ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Download className="w-4 h-4 mr-2" />
+                    )}
+                    {downloadingId === hd.maHd ? "Đang tải..." : "Tải PDF"}
                   </Button>
                 </div>
               </CardContent>

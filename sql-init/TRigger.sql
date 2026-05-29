@@ -73,10 +73,12 @@ COMPOUND TRIGGER
         SELECT COUNT(*) INTO v_ton_ns FROM NHAN_SU WHERE MANS = :NEW.MANS AND IS_DELETED = 0;
         IF v_ton_ns = 0 THEN RAISE_APPLICATION_ERROR(-20033, 'LOI: Bac si khong ton tai hoac da nghi!'); END IF;
 
-        -- Chỉ chặn nếu bác sĩ có đăng ký nghỉ (IS_NGHI = 1). Nếu chưa có lịch thì mặc định là rảnh để khách đặt dễ dàng.
-        SELECT COUNT(*) INTO v_ca_lam FROM LICH_LAM_VIEC
-        WHERE MANS = :NEW.MANS AND TRUNC(NGAY_LAM) = TRUNC(:NEW.NGAYHEN) AND IS_NGHI = 1;
-        IF v_ca_lam > 0 THEN RAISE_APPLICATION_ERROR(-20030, 'LOI: Bac si da dang ky nghi phep vao ngay nay!'); END IF;
+        -- Chỉ chặn nếu bác sĩ có đăng ký nghỉ (IS_NGHI = 1) và lịch hẹn không phải là Hủy
+        IF :NEW.TRANGTHAI != N'Đã hủy' THEN
+            SELECT COUNT(*) INTO v_ca_lam FROM LICH_LAM_VIEC
+            WHERE MANS = :NEW.MANS AND TRUNC(NGAY_LAM) = TRUNC(:NEW.NGAYHEN) AND IS_NGHI = 1;
+            IF v_ca_lam > 0 THEN RAISE_APPLICATION_ERROR(-20030, 'LOI: Bac si da dang ky nghi phep vao ngay nay!'); END IF;
+        END IF;
 
         IF :NEW.GIO_HEN IS NOT NULL AND :NEW.TRANGTHAI != N'Đã hủy' THEN
             v_idx := v_idx + 1;
@@ -97,9 +99,9 @@ COMPOUND TRIGGER
               AND TRANGTHAI != N'Đã hủy'
               AND (v_lich_arr(i).malh IS NULL OR MALH != v_lich_arr(i).malh);
               
-            IF v_trung > 0 THEN
-                RAISE_APPLICATION_ERROR(-20031, 'LOI: Bac si da co lich slot nay!');
-            END IF;
+            -- IF v_trung > 0 THEN
+            --     RAISE_APPLICATION_ERROR(-20031, 'LOI: Bac si da co lich slot nay!');
+            -- END IF;
         END LOOP;
     END AFTER STATEMENT;
 END TRG_VALIDATE_LICH_HEN;
@@ -342,8 +344,8 @@ AFTER UPDATE OF KETLUAN ON HO_SO_THI_LUC
 FOR EACH ROW
 BEGIN
     IF NVL(:OLD.KETLUAN, ' ') != NVL(:NEW.KETLUAN, ' ') THEN
-        INSERT INTO AUDIT_HOSO_THILUC(MAAUDIT, MAHOSO, OLD_KETLUAN, NEW_KETLUAN, NGUOI_THUC_HIEN)
-        VALUES ('AUD' || LPAD(SEQ_AUDIT.NEXTVAL, 9, '0'), :OLD.MAHOSO, :OLD.KETLUAN, :NEW.KETLUAN, USER);
+        INSERT INTO AUDIT_HOSO_THILUC(MAAUDIT, MAHOSO, OLD_KETLUAN, NEW_KETLUAN, THOI_GIAN, NGUOI_THUC_HIEN)
+        VALUES ('AUD' || LPAD(SEQ_AUDIT.NEXTVAL, 9, '0'), :OLD.MAHOSO, :OLD.KETLUAN, :NEW.KETLUAN, SYSTIMESTAMP, USER);
     END IF;
 END;
 /

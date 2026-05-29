@@ -7,7 +7,7 @@ import {
   User, Clock, ClipboardList, AlertCircle, 
   ShieldAlert, FileText, CheckCircle2, Sparkles, FilterX
 } from "lucide-react";
-import { useAuditHoSo } from "@/hooks/useClinic";
+import { useAuditHoSo, useBacSi, useHoSoKhamByBacSi } from "@/hooks/useClinic";
 import { useAuth } from "@/hooks/useAuth";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,8 +17,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 
-// Định nghĩa role được phép truy cập trang này (Bác sĩ)
-const ALLOWED_ROLES = ["ROLE_BAC_SI", "NH01"];
+// Định nghĩa role được phép truy cập trang này (Bác sĩ, Admin/Quản lý)
+const ALLOWED_ROLES = ["ROLE_BAC_SI", "NH01", "ROLE_ADMIN", "NH04"];
 
 function AuditContent() {
   const router = useRouter();
@@ -28,6 +28,12 @@ function AuditContent() {
   const initialMaHoSo = searchParams.get("maHoSo") || "";
   const [maHoSoInput, setMaHoSoInput] = useState(initialMaHoSo);
   const [activeMaHoSo, setActiveMaHoSo] = useState(initialMaHoSo);
+  
+  // Lấy danh sách bác sĩ và hồ sơ đã khám của họ
+  const { data: doctorsList } = useBacSi();
+  const [selectedDoctor, setSelectedDoctor] = useState<string>("");
+  const { data: docRecordsData, isLoading: loadingDocRecords } = useHoSoKhamByBacSi(selectedDoctor);
+  const docRecords = (docRecordsData as any)?.data || [];
   const [isMounted, setIsMounted] = useState(false);
 
   // Set mount status once on client mount
@@ -152,40 +158,110 @@ function AuditContent() {
         </div>
       </div>
 
-      {/* SEARCH CARD */}
-      <Card className="bg-white/80 backdrop-blur border border-slate-200/80 shadow-md rounded-2xl overflow-hidden">
-        <CardHeader className="bg-slate-50/50 pb-4 border-b">
-          <CardTitle className="text-base font-bold text-slate-800 flex items-center gap-2">
-            <Search className="w-4.5 h-4.5 text-purple-600" /> Tra cứu thông tin hồ sơ
-          </CardTitle>
-          <CardDescription>Nhập chính xác mã hồ sơ bệnh án (VD: HS001) để truy vết toàn bộ quá trình cập nhật thị lực.</CardDescription>
-        </CardHeader>
-        <CardContent className="pt-6">
-          <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-400" />
-              <Input
-                placeholder="Nhập mã hồ sơ (VD: HS001, HS002)..."
-                value={maHoSoInput}
-                onChange={(e) => setMaHoSoInput(e.target.value)}
-                className="pl-11 h-11 border-slate-200 focus-visible:ring-purple-500 focus-visible:border-purple-500 rounded-xl font-semibold text-slate-800 bg-slate-50/50 focus:bg-white transition-all"
-              />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* SEARCH CARD */}
+        <Card className="bg-white/80 backdrop-blur border border-slate-200/80 shadow-md rounded-2xl overflow-hidden">
+          <CardHeader className="bg-slate-50/50 pb-4 border-b">
+            <CardTitle className="text-base font-bold text-slate-800 flex items-center gap-2">
+              <Search className="w-4.5 h-4.5 text-purple-600" /> Tra cứu thông tin hồ sơ
+            </CardTitle>
+            <CardDescription>Nhập chính xác mã hồ sơ bệnh án (VD: HS001) để truy vết toàn bộ quá trình cập nhật thị lực.</CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3">
+              <div className="relative flex-1">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-400" />
+                <Input
+                  placeholder="Nhập mã hồ sơ (VD: HS001, HS002)..."
+                  value={maHoSoInput}
+                  onChange={(e) => setMaHoSoInput(e.target.value)}
+                  className="pl-11 h-11 border-slate-200 focus-visible:ring-purple-500 focus-visible:border-purple-500 rounded-xl font-semibold text-slate-800 bg-slate-50/50 focus:bg-white transition-all"
+                />
+              </div>
+              <Button 
+                type="submit" 
+                className="bg-purple-600 hover:bg-purple-700 h-11 px-6 font-bold gap-2 shadow-md shadow-purple-600/10 hover:shadow-purple-600/20 hover:scale-[1.02] active:scale-[0.98] transition-all rounded-xl shrink-0"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                ) : (
+                  <Search className="w-4.5 h-4.5" />
+                )}
+                Tra cứu hồ sơ
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        {/* DOCTOR EXAMINED RECORDS CARD */}
+        <Card className="bg-white/80 backdrop-blur border border-slate-200/80 shadow-md rounded-2xl overflow-hidden">
+          <CardHeader className="bg-slate-50/50 pb-4 border-b">
+            <CardTitle className="text-base font-bold text-slate-800 flex items-center gap-2">
+              <User className="w-4.5 h-4.5 text-purple-600" /> Hồ sơ đã khám của bác sĩ
+            </CardTitle>
+            <CardDescription>Chọn bác sĩ để xem danh sách các hồ sơ bệnh án họ đã khám.</CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6 space-y-4">
+            <div className="flex gap-3">
+              <select
+                value={selectedDoctor}
+                onChange={(e) => setSelectedDoctor(e.target.value)}
+                className="flex-1 h-11 px-4 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
+              >
+                <option value="">-- Chọn bác sĩ --</option>
+                {doctorsList?.map((doc: any) => (
+                  <option key={doc.maNs} value={doc.maNs}>
+                    BS. {doc.hoTen} ({doc.maNs})
+                  </option>
+                ))}
+              </select>
             </div>
-            <Button 
-              type="submit" 
-              className="bg-purple-600 hover:bg-purple-700 h-11 px-6 font-bold gap-2 shadow-md shadow-purple-600/10 hover:shadow-purple-600/20 hover:scale-[1.02] active:scale-[0.98] transition-all rounded-xl shrink-0"
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-              ) : (
-                <Search className="w-4.5 h-4.5" />
-              )}
-              Tra cứu hồ sơ
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+            
+            {selectedDoctor && (
+              <div className="max-h-[120px] overflow-y-auto border border-slate-100 rounded-xl divide-y divide-slate-150 bg-slate-50/20">
+                {loadingDocRecords ? (
+                  <div className="p-4 text-center text-slate-405 text-xs flex items-center justify-center gap-2">
+                    <span className="w-4 h-4 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></span>
+                    Đang tải danh sách hồ sơ...
+                  </div>
+                ) : docRecords.length > 0 ? (
+                  docRecords.map((rec: any) => (
+                    <div key={rec.maHoSo} className="p-3 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                      <div className="min-w-0 flex-1 pr-3">
+                        <p className="text-xs font-bold text-slate-800">
+                          {rec.maHoSo} - {rec.tenKhachHang || "Bệnh nhân"}
+                        </p>
+                        <p className="text-[10px] text-slate-500">
+                          Kết luận: {rec.ketLuan || "—"}
+                        </p>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 text-xs font-bold border-purple-200 text-purple-600 hover:bg-purple-50 rounded-lg shrink-0"
+                        onClick={() => {
+                          setMaHoSoInput(rec.maHoSo);
+                          setActiveMaHoSo(rec.maHoSo);
+                          const params = new URLSearchParams(window.location.search);
+                          params.set("maHoSo", rec.maHoSo);
+                          router.push(`/staff/clinic/audit?${params.toString()}`);
+                        }}
+                      >
+                        Chọn xem
+                      </Button>
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-4 text-center text-slate-400 text-xs">
+                    Bác sĩ này chưa thực hiện ca khám nào.
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
       {/* RESULTS DISPLAY */}
       {!activeMaHoSo ? (

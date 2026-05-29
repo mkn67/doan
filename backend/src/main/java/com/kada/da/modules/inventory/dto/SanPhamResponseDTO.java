@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -20,4 +21,5 @@ public class SanPhamResponseDTO {
     private Integer tongTonKho; // Tổng số lượng từ tất cả các lô (LoHang)
     private String trangThai; // Lấy từ Enum TrangThaiSanPham.getValue()
     private Boolean laThuoc; // Để Frontend hiển thị icon khác nhau
+    private List<LoHangResponseDTO> loHangList;
 }
