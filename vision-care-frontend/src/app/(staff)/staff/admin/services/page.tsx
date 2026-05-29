@@ -293,21 +293,26 @@ export default function ServicesPage() {
                     </TableCell>
                     <TableCell className="text-right pr-6">
                       {!isBulkEditMode && (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-9 w-9 opacity-0 group-hover:opacity-100 transition-opacity rounded-full hover:bg-slate-200/50">
-                              <MoreHorizontal className="h-4 w-4 text-slate-500" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="bg-white/95 backdrop-blur-xl rounded-2xl border border-slate-100 shadow-xl p-1.5 w-40">
-                            <DropdownMenuItem className="rounded-xl cursor-pointer hover:bg-emerald-50 hover:text-emerald-700 focus:bg-emerald-50 font-medium py-2.5 transition-colors" onClick={() => handleEdit(svc)}>
-                              <Pencil className="mr-2.5 h-4 w-4" /> Chỉnh sửa
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="rounded-xl cursor-pointer text-rose-600 hover:bg-rose-50 hover:text-rose-700 focus:bg-rose-50 font-medium py-2.5 transition-colors mt-1" onClick={() => setDeleteConfirm(svc.maDv)}>
-                              <Trash2 className="mr-2.5 h-4 w-4" /> Xóa dịch vụ
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                        <div className="flex items-center justify-end gap-1.5">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={() => handleEdit(svc)}
+                            className="h-8.5 w-8.5 rounded-lg hover:bg-emerald-50 hover:text-emerald-600 transition-colors text-slate-400 hover:scale-105"
+                            title="Chỉnh sửa"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={() => setDeleteConfirm(svc.maDv)}
+                            className="h-8.5 w-8.5 rounded-lg hover:bg-rose-50 hover:text-rose-600 transition-colors text-slate-400 hover:scale-105"
+                            title="Xóa dịch vụ"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       )}
                     </TableCell>
                   </TableRow>

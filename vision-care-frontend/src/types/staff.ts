@@ -126,6 +126,8 @@ export interface XuLyKinhResponseDTO {
   tenKhachHang: string
   tenKyThuatVien?: string
   trangThai: string
+  maHd?: string
+  trangThaiThanhToan?: string
   ngayBatDau: string
   ngayHoanThanh: string
   ghiChu?: string

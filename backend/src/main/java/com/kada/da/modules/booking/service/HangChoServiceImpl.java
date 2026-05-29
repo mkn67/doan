@@ -43,10 +43,11 @@ public class HangChoServiceImpl implements HangChoService {
     @Override
     @Transactional(readOnly = true) // ĐÃ SỬA: Tối ưu cho hàm chỉ đọc
     public List<HangChoHomNayDto> getHangChoHomNay() {
-        LocalDateTime startOfToday = LocalDate.now().atStartOfDay();
-        LocalDateTime endOfToday = LocalDate.now().atTime(LocalTime.MAX);
+        java.time.ZoneId zoneId = java.time.ZoneId.of("Asia/Ho_Chi_Minh");
+        LocalDateTime startOfToday = LocalDate.now(zoneId).atStartOfDay();
+        LocalDateTime endOfToday = LocalDate.now(zoneId).atTime(LocalTime.MAX);
         List<HangCho> listHc = hangChoRepository.findHangChoToday(startOfToday, endOfToday);
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(zoneId);
 
         return listHc.stream()
                 .filter(hc -> hc.getTrangThai() != null && !hc.getTrangThai().name().equals("HOAN_THANH")

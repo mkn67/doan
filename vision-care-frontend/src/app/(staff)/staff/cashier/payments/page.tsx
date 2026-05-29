@@ -88,28 +88,13 @@ export default function PaymentsPage() {
     onAfterPrint: () => setInvoiceToPrint(null),
   });
 
-  const ALLOWED_ROLES = ["ROLE_THU_NGAN", "NH02"];
+  const ALLOWED_ROLES = ["ROLE_THU_NGAN", "NH02", "ROLE_ADMIN", "NH04"];
   const hasAccess = () => {
     if (!user) return false;
     const userRoles = user?.roles || [];
     const userGroup = user?.maNhom ? user.maNhom : null;
     return ALLOWED_ROLES.some(role => userRoles.includes(role) || role === userGroup);
   };
-
-  if (!hasAccess()) {
-    return (
-      <div className="flex h-[calc(100vh-4rem)] flex-col items-center justify-center bg-slate-50/50 rounded-2xl border-2 border-dashed border-slate-200 m-6 p-8 text-center">
-        <ShieldAlert className="w-16 h-16 text-rose-500 mb-4 animate-bounce mx-auto" />
-        <h2 className="text-2xl font-bold text-slate-800">Truy Cập Bị Từ Chối</h2>
-        <p className="text-slate-500 mt-2 max-w-md mx-auto">
-          Tài khoản của bạn không có nghiệp vụ Thu ngân. Vui lòng quay lại!
-        </p>
-        <Button onClick={() => router.back()} className="mt-6 bg-slate-800 hover:bg-slate-900 rounded-xl px-5 h-11 font-bold">
-          Quay lại trang trước
-        </Button>
-      </div>
-    );
-  }
 
   const triggerPrint = (invoice: HoaDonResponseDTO) => {
     setInvoiceToPrint(invoice);
@@ -211,6 +196,19 @@ export default function PaymentsPage() {
 
   return (
     <div className="p-6 md:p-8 space-y-6 bg-slate-50 min-h-[calc(100vh-4rem)]">
+      {!hasAccess() ? (
+        <div className="flex h-[calc(100vh-4rem)] flex-col items-center justify-center bg-slate-50/50 rounded-2xl border-2 border-dashed border-slate-200 p-8 text-center mx-auto my-12 max-w-lg">
+          <ShieldAlert className="w-16 h-16 text-rose-500 mb-4 animate-bounce mx-auto" />
+          <h2 className="text-2xl font-bold text-slate-800">Truy Cập Bị Từ Chối</h2>
+          <p className="text-slate-505 mt-2 max-w-md mx-auto">
+            Tài khoản của bạn không có nghiệp vụ Thu ngân. Vui lòng quay lại!
+          </p>
+          <Button onClick={() => router.back()} className="mt-6 bg-slate-800 hover:bg-slate-900 rounded-xl px-5 h-11 font-bold">
+            Quay lại trang trước
+          </Button>
+        </div>
+      ) : (
+        <>
       {/* HEADER TÌM KIẾM */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
         <div className="flex items-center gap-4">
@@ -712,6 +710,8 @@ export default function PaymentsPage() {
           </div>
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 }

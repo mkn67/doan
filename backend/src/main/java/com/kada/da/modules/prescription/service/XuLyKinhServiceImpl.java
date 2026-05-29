@@ -20,6 +20,8 @@ import com.kada.da.modules.prescription.dto.XuLyKinhRequestDTO;
 import com.kada.da.modules.prescription.dto.XuLyKinhResponseDTO;
 import com.kada.da.modules.prescription.repository.XuLyKinhRepository;
 import com.kada.da.modules.staff.dto.PageResponseDTO;
+import com.kada.da.modules.billing.repository.HoaDonRepository;
+import com.kada.da.modules.billing.domain.HoaDon;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +34,7 @@ public class XuLyKinhServiceImpl implements XuLyKinhService {
 
     private final XuLyKinhRepository xuLyKinhRepository;
     private final LoHangRepository loHangRepository;
+    private final HoaDonRepository hoaDonRepository;
     private final ObjectMapper objectMapper; // Dùng để ép cục JSON thông số kính thành String
 
     @Override
@@ -254,12 +257,30 @@ public class XuLyKinhServiceImpl implements XuLyKinhService {
             thongSoObj = entity.getThongSoKinh(); // Lỡ lỗi thì trả nguyên chuỗi
         }
 
+        String maHd = null;
+        String trangThaiThanhToan = "Chưa lập hóa đơn";
+        if (entity.getPhieuKeDon() != null) {
+            String maDon = entity.getPhieuKeDon().getMaDon();
+            List<HoaDon> hoaDons = hoaDonRepository.findByPhieuKeDon_MaDon(maDon);
+            if (hoaDons != null && !hoaDons.isEmpty()) {
+                HoaDon activeHd = hoaDons.stream()
+                        .filter(hd -> hd.getIsDeleted() == null || hd.getIsDeleted() == 0)
+                        .findFirst().orElse(null);
+                if (activeHd != null) {
+                    maHd = activeHd.getMaHd();
+                    trangThaiThanhToan = activeHd.getTrangThai() != null ? activeHd.getTrangThai().getValue() : "Chưa thanh toán";
+                }
+            }
+        }
+
         return XuLyKinhResponseDTO.builder()
                 .maXl(entity.getMaXl())
                 .maDon(entity.getPhieuKeDon() != null ? entity.getPhieuKeDon().getMaDon() : null)
                 .tenKhachHang(tenKhachHang) // Lấy từ Hồ Sơ (thay vì Hóa Đơn vì xử lý kính nối với Đơn Thuốc)
                 .tenKyThuatVien(entity.getNhanSuKyThuat() != null ? entity.getNhanSuKyThuat().getHoTen() : null)
                 .trangThai(entity.getTrangThai())
+                .maHd(maHd)
+                .trangThaiThanhToan(trangThaiThanhToan)
                 .ngayBatDau(entity.getNgayBatDau())
                 .ngayHoanThanh(entity.getNgayHoanThanh())
                 .ghiChu(entity.getGhiChu())

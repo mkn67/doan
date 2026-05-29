@@ -133,6 +133,22 @@ export const useUpdateTrangThaiLichHen = () => {
   });
 };
 
+export const useCheckInLichHen = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (maLh: string | number) => staffApi.checkInLichHen(maLh),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["lich-hen"] });
+      queryClient.invalidateQueries({ queryKey: ["hang-cho"] });
+      queryClient.invalidateQueries({ queryKey: ["hang-cho-hom-nay"] });
+    },
+    onError: (error: AxiosError) => {
+      console.error("Lỗi check-in lịch hẹn:", error.response?.data || error.message);
+    },
+  });
+};
+
 // --- STAFF CRUD HOOKS ---
 export const useUpdateNhanSu = () => {
   const queryClient = useQueryClient();

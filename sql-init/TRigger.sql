@@ -141,7 +141,7 @@ BEGIN
             FROM NHAN_SU ns JOIN CHUC_VU cv ON ns.MACV = cv.MACV
             WHERE ns.MANS = :NEW.MANS;
 
-            IF v_tencv NOT IN (N'Thu ngân', N'Quản lý') THEN
+            IF v_tencv NOT IN (N'Thu ngân', N'Quản lý', N'Bác sĩ', N'Lễ tân', N'Kỹ thuật viên mắt kính') THEN
                 RAISE_APPLICATION_ERROR(-20003, 'LOI: Nhan vien khong co quyen tao Hoa Don!');
             END IF;
         EXCEPTION
@@ -432,6 +432,50 @@ WHEN (OLD.GIABAN != NEW.GIABAN)
 BEGIN
     INSERT INTO LICH_SU_GIA(MALSG, MASP, GIA_CU, GIA_MOI, NGUOI_CAP_NHAT)
     VALUES ('LG' || LPAD(SEQ_LICH_SU_GIA.NEXTVAL, 6, '0'), :NEW.MASP, :OLD.GIABAN, :NEW.GIABAN, USER);
+END;
+/
+
+-- 15. Tự sinh mã hàng chờ và số thứ tự
+CREATE OR REPLACE TRIGGER TRG_GEN_MAHC
+BEFORE INSERT ON HANG_CHO
+FOR EACH ROW
+DECLARE
+    v_seq NUMBER;
+    v_max_stt NUMBER;
+    v_start_of_day TIMESTAMP;
+    v_end_of_day TIMESTAMP;
+BEGIN
+    IF :NEW.MAHC IS NULL THEN
+        SELECT SEQ_HANG_CHO.NEXTVAL INTO v_seq FROM DUAL;
+        :NEW.MAHC := 'HC' || LPAD(v_seq, 6, '0');
+    END IF;
+
+    IF :NEW.SO_THU_TU IS NULL THEN
+        v_start_of_day := TRUNC(CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Ho_Chi_Minh' AS DATE));
+        v_end_of_day := v_start_of_day + 1 - 1/86400;
+
+        SELECT NVL(MAX(SO_THU_TU), 0) INTO v_max_stt
+        FROM HANG_CHO
+        WHERE GIO_DANG_KY >= v_start_of_day AND GIO_DANG_KY <= v_end_of_day;
+
+        :NEW.SO_THU_TU := v_max_stt + 1;
+    END IF;
+
+    IF :NEW.LOAI_KHACH IS NULL THEN
+        IF :NEW.MALH IS NOT NULL THEN
+            :NEW.LOAI_KHACH := N'Đặt lịch';
+        ELSE
+            :NEW.LOAI_KHACH := N'Walk-in';
+        END IF;
+    END IF;
+
+    IF :NEW.TRANG_THAI IS NULL THEN
+        :NEW.TRANG_THAI := N'Đang chờ';
+    END IF;
+
+    IF :NEW.TEN_KHACH IS NULL AND :NEW.MAKH IS NOT NULL THEN
+        SELECT HOTEN INTO :NEW.TEN_KHACH FROM KHACH_HANG WHERE MAKH = :NEW.MAKH;
+    END IF;
 END;
 /
 

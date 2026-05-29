@@ -42,7 +42,7 @@ public class HoSoThiLucServiceImpl implements HoSoThiLucService {
         hoSoThiLuc.setMaHoSo(generatedMaHs);
         hoSoThiLuc.setKhachHang(lichHen.getKhachHang());
         hoSoThiLuc.setNhanSu(lichHen.getNhanSu());
-        hoSoThiLuc.setNgayKham(LocalDate.now());
+        hoSoThiLuc.setNgayKham(LocalDate.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh")));
 
         if (hoSoThiLuc.getChiTietThiLucs() != null) {
             hoSoThiLuc.getChiTietThiLucs().forEach(chiTiet -> {

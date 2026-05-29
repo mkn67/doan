@@ -214,7 +214,7 @@ public class LichLamViecServiceImpl implements LichLamViecService {
         if (ngay != null) {
             danhSachLich = lichLamViecRepository.findByIsNghiFalseAndNgayLam(ngay);
         } else {
-            LocalDate today = LocalDate.now();
+            LocalDate today = LocalDate.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"));
             danhSachLich = lichLamViecRepository.findByIsNghiFalseAndNgayLamGreaterThanEqual(today);
         }
 

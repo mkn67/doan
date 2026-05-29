@@ -88,19 +88,18 @@ public class LichHenServiceImpl implements LichHenService {
             throw new BusinessRuleException("Khách hàng chưa được xác nhận lịch hẹn, không thể check-in!");
         }
 
-        LocalDate today = LocalDate.now();
-        if (lichHen.getNgayHen() == null || !lichHen.getNgayHen().toLocalDate().isEqual(today)) {
-            throw new BusinessRuleException("Lịch hẹn không phải hôm nay, không thể check-in");
-        }
+        java.time.ZoneId zoneId = java.time.ZoneId.of("Asia/Ho_Chi_Minh");
 
         // Cập nhật trạng thái lịch hẹn
         lichHen.setTrangThai(TrangThaiLichHen.DA_CHECK_IN);
         lichHenRepository.save(lichHen);
 
-        // Tạo Hàng Chờ mới (KHÔNG set MAHC và SO_THU_TU, để Trigger Oracle tự lo)
+        // Tạo Hàng Chờ mới (Sinh MAHC bằng Java, SO_THU_TU để Trigger tự lo)
+        String generatedMaHc = "HC" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase();
         HangCho hangCho = HangCho.builder()
+                .maHc(generatedMaHc)
                 .trangThai(TrangThaiHangCho.DANG_CHO)
-                .gioDangKy(LocalDateTime.now())
+                .gioDangKy(LocalDateTime.now(zoneId))
                 .khachHang(lichHen.getKhachHang())
                 .lichHen(lichHen)
                 .nhanSuPhanCong(lichHen.getNhanSu())

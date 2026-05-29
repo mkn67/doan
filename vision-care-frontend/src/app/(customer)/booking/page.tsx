@@ -149,9 +149,12 @@ export default function BookingPage() {
 
   /* prefill user */
   useEffect(() => {
-    if (user && !datChoNguoiThan) {
+    if (user && user.loaiTk === 'EXTERNAL' && !datChoNguoiThan) {
       setHoTen(user.hoTen || "");
       setSdt(user.sdt || "");
+    } else {
+      setHoTen("");
+      setSdt("");
     }
   }, [user, datChoNguoiThan]);
 
@@ -190,7 +193,7 @@ export default function BookingPage() {
     try {
       let finalMaKh = "";
 
-      if (user && !datChoNguoiThan) {
+      if (user && user.loaiTk === 'EXTERNAL' && !datChoNguoiThan) {
         finalMaKh = user.maKh || user.username || "";
       } else {
         // Khách vãng lai hoặc đặt cho người thân → tạo KH mới
@@ -265,7 +268,7 @@ export default function BookingPage() {
             <h1 className="text-xl font-bold text-gray-900">Đặt Lịch Khám Mắt</h1>
             <p className="text-xs text-gray-500 mt-0.5">Chọn bác sĩ, gói dịch vụ và khung giờ phù hợp</p>
           </div>
-          {mounted && user && (
+          {mounted && user && user.loaiTk === 'EXTERNAL' && (
             <div className="ml-auto flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               <span className="text-xs font-semibold text-emerald-700">{user.hoTen || user.username}</span>
@@ -316,7 +319,7 @@ export default function BookingPage() {
           <div className="p-6 md:p-8 space-y-8">
 
             {/* Guest banner */}
-            {mounted && !user && (
+            {mounted && (!user || user.loaiTk !== 'EXTERNAL') && (
               <div className="flex items-start gap-3 p-4 rounded-2xl text-sm"
                 style={{ background: "#eff6ff", border: "1px solid #bfdbfe" }}>
                 <div className="mt-0.5 text-blue-600 shrink-0"><IconLogin /></div>
@@ -324,11 +327,13 @@ export default function BookingPage() {
                   <p className="font-semibold text-blue-900 text-sm">Bạn đang đặt lịch với tư cách khách</p>
                   <p className="text-blue-700 text-xs mt-0.5">Vui lòng nhập thông tin chính xác để hệ thống liên hệ xác nhận lịch hẹn.</p>
                 </div>
-                <button onClick={() => router.push("/auth/login")}
-                  className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white"
-                  style={{ background: "#2563eb" }}>
-                  <IconLogin /> Đăng nhập
-                </button>
+                {!user && (
+                  <button onClick={() => router.push("/auth/login")}
+                    className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white"
+                    style={{ background: "#2563eb" }}>
+                    <IconLogin /> Đăng nhập
+                  </button>
+                )}
               </div>
             )}
 
@@ -337,7 +342,7 @@ export default function BookingPage() {
               <SectionTitle num={1} title="Thông tin người khám" color="#2196f3" />
 
               {/* Checkbox đặt hộ (chỉ hiện khi đã đăng nhập) */}
-              {mounted && user && (
+              {mounted && user && user.loaiTk === 'EXTERNAL' && (
                 <label className="flex items-center gap-2.5 cursor-pointer w-fit">
                   <input
                     type="checkbox"
@@ -357,48 +362,54 @@ export default function BookingPage() {
               )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Họ tên */}
-                <div className="space-y-1.5" data-error={errors.hoTen ? "1" : undefined}>
-                  <label className="text-xs font-semibold text-gray-600 flex items-center gap-1">
-                    Họ và tên <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Nguyễn Văn An"
-                    value={hoTen}
-                    onChange={(e) => { setHoTen(e.target.value); if (submitted) setErrors(v => ({ ...v, hoTen: "" })); }}
-                    className={`${inputBase} ${errors.hoTen ? inputError : inputOk}`}
-                  />
-                  {errors.hoTen && <p className="text-xs text-red-500 flex items-center gap-1"><span>⚠</span>{errors.hoTen}</p>}
-                </div>
-
-                {/* SĐT */}
-                <div className="space-y-1.5" data-error={errors.sdt ? "1" : undefined}>
-                  <label className="text-xs font-semibold text-gray-600 flex items-center gap-1">
-                    Số điện thoại <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="tel"
-                    placeholder="0912 345 678"
-                    value={sdt}
-                    onChange={(e) => { setSdt(e.target.value); if (submitted) setErrors(v => ({ ...v, sdt: "" })); }}
-                    className={`${inputBase} ${errors.sdt ? inputError : inputOk}`}
-                  />
-                  {errors.sdt && <p className="text-xs text-red-500 flex items-center gap-1"><span>⚠</span>{errors.sdt}</p>}
-                </div>
-
-                {/* Địa chỉ - chỉ hiện khi cần */}
-                {(!user || datChoNguoiThan) && (
-                  <div className="space-y-1.5 sm:col-span-2">
-                    <label className="text-xs font-semibold text-gray-600">Địa chỉ liên hệ</label>
-                    <input
-                      type="text"
-                      placeholder="Số nhà, đường, quận, tỉnh/thành phố..."
-                      value={diaChi}
-                      onChange={(e) => setDiaChi(e.target.value)}
-                      className={`${inputBase} ${inputOk}`}
-                    />
+                {mounted && user && user.loaiTk === 'EXTERNAL' && !datChoNguoiThan ? (
+                  <div className="p-4 rounded-2xl bg-blue-50/50 border border-blue-200 text-sm text-blue-800 col-span-1 sm:col-span-2">
+                    Bạn đang đặt lịch khám cho chính mình: <strong>{user.hoTen || user.username}</strong> - <strong>{user.sdt || "Chưa cập nhật SĐT"}</strong>
                   </div>
+                ) : (
+                  <>
+                    {/* Họ tên */}
+                    <div className="space-y-1.5" data-error={errors.hoTen ? "1" : undefined}>
+                      <label className="text-xs font-semibold text-gray-600 flex items-center gap-1">
+                        Họ và tên <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Nguyễn Văn An"
+                        value={hoTen}
+                        onChange={(e) => { setHoTen(e.target.value); if (submitted) setErrors(v => ({ ...v, hoTen: "" })); }}
+                        className={`${inputBase} ${errors.hoTen ? inputError : inputOk}`}
+                      />
+                      {errors.hoTen && <p className="text-xs text-red-500 flex items-center gap-1"><span>⚠</span>{errors.hoTen}</p>}
+                    </div>
+
+                    {/* SĐT */}
+                    <div className="space-y-1.5" data-error={errors.sdt ? "1" : undefined}>
+                      <label className="text-xs font-semibold text-gray-600 flex items-center gap-1">
+                        Số điện thoại <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="tel"
+                        placeholder="0912 345 678"
+                        value={sdt}
+                        onChange={(e) => { setSdt(e.target.value); if (submitted) setErrors(v => ({ ...v, sdt: "" })); }}
+                        className={`${inputBase} ${errors.sdt ? inputError : inputOk}`}
+                      />
+                      {errors.sdt && <p className="text-xs text-red-500 flex items-center gap-1"><span>⚠</span>{errors.sdt}</p>}
+                    </div>
+
+                    {/* Địa chỉ */}
+                    <div className="space-y-1.5 sm:col-span-2">
+                      <label className="text-xs font-semibold text-gray-600">Địa chỉ liên hệ</label>
+                      <input
+                        type="text"
+                        placeholder="Số nhà, đường, quận, tỉnh/thành phố..."
+                        value={diaChi}
+                        onChange={(e) => setDiaChi(e.target.value)}
+                        className={`${inputBase} ${inputOk}`}
+                      />
+                    </div>
+                  </>
                 )}
               </div>
             </section>

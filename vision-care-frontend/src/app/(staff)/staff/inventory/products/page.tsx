@@ -37,7 +37,7 @@ export default function ProductsPage() {
   const { user } = useAuth();
   const isAdmin = user?.roles?.includes("ROLE_ADMIN") || user?.maNhom === "NH04";
 
-  const ALLOWED_ROLES = ["ROLE_THU_KHO", "NH03"];
+  const ALLOWED_ROLES = ["ROLE_THU_KHO", "NH03", "ROLE_ADMIN", "NH04"];
   const hasAccess = () => {
     if (!user) return false;
     const userRoles = user?.roles || [];
@@ -376,7 +376,6 @@ export default function ProductsPage() {
               <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 text-xs font-bold uppercase tracking-wider">
                 <th className="py-4.5 px-6">Tên sản phẩm</th>
                 <th className="py-4.5 px-6 text-center w-36">Phân loại</th>
-                <th className="py-4.5 px-6">Tên Loại</th>
                 <th className="py-4.5 px-6">Nhà cung cấp</th>
                 <th className="py-4.5 px-6 text-right w-44">Giá bán lẻ</th>
                 <th className="py-4.5 px-6 text-center w-36">Tồn kho</th>
@@ -418,11 +417,6 @@ export default function ProductsPage() {
                             <Box className="w-3.5 h-3.5 text-blue-500" /> Vật tư
                           </span>
                         )}
-                      </td>
-                      <td className="py-4 px-6">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
-                          {sp.tenLoai || "Chưa phân loại"}
-                        </span>
                       </td>
                       <td className="py-4 px-6 text-slate-500 font-medium">
                         {sp.tenNhaCungCap || "Chưa gán đối tác"}

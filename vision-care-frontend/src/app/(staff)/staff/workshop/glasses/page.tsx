@@ -526,6 +526,7 @@ function WorkshopContent() {
                 <th className="p-4 pl-6">Mã XL</th>
                 <th className="p-4">Toa thuốc</th>
                 <th className="p-4">Tên khách hàng</th>
+                <th className="p-4">Thanh toán</th>
                 <th className="p-4">Kỹ thuật viên</th>
                 <th className="p-4">Trạng thái</th>
                 <th className="p-4">Hạn hoàn thành</th>
@@ -536,7 +537,7 @@ function WorkshopContent() {
             <tbody className="divide-y divide-slate-100 text-sm">
               {ordersLoading ? (
                 <tr>
-                  <td colSpan={8} className="p-12 text-center text-slate-400">
+                  <td colSpan={9} className="p-12 text-center text-slate-400">
                     <div className="flex flex-col items-center justify-center space-y-2">
                       <Loader2 className="w-8 h-8 animate-spin text-amber-600" />
                       <span>Đang đồng bộ dữ liệu phân xưởng...</span>
@@ -554,6 +555,21 @@ function WorkshopContent() {
                     </td>
                     <td className="p-4 font-semibold text-slate-900">
                       {item.tenKhachHang || "Khách Vãng Lai"}
+                    </td>
+                    <td className="p-4">
+                      {item.maHd ? (
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border ${
+                          item.trangThaiThanhToan === "Đã thanh toán" 
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-200" 
+                            : "bg-amber-50 text-amber-700 border-amber-200"
+                        }`}>
+                          {item.trangThaiThanhToan}
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border bg-rose-50 text-rose-700 border-rose-200">
+                          Chưa lập hóa đơn
+                        </span>
+                      )}
                     </td>
                     <td className="p-4">
                       {item.tenKyThuatVien ? (
@@ -590,7 +606,14 @@ function WorkshopContent() {
                         {item.trangThai === "Chờ xử lý" && (
                           <>
                             <Button
-                              onClick={() => triggerBatDau(item.maXl)}
+                              onClick={() => {
+                                if (item.trangThaiThanhToan !== "Đã thanh toán") {
+                                  if (!window.confirm("⚠️ Khách hàng CHƯA THANH TOÁN (hoặc chưa lập hóa đơn). Bạn có chắc chắn muốn bắt đầu gia công kính không?")) {
+                                    return;
+                                  }
+                                }
+                                triggerBatDau(item.maXl);
+                              }}
                               disabled={isActionPending}
                               size="sm"
                               className="bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs h-8 px-3 rounded-lg flex items-center gap-1 shadow-sm"
@@ -693,7 +716,7 @@ function WorkshopContent() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={8} className="p-16 text-center text-slate-400">
+                  <td colSpan={9} className="p-16 text-center text-slate-400">
                     <div className="flex flex-col items-center justify-center space-y-2">
                       <Info className="w-8 h-8 text-slate-300" />
                       <p className="text-sm font-semibold text-slate-500">Không tìm thấy đơn gia công nào thuộc trạng thái này</p>

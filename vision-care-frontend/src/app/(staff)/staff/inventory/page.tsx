@@ -117,7 +117,7 @@ export default function InventoryOverviewPage() {
       </div>
 
       {/* STATS GRID (Dữ liệu thật) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <StatsCard 
           title="Tổng Sản Phẩm" 
           value={spList.length.toString()} 
@@ -134,13 +134,6 @@ export default function InventoryOverviewPage() {
           description={canhBaoList.length > 0 ? "Yêu cầu bổ sung hàng gấp" : "Kho hàng ở mức an toàn"}
         />
         <StatsCard 
-          title="Nhà Cung Cấp" 
-          value={nccList.length.toString()} 
-          icon={<Truck className="w-6 h-6 text-emerald-600" />} 
-          bg="bg-emerald-50 text-emerald-600"
-          description="Đại lý & Đối tác liên kết"
-        />
-        <StatsCard 
           title="Phiếu Nhập (Tổng)" 
           value={pnList.length.toString()} 
           icon={<FileText className="w-6 h-6 text-violet-600" />} 
@@ -150,7 +143,7 @@ export default function InventoryOverviewPage() {
       </div>
 
       {/* ĐIỀU HƯỚNG NHANH */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Card 1: Danh Mục Vật Tư */}
         <Card 
           className="hover:shadow-xl hover:shadow-blue-500/5 hover:border-blue-500/30 transition-all duration-300 border-t-4 border-t-blue-600 group cursor-pointer bg-white rounded-2xl relative overflow-hidden" 
@@ -200,33 +193,6 @@ export default function InventoryOverviewPage() {
           <CardContent className="px-6 pb-6 pt-0">
             <div className="flex items-center text-sm font-bold text-emerald-600">
               Xem phiếu nhập 
-              <ArrowRight className="w-4 h-4 ml-1.5 group-hover:translate-x-2 transition-transform duration-300" />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Card 3: Nhà Cung Cấp */}
-        <Card 
-          className="hover:shadow-xl hover:shadow-purple-500/5 hover:border-purple-500/30 transition-all duration-300 border-t-4 border-t-purple-600 group cursor-pointer bg-white rounded-2xl relative overflow-hidden" 
-          onClick={() => router.push('/staff/inventory/suppliers')}
-        >
-          <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/5 rounded-full blur-2xl group-hover:bg-purple-500/10 transition-colors" />
-          <CardHeader className="p-6">
-            <div className="flex items-center justify-between">
-              <span className="p-3 bg-purple-50 text-purple-600 rounded-2xl group-hover:scale-110 transition-transform duration-300">
-                <Truck className="w-6 h-6" />
-              </span>
-            </div>
-            <CardTitle className="text-xl font-bold text-slate-800 group-hover:text-purple-600 transition-colors mt-4">
-              Nhà Cung Cấp
-            </CardTitle>
-            <CardDescription className="pt-2 text-slate-500 leading-relaxed text-sm">
-              Thông tin liên hệ các đại lý, hãng kính, hãng thuốc đối tác cung ứng vật tư.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="px-6 pb-6 pt-0">
-            <div className="flex items-center text-sm font-bold text-purple-600">
-              Tra cứu đối tác 
               <ArrowRight className="w-4 h-4 ml-1.5 group-hover:translate-x-2 transition-transform duration-300" />
             </div>
           </CardContent>

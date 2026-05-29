@@ -32,7 +32,7 @@ export default function BillingPage() {
   const [isMounted, setIsMounted] = useState(false);
   const [maNs, setMaNs] = useState("");
 
-  const ALLOWED_ROLES = ["ROLE_THU_NGAN", "NH02"];
+  const ALLOWED_ROLES = ["ROLE_THU_NGAN", "NH02", "ROLE_ADMIN", "NH04"];
   const hasAccess = () => {
     if (!user) return false;
     const userRoles = user?.roles || [];

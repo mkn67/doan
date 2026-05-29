@@ -88,12 +88,6 @@ const staffMenuItems = [
     icon: ClipboardList, 
     roles: ["ROLE_THU_KHO", "NH03"] 
   },
-  { 
-    name: "Nhà cung cấp", 
-    href: "/staff/inventory/suppliers", 
-    icon: Truck, 
-    roles: ["ROLE_THU_KHO", "NH03"] 
-  },
 
   // --- KỸ THUẬT VIÊN (TECHNICIAN) ---
   { 
@@ -261,7 +255,8 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
               allowedRoles = ["ROLE_KY_THUAT", "NH05"];
             }
 
-            const isAuthorized = allowedRoles === null || hasAccess(allowedRoles);
+            const isAdmin = user?.roles?.includes("ROLE_ADMIN") || user?.maNhom === "NH04";
+            const isAuthorized = allowedRoles === null || isAdmin || hasAccess(allowedRoles);
             if (!isAuthorized) {
               return (
                 <div className="flex flex-col items-center justify-center min-h-[50vh] bg-white rounded-3xl border border-slate-100 shadow-xl p-8 text-center max-w-xl mx-auto mt-10">

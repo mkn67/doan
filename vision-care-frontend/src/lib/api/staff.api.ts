@@ -65,6 +65,11 @@ export const staffApi = {
     return response.data;
   },
 
+  checkInLichHen: async (maLh: string | number): Promise<HangChoResponseDTO> => {
+    const response = await axiosClient.post<HangChoResponseDTO>(`/bookings/${maLh}/check-in`);
+    return response.data;
+  },
+
   // --- HÀNG CHỜ (MÀN HÌNH LỄ TÂN) ---
   themVaoHangCho: async (data: HangChoRequestDTO): Promise<HangChoResponseDTO> => {
     const response = await axiosClient.post<HangChoResponseDTO>('/hang-cho', data);

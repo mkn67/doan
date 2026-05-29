@@ -70,7 +70,7 @@ export default function CustomersPage() {
   const [selectedDetailCustomer, setSelectedDetailCustomer] = useState<Customer | null>(null);
   const [isEditing, setIsEditing] = useState(false);
 
-  const ALLOWED_ROLES = ["ROLE_LE_TAN", "NH06"];
+  const ALLOWED_ROLES = ["ROLE_LE_TAN", "NH06", "ROLE_ADMIN", "NH04"];
 
   useEffect(() => {
     setTimeout(() => {

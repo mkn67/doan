@@ -16,7 +16,7 @@ import { useRouter } from "next/navigation";
 
 import { useAuth } from "@/hooks/useAuth";
 import { useDatLich, useDanhSachDichVu, useBacSi } from "@/hooks/useClinic"; 
-import { useDanhSachLichHen, useSlotTrong, useUpdateTrangThaiLichHen } from "@/hooks/useStaff"; 
+import { useDanhSachLichHen, useSlotTrong, useUpdateTrangThaiLichHen, useCheckInLichHen } from "@/hooks/useStaff"; 
 import { useDanhSachKhachHang, useCreateKhachHang } from "@/hooks/useCustomer";
 import { LichHenFilterDTO, SlotTrongDTO, LichHenResponseDTO } from "@/types/staff";
 import { DatLichRequest, DichVuKhamResponse } from "@/types/clinic";
@@ -65,7 +65,7 @@ const bookingSchema = z.object({
 type BookingFormValues = z.infer<typeof bookingSchema>;
 
 // Allowed roles for this page: Receptionist Only
-const ALLOWED_ROLES = ["ROLE_LE_TAN", "NH06"];
+const ALLOWED_ROLES = ["ROLE_LE_TAN", "NH06", "ROLE_ADMIN", "NH04"];
 
 export default function AppointmentsPage() {
   const queryClient = useQueryClient();
@@ -104,6 +104,7 @@ export default function AppointmentsPage() {
   const datLichMutation = useDatLich();
   const updateStatusMutation = useUpdateTrangThaiLichHen();
   const createKhachHangMutation = useCreateKhachHang();
+  const checkInMutation = useCheckInLichHen();
 
   // Load existing customers for search
   const { data: searchCustomersResult } = useDanhSachKhachHang({ keyword: customerSearch || undefined });
@@ -248,6 +249,22 @@ export default function AppointmentsPage() {
       onSuccess: () => {
         alert("✅ Đã cập nhật trạng thái!");
         queryClient.invalidateQueries({ queryKey: ["lich-hen"] });
+      }
+    });
+  };
+
+  const handleCheckIn = (maLh: string | number) => {
+    if (isAdmin) {
+      alert("⚠️ Tài khoản Admin đang ở chế độ Chỉ đọc, không thể thực hiện check-in!");
+      return;
+    }
+    checkInMutation.mutate(maLh, {
+      onSuccess: () => {
+        alert("✅ Check-in thành công! Bệnh nhân đã được thêm vào hàng chờ.");
+        queryClient.invalidateQueries({ queryKey: ["lich-hen"] });
+      },
+      onError: (err: any) => {
+        alert("❌ Lỗi check-in: " + (err.response?.data?.message || err.message));
       }
     });
   };
@@ -560,8 +577,19 @@ export default function AppointmentsPage() {
                           <Check className="w-3.5 h-3.5" /> Duyệt
                         </Button>
                       )}
+
+                      {item.trangThai === "DA_XAC_NHAN" && (
+                        <Button
+                          size="sm"
+                          onClick={() => handleCheckIn(item.maLh)}
+                          className="h-8 px-2.5 text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg gap-1 transition-colors"
+                          disabled={isAdmin}
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5" /> Check-in
+                        </Button>
+                      )}
                       
-                      {item.trangThai !== "DA_HUY" && item.trangThai !== "DA_DEN" && (
+                      {item.trangThai !== "DA_HUY" && item.trangThai !== "DA_DEN" && item.trangThai !== "DA_CHECK_IN" && item.trangThai !== "HOAN_THANH" && (
                         <Button
                           size="sm"
                           onClick={() => handleUpdateStatus(item.maLh, "DA_HUY")}
@@ -572,7 +600,7 @@ export default function AppointmentsPage() {
                         </Button>
                       )}
 
-                      {item.trangThai !== "CHUA_XAC_NHAN" && item.trangThai !== "CHO_XAC_NHAN" && (item.trangThai === "DA_HUY" || item.trangThai === "DA_DEN") && (
+                      {(item.trangThai === "DA_HUY" || item.trangThai === "DA_DEN" || item.trangThai === "DA_CHECK_IN" || item.trangThai === "HOAN_THANH") && (
                         <span className="text-xs text-slate-400 italic font-semibold">Không có thao tác</span>
                       )}
                     </div>
