@@ -119,7 +119,7 @@ export const staffApi = {
   },
 
   getLichHenTrieuChung: async (): Promise<LichHenTrieuChungDTO[]> => {
-    const response = await axiosClient.get<LichHenTrieuChungDTO[]>("/lich-hen/trieu-chung");
+    const response = await axiosClient.get<LichHenTrieuChungDTO[]>("/bookings/trieu-chung");
     return response.data;
   },
 
@@ -127,7 +127,7 @@ export const staffApi = {
       const params: any = {};
       if (ngay) params.ngay = ngay;
       if (maNs) params.maNs = maNs;
-      const response = await axiosClient.get<SlotTrongDTO[]>("/lich-lam-viec/slot-trong", { params });
+      const response = await axiosClient.get<SlotTrongDTO[]>("/lich-lam-viec/nhan-su-ranh", { params });
       return response.data;
   },
 

@@ -32,6 +32,6 @@ public class DatLichRequestDTO {
     private LocalDate ngayHen;
 
     @NotNull(message = "Giờ hẹn không được để trống")
-    // Tùy theo Frontend gửi, thường là ISO nên không cần ép, nhưng an toàn thì để nguyên
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime gioHen;
 }

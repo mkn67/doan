@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { AxiosError } from "axios";
 import { clinicApi } from "@/lib/api/clinic.api";
+import axiosClient from "@/lib/axios";
 import {
   HoSoKhamRequest, HoSoKhamResponse,
   DichVuKhamRequest,
@@ -25,10 +26,8 @@ export const useBacSi = () => {
   return useQuery({
     queryKey: ["bacSiList"],
     queryFn: async () => {
-      // Gọi đúng cái API chuc-vu/CV06 (Bác sĩ) mà m vừa code lúc nãy
-      const res = await fetch("http://localhost:8080/api/v1/nhan-su/chuc-vu/CV06");
-      if (!res.ok) throw new Error("Lỗi fetch bác sĩ");
-      return res.json();
+      const response = await axiosClient.get("/nhan-su/chuc-vu/CV06");
+      return response.data;
     },
   });
 };
@@ -37,10 +36,8 @@ export const useGoiKham = () => {
   return useQuery({
     queryKey: ["goiKhamList"],
     queryFn: async () => {
-      // Giả định API m tạo bên Backend
-      const res = await fetch("http://localhost:8080/api/v1/goi-kham/active");
-      if (!res.ok) throw new Error("Lỗi fetch gói khám");
-      return res.json();
+      const response = await axiosClient.get("/goi-kham/active");
+      return response.data;
     },
   });
 };
