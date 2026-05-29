@@ -47,6 +47,25 @@ const employeeSchema = z.object({
   maChucVu: z.string().min(1, { message: "Vui lòng chọn chức vụ" }),
 })
 
+// Mapping between Nhóm Quyền (maNhom) and Chức Vụ (maChucVu) to synchronize them
+const nhomToChucVuMap: Record<string, string> = {
+  "BAC_SI": "CV06",   // Bác sĩ
+  "KY_THUAT": "CV07", // Kỹ thuật viên mắt kính
+  "THU_NGAN": "CV08", // Thu ngân
+  "THU_KHO": "CV09",  // Thủ kho
+  "ADMIN": "CV10",    // Quản lý
+  "LE_TAN": "CV11",   // Lễ tân
+};
+
+const chucVuToNhomMap: Record<string, string> = {
+  "CV06": "BAC_SI",
+  "CV07": "KY_THUAT",
+  "CV08": "THU_NGAN",
+  "CV09": "THU_KHO",
+  "CV10": "ADMIN",
+  "CV11": "LE_TAN",
+};
+
 export default function EmployeesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [editEmployee, setEditEmployee] = useState<NhanSuResponseDTO | null>(null);
@@ -240,7 +259,17 @@ export default function EmployeesPage() {
                   <FormField control={form.control} name="maNhom" render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-slate-700 font-medium">Nhóm quyền</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                      <Select 
+                        onValueChange={(val) => {
+                          field.onChange(val);
+                          const cvVal = nhomToChucVuMap[val];
+                          if (cvVal) {
+                            form.setValue("maChucVu", cvVal);
+                          }
+                        }} 
+                        defaultValue={field.value} 
+                        value={field.value}
+                      >
                         <FormControl><SelectTrigger className="bg-white rounded-xl h-11"><SelectValue placeholder="Chọn nhóm quyền" /></SelectTrigger></FormControl>
                         <SelectContent className="bg-white/95 backdrop-blur-xl rounded-xl border border-slate-100 shadow-lg">
                           {listNhomQuyen?.map((nhom) => (
@@ -254,7 +283,17 @@ export default function EmployeesPage() {
                    <FormField control={form.control} name="maChucVu" render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-slate-700 font-medium">Chức vụ thực tế</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                      <Select 
+                        onValueChange={(val) => {
+                          field.onChange(val);
+                          const nhomVal = chucVuToNhomMap[val];
+                          if (nhomVal) {
+                            form.setValue("maNhom", nhomVal);
+                          }
+                        }} 
+                        defaultValue={field.value} 
+                        value={field.value}
+                      >
                         <FormControl><SelectTrigger className="bg-white rounded-xl h-11"><SelectValue placeholder="Chọn chức vụ" /></SelectTrigger></FormControl>
                         <SelectContent className="bg-white/95 backdrop-blur-xl rounded-xl border border-slate-100 shadow-lg">
                           {listChucVu?.map((cv) => (

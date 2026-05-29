@@ -69,7 +69,12 @@ export const useUpdateProfile = () => {
 };
 
 export const useAuth = () => {
-  const [user, setUser] = useState<AuthUser | null>(() => {
+  // Initial state is `undefined` so server and initial client render match.
+  const [user, setUser] = useState<AuthUser | null | undefined>(undefined);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setLoading(true);
     if (typeof window !== "undefined") {
       const stored = localStorage.getItem("user");
       if (stored) {
@@ -78,15 +83,19 @@ export const useAuth = () => {
           if (parsed && !parsed.maKh && parsed.loaiTk === "EXTERNAL" && parsed.username?.toLowerCase().startsWith("kh")) {
             parsed.maKh = parsed.username.toUpperCase();
           }
-          return parsed;
+          setUser(parsed);
         } catch (e) {
           console.error("Failed to parse user from localStorage", e);
+          setUser(null);
         }
+      } else {
+        setUser(null);
       }
+    } else {
+      setUser(null);
     }
-    return null;
-  });
-  const [loading] = useState(false);
+    setLoading(false);
+  }, []);
 
   return { user, setUser, loading };
 };

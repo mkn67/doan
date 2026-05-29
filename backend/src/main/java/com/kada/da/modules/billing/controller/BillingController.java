@@ -19,8 +19,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.kada.da.modules.billing.domain.CtHoaDon;
+import com.kada.da.modules.billing.domain.CtHoaDonDv;
 import com.kada.da.modules.billing.domain.HoaDon;
 import com.kada.da.modules.billing.dto.HoaDonResponseDTO;
+import com.kada.da.modules.billing.dto.PendingInvoiceResponseDTO;
 import com.kada.da.modules.billing.dto.TaoHoaDonJsonRequest;
 import com.kada.da.modules.billing.dto.ThanhToanRequestDTO;
 import com.kada.da.modules.billing.mapper.HoaDonMapper;
@@ -48,6 +50,11 @@ public class BillingController {
     @GetMapping
     public ResponseEntity<List<HoaDonResponseDTO>> getDanhSachHoaDon() {
         return ResponseEntity.ok(hoaDonService.getAllHoaDon());
+    }
+
+    @GetMapping("/pending")
+    public ResponseEntity<List<PendingInvoiceResponseDTO>> getDanhSachChoLapHoaDon() {
+        return ResponseEntity.ok(hoaDonService.getPendingInvoices());
     }
 
     @PostMapping("/pay")
@@ -116,10 +123,23 @@ public class BillingController {
             document.add(new Paragraph("------------------------------------------------------------------"));
 
             // Chi tiết mặt hàng
-            if (hoaDon.getCtHoaDons() != null) {
+            if (hoaDon.getCtHoaDons() != null && !hoaDon.getCtHoaDons().isEmpty()) {
+                document.add(new Paragraph("SanPham / Glass Items:"));
                 for (CtHoaDon ct : hoaDon.getCtHoaDons()) {
                     String line = String.format("- %s | SL: %d | DG: %s",
                             ct.getLoHang().getSanPham().getTenSp(),
+                            ct.getSoLuong(),
+                            ct.getDonGia());
+                    document.add(new Paragraph(line));
+                }
+            }
+
+            // Chi tiết dịch vụ
+            if (hoaDon.getCtHoaDonDvs() != null && !hoaDon.getCtHoaDonDvs().isEmpty()) {
+                document.add(new Paragraph("Dich Vu / Services:"));
+                for (CtHoaDonDv ct : hoaDon.getCtHoaDonDvs()) {
+                    String line = String.format("- %s | SL: %d | DG: %s",
+                            ct.getDichVuKham().getTenDv(),
                             ct.getSoLuong(),
                             ct.getDonGia());
                     document.add(new Paragraph(line));

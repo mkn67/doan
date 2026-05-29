@@ -5,62 +5,115 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { 
-  CalendarDays, AlertTriangle, User, Stethoscope, 
-  Calendar, Clock, Check, Sparkles, LogIn, ArrowRight 
+  CalendarDays, User, Stethoscope, 
+  Calendar, Clock, Check, Sparkles, LogIn
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useDatLich, useBacSi, useGoiKham } from "@/hooks/useClinic"; 
+import { useSlotTrong } from "@/hooks/useStaff";
+import { SlotTrongDTO } from "@/types/staff";
+import { useCreateKhachHang } from "@/hooks/useCustomer";
 
 export default function BookingPage() {
   const router = useRouter();
   const { user } = useAuth();
   const { mutateAsync, isPending } = useDatLich();
+  const createKhachHangMutation = useCreateKhachHang();
   
   // Lấy data từ Backend
   const { data: listBacSi, isLoading: loadingBs } = useBacSi(); 
   const { data: listGoiKham, isLoading: loadingGoi } = useGoiKham();
 
+  // Form states
+  const [hoTen, setHoTen] = useState("");
+  const [sdt, setSdt] = useState("");
+  const [diaChi, setDiaChi] = useState("");
+  const [datChoNguoiThan, setDatChoNguoiThan] = useState(false);
+
   const [maNs, setMaNs] = useState("");
   const [maGoi, setMaGoi] = useState("");
   const [ngayHen, setNgayHen] = useState("");
   const [gioHen, setGioHen] = useState("");
-  const [mounted, setMounted] = useState(false);
 
-  // Hydration guard: useAuth() hook data is not available during SSR
+  const [mounted, setMounted] = useState(false);
+  const [minDate, setMinDate] = useState("");
+
+  // Fetch slots
+  const { data: slotsTrong, isLoading: loadingSlots } = useSlotTrong(ngayHen, maNs);
+
+  // Prefill when user changes
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setMounted(true);
+    if (user) {
+      setHoTen(user.hoTen || "");
+      setSdt(user.sdt || "");
+    }
+  }, [user]);
+
+  // FIX: Gộp logic và dùng setTimeout để đẩy việc set state Client sang hàng đợi bất đồng bộ
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setMounted(true);
+      setMinDate(new Date().toISOString().split('T')[0]);
+    }, 0);
+
+    return () => clearTimeout(timer);
   }, []);
 
-  const isKhachHang = !!user?.maKh || (user?.loaiTk === "EXTERNAL" && user?.username?.toLowerCase().startsWith("kh"));
-  const showBookingContent = mounted && isKhachHang;
+  const showBookingContent = true;
 
   const handleSubmit = async () => {
-    if (!isKhachHang) {
-      alert("Vui lòng đăng nhập bằng tài khoản khách hàng để đặt lịch!");
-      router.push("/auth/login");
+    if (!hoTen.trim() || !sdt.trim()) {
+      alert("Vui lòng điền đầy đủ Họ và tên, Số điện thoại người khám!");
       return;
     }
 
     if (!maNs || !maGoi || !ngayHen || !gioHen) {
-      alert("Vui lòng chọn đầy đủ thông tin!");
+      alert("Vui lòng chọn đầy đủ thông tin bác sĩ, gói khám, ngày và giờ!");
       return;
     }
 
     try {
-      const userMaKh = user?.maKh || (user?.username?.toLowerCase().startsWith("kh") ? user.username.toUpperCase() : "");
+      let finalMaKh = "";
+
+      if (user && !datChoNguoiThan) {
+        finalMaKh = user.maKh || "";
+      } else {
+        // Đặt cho người thân hoặc là Khách vãng lai chưa đăng nhập -> tạo khách hàng mới
+        const newKh = await createKhachHangMutation.mutateAsync({
+          hoTen: hoTen.trim(),
+          sdt: sdt.trim(),
+          diaChi: diaChi.trim() || undefined,
+        });
+        finalMaKh = newKh.maKh;
+      }
+
       const gioHenFull = `${ngayHen}T${gioHen}:00`;
       await mutateAsync({
-        maKh: userMaKh,
+        maKh: finalMaKh,
         maNs,
         maGoi,
         ngayHen,
         gioHen: gioHenFull,
       });
-      alert("Đặt lịch thành công!");
-      router.push("/profile/appointments");
-    } catch {
-      alert("Đặt lịch thất bại!");
+
+      alert("🎯 Đặt lịch thành công!");
+      if (user) {
+        router.push("/profile/appointments");
+      } else {
+        // Khách vãng lai
+        alert("Cảm ơn bạn đã đặt lịch khám mắt! Vui lòng đến phòng khám đúng giờ hẹn.");
+        setMaNs("");
+        setMaGoi("");
+        setNgayHen("");
+        setGioHen("");
+        setHoTen("");
+        setSdt("");
+        setDiaChi("");
+        setDatChoNguoiThan(false);
+      }
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || (err instanceof Error ? err.message : String(err));
+      alert("Đặt lịch thất bại: " + msg);
     }
   };
 
@@ -68,6 +121,14 @@ export default function BookingPage() {
     if (!name) return "BS";
     const parts = name.trim().split(" ");
     return parts.pop()?.substring(0, 2).toUpperCase() || "BS";
+  };
+
+  const formatSlotTime = (val: number) => {
+    const hour = Math.floor(val);
+    const minutes = Math.round((val - hour) * 60);
+    const hh = String(hour).padStart(2, "0");
+    const mm = String(minutes).padStart(2, "0");
+    return `${hh}:${mm}`;
   };
 
   return (
@@ -95,34 +156,107 @@ export default function BookingPage() {
               <p className="text-sm font-medium text-slate-400">Chọn lịch, bác sĩ chuyên môn và gói dịch vụ mong muốn</p>
             </div>
           </div>
-          {showBookingContent && (
-            <div className="bg-slate-100 px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 flex items-center gap-2 max-w-fit">
-              <span className="w-2 h-2 bg-emerald-500 rounded-full animate-ping"></span>
-              Khách hàng: <span className="text-slate-800 font-bold">{user?.hoTen || user?.username}</span>
-            </div>
-          )}
+            {mounted && user && (
+              <div suppressHydrationWarning className="bg-slate-100 px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 flex items-center gap-2 max-w-fit">
+                <span className="w-2 h-2 bg-emerald-500 rounded-full animate-ping"></span>
+                Tài khoản: <span className="text-slate-800 font-bold">{user?.hoTen || user?.username}</span>
+              </div>
+            )}
         </div>
 
-        {/* Warning if not logged in */}
-        {!showBookingContent && (
-          <div className="flex items-start gap-4 text-amber-900 bg-amber-50/50 border border-amber-200/60 p-5 rounded-2xl animate-fade-in relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 rounded-full blur-xl pointer-events-none" />
-            <AlertTriangle className="w-6 h-6 text-amber-600 shrink-0 mt-0.5" />
-            <div className="text-xs md:text-sm space-y-2">
-              <p className="font-bold text-amber-950">Yêu cầu tài khoản khách hàng</p>
-              <p className="text-amber-800 font-medium">Bạn cần đăng nhập tài khoản khách hàng để có thể hoàn tất quy trình đặt lịch và đồng bộ hồ sơ bệnh án.</p>
-              <Button 
-                onClick={() => router.push("/auth/login")} 
-                className="mt-2 font-bold bg-amber-600 hover:bg-amber-700 text-white text-xs h-9 px-4 rounded-xl gap-1.5 shadow-sm transition-all hover:scale-[1.02]"
-              >
-                <LogIn className="w-4 h-4" /> Đăng nhập ngay
-              </Button>
+        {/* Info banner if not logged in */}
+          {!user && (
+            <div className="flex items-start gap-4 text-blue-900 bg-blue-50/50 border border-blue-200/60 p-5 rounded-2xl animate-fade-in relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full blur-xl pointer-events-none" />
+              <User className="w-6 h-6 text-blue-600 shrink-0 mt-0.5" />
+              <div className="text-xs md:text-sm space-y-2">
+                <p className="font-bold text-blue-950">Đặt lịch với tư cách Khách vãng lai</p>
+                <p className="text-blue-800 font-medium">Bạn có thể đặt lịch mà không cần đăng nhập. Vui lòng nhập thông tin liên lạc chính xác ở phần bên dưới để hệ thống lưu hồ sơ bệnh án.</p>
+                <Button 
+                  onClick={() => router.push("/auth/login")} 
+                  className="mt-2 font-bold bg-blue-600 hover:bg-blue-700 text-white text-xs h-9 px-4 rounded-xl gap-1.5 shadow-sm transition-all hover:scale-[1.02]"
+                >
+                  <LogIn className="w-4 h-4" /> Đăng nhập để đồng bộ hồ sơ
+                </Button>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
         <div className={`space-y-8 ${!showBookingContent ? "opacity-60 pointer-events-none select-none" : ""}`}>
           
+          {/* STEP 0: THÔNG TIN KHÁCH HÀNG */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <span className="flex items-center justify-center w-7 h-7 bg-blue-100 text-blue-600 font-bold rounded-lg text-xs">0</span>
+              <label className="text-sm font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                <User className="w-4.5 h-4.5 text-slate-400" /> Thông tin người khám
+              </label>
+            </div>
+
+            {mounted && user && (
+              <div className="flex items-center gap-2.5 mb-2">
+                <input
+                  type="checkbox"
+                  id="datChoNguoiThan"
+                  checked={datChoNguoiThan}
+                  onChange={(e) => {
+                    setDatChoNguoiThan(e.target.checked);
+                    if (!e.target.checked) {
+                      setHoTen(user.hoTen || "");
+                      setSdt(user.sdt || "");
+                      setDiaChi("");
+                    } else {
+                      setHoTen("");
+                      setSdt("");
+                      setDiaChi("");
+                    }
+                  }}
+                  className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 h-4 w-4"
+                />
+                <label htmlFor="datChoNguoiThan" className="text-xs font-bold text-slate-600 cursor-pointer">
+                  Đặt lịch cho người thân / Đặt hộ
+                </label>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 border p-4 rounded-2xl">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-500">Họ và tên người khám <span className="text-red-500">*</span></label>
+                <input
+                  type="text"
+                  placeholder="Nguyễn Văn A..."
+                  value={hoTen}
+                  onChange={(e) => setHoTen(e.target.value)}
+                  className="w-full h-10 px-4 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white font-semibold text-slate-800 text-sm transition-all"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-500">Số điện thoại <span className="text-red-500">*</span></label>
+                <input
+                  type="text"
+                  placeholder="0912345678..."
+                  value={sdt}
+                  onChange={(e) => setSdt(e.target.value)}
+                  className="w-full h-10 px-4 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white font-semibold text-slate-800 text-sm transition-all"
+                />
+              </div>
+
+              {mounted && (!user || datChoNguoiThan) && (
+                <div className="space-y-1.5 sm:col-span-2">
+                  <label className="text-xs font-bold text-slate-500">Địa chỉ liên hệ</label>
+                  <input
+                    type="text"
+                    placeholder="Quận 1, TP.HCM..."
+                    value={diaChi}
+                    onChange={(e) => setDiaChi(e.target.value)}
+                    className="w-full h-10 px-4 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white font-semibold text-slate-800 text-sm transition-all"
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* STEP 1: CHỌN BÁC SĨ */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
@@ -253,9 +387,12 @@ export default function BookingPage() {
                     id="ngayHen"
                     type="date"
                     disabled={!showBookingContent}
-                    min={new Date().toISOString().split('T')[0]} // Chặn chọn ngày trong quá khứ
+                    min={minDate || undefined}
                     value={ngayHen}
-                    onChange={(e) => setNgayHen(e.target.value)}
+                    onChange={(e) => {
+                      setNgayHen(e.target.value);
+                      setGioHen("");
+                    }}
                     className="w-full h-11 px-4 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white font-semibold text-slate-800 text-sm transition-all"
                   />
                 </div>
@@ -263,19 +400,47 @@ export default function BookingPage() {
 
               {/* Giờ */}
               <div className="space-y-1.5">
-                <label htmlFor="gioHen" className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <Clock className="w-4 h-4 text-slate-400" /> Giờ hẹn khám <span className="text-red-500 font-bold">*</span>
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <Clock className="w-4 h-4 text-slate-400" /> Khung giờ trống <span className="text-red-500 font-bold">*</span>
                 </label>
-                <div className="relative">
-                  <input
-                    id="gioHen"
-                    type="time"
-                    disabled={!showBookingContent}
-                    value={gioHen}
-                    onChange={(e) => setGioHen(e.target.value)}
-                    className="w-full h-11 px-4 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white font-semibold text-slate-800 text-sm transition-all"
-                  />
-                </div>
+                {!ngayHen || !maNs ? (
+                  <div className="text-xs text-slate-400 font-semibold p-3.5 bg-slate-50 border rounded-xl">
+                    Vui lòng chọn bác sĩ và ngày khám trước.
+                  </div>
+                ) : loadingSlots ? (
+                  <div className="text-xs text-blue-600 font-semibold p-3.5 bg-blue-50/50 border border-blue-100 rounded-xl animate-pulse">
+                    Đang tìm khung giờ trống...
+                  </div>
+                ) : slotsTrong && slotsTrong.length > 0 ? (
+                  <div className="grid grid-cols-3 gap-2">
+                    {slotsTrong.map((slot: SlotTrongDTO, idx: number) => {
+                      const slotStr = formatSlotTime(slot.gioBatDau);
+                      const isSelected = gioHen === slotStr;
+                      const isBooked = slot.trangThaiSlot === "Đã đặt";
+                      return (
+                        <button
+                          key={idx}
+                          type="button"
+                          disabled={isBooked}
+                          onClick={() => setGioHen(slotStr)}
+                          className={`p-2.5 rounded-xl border text-xs font-bold transition-all ${
+                            isBooked
+                              ? "bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed line-through"
+                              : isSelected
+                              ? "bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-500/10"
+                              : "bg-white hover:border-slate-300 hover:bg-slate-50 text-slate-700"
+                          }`}
+                        >
+                          {formatSlotTime(slot.gioBatDau)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-xs text-rose-500 font-bold p-3.5 bg-rose-50 border border-rose-100 rounded-xl">
+                    Không có khung giờ nào khả dụng cho ngày này. Vui lòng chọn ngày khác!
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -286,7 +451,7 @@ export default function BookingPage() {
         <div className="border-t border-slate-100 pt-6">
           <Button
             onClick={handleSubmit}
-            disabled={isPending || (showBookingContent && (!maNs || !maGoi || !ngayHen || !gioHen))}
+            disabled={isPending || (showBookingContent && (!hoTen.trim() || !sdt.trim() || !maNs || !maGoi || !ngayHen || !gioHen))}
             className="w-full h-12 text-base font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-2xl shadow-lg shadow-blue-500/10 hover:shadow-blue-500/25 transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-40 disabled:hover:scale-100 disabled:shadow-none gap-2"
           >
             {isPending ? (
@@ -294,10 +459,6 @@ export default function BookingPage() {
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                 Đang gửi yêu cầu...
               </div>
-            ) : !showBookingContent ? (
-              <>
-                Đăng nhập để đặt lịch <ArrowRight className="w-5 h-5" />
-              </>
             ) : (
               <>
                 Xác nhận đặt lịch khám <Check className="w-5 h-5 stroke-[2.5]" />

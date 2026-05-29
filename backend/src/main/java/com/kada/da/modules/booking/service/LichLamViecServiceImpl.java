@@ -209,9 +209,21 @@ public class LichLamViecServiceImpl implements LichLamViecService {
     }
 
     @Override
-    public List<SlotTrongDto> getDanhSachSlotTrong() {
-        LocalDate today = LocalDate.now();
-        List<LichLamViec> danhSachLich = lichLamViecRepository.findByIsNghiFalseAndNgayLamGreaterThanEqual(today);
+    public List<SlotTrongDto> getDanhSachSlotTrong(LocalDate ngay, String maNs) {
+        List<LichLamViec> danhSachLich;
+        if (ngay != null) {
+            danhSachLich = lichLamViecRepository.findByIsNghiFalseAndNgayLam(ngay);
+        } else {
+            LocalDate today = LocalDate.now();
+            danhSachLich = lichLamViecRepository.findByIsNghiFalseAndNgayLamGreaterThanEqual(today);
+        }
+
+        if (maNs != null && !maNs.trim().isEmpty()) {
+            danhSachLich = danhSachLich.stream()
+                    .filter(llv -> llv.getNhanSu() != null && llv.getNhanSu().getMaNs().equals(maNs))
+                    .collect(Collectors.toList());
+        }
+
         List<LichHen> tatCaLichHen = lichHenRepository.findByTrangThaiNot(TrangThaiLichHen.DA_HUY); // dùng enum
 
         return danhSachLich.stream()

@@ -101,3 +101,14 @@ export interface ThongKeTongQuanDTO {
   tongDoanhThu: number
   tyLeTangTruongDoanhThu?: number
 }
+
+export interface PendingInvoiceResponseDTO {
+  maKh: string
+  tenKhachHang: string
+  sdtKhachHang?: string
+  maHoSo?: string
+  ngayKham?: string
+  maDon?: string
+  ngayKeDon?: string
+  loaiKham: string // e.g. "Khám mắt", "Đơn kính/thuốc", "Khám & Đơn kính/thuốc"
+}

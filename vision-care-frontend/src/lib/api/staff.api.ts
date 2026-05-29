@@ -118,8 +118,10 @@ export const staffApi = {
     return response.data;
   },
 
-  getSlotTrong: async (ngay?: string): Promise<SlotTrongDTO[]> => {
-      const params = ngay ? { ngay } : {};
+  getSlotTrong: async (ngay?: string, maNs?: string): Promise<SlotTrongDTO[]> => {
+      const params: any = {};
+      if (ngay) params.ngay = ngay;
+      if (maNs) params.maNs = maNs;
       const response = await axiosClient.get<SlotTrongDTO[]>("/lich-lam-viec/slot-trong", { params });
       return response.data;
   },

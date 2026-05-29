@@ -30,10 +30,14 @@ public class TaiKhoanMapper {
     public static TaiKhoanResponseDTO toResponse(TaiKhoan taiKhoan) {
         if (taiKhoan == null)
             return null;
+        String loai = taiKhoan.getLoaiTk();
+        if (taiKhoan.getDanhSachNhom() != null && !taiKhoan.getDanhSachNhom().isEmpty()) {
+            loai = taiKhoan.getDanhSachNhom().get(0).getMaNhom();
+        }
         return TaiKhoanResponseDTO.builder()
                 .maTk(taiKhoan.getMaTk())
                 .username(taiKhoan.getUsername())
-                .loaiTk(taiKhoan.getLoaiTk())
+                .loaiTk(loai)
                 .trangThai(taiKhoan.getTrangThai())
                 .build();
     }

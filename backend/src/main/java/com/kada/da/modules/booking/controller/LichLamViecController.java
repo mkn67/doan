@@ -147,4 +147,12 @@ public class LichLamViecController {
         lichLamViecService.deleteLichLamViec(maLlv);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/slot-trong")
+    public ResponseEntity<List<com.kada.da.modules.booking.dto.SlotTrongDto>> getDanhSachSlotTrong(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate ngay,
+            @RequestParam(required = false) String maNs) {
+        log.info("API: Lấy danh sách slot trống. Ngày: {}, Bác sĩ: {}", ngay, maNs);
+        return ResponseEntity.ok(lichLamViecService.getDanhSachSlotTrong(ngay, maNs));
+    }
 }

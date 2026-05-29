@@ -5,6 +5,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,17 +17,17 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.kada.da.modules.billing.Enum.TrangThaiHoaDon;
+import com.kada.da.modules.billing.domain.HoaDon;
+import com.kada.da.modules.billing.repository.HoaDonRepository;
+import com.kada.da.modules.booking.domain.LichHen;
+import com.kada.da.modules.booking.repository.LichHenRepository;
 import com.kada.da.modules.customer.domain.KhachHang;
 import com.kada.da.modules.customer.dto.KhachHangResponseDTO;
 import com.kada.da.modules.customer.mapper.KhachHangMapper;
 import com.kada.da.modules.customer.service.KhachHangService;
-import com.kada.da.modules.examination.repository.HoSoThiLucRepository;
-import com.kada.da.modules.booking.repository.LichHenRepository;
-import com.kada.da.modules.billing.repository.HoaDonRepository;
 import com.kada.da.modules.examination.domain.HoSoThiLuc;
-import com.kada.da.modules.booking.domain.LichHen;
-import com.kada.da.modules.billing.domain.HoaDon;
-import com.kada.da.modules.billing.Enum.TrangThaiHoaDon;
+import com.kada.da.modules.examination.repository.HoSoThiLucRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -105,6 +106,7 @@ public class CustomerController {
 
     // 2. Lấy thông tin chi tiết 1 khách hàng (Trả về Entity hoặc DTO tùy ông giáo)
     @GetMapping("/{maKh}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LE_TAN') or (hasRole('CUSTOMER') and #maKh.equalsIgnoreCase(authentication.name))")
     public ResponseEntity<KhachHangResponseDTO> layKhachHangTheoId(@PathVariable("maKh") String maKh) {
         KhachHang kh = khachHangService.timKhachHangTheoId(maKh);
         return ResponseEntity.ok(mapToResponseDTO(kh));

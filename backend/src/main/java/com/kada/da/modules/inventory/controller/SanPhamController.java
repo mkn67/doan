@@ -22,6 +22,7 @@ import com.kada.da.modules.inventory.dto.SanPhamResponseDTO;
 import com.kada.da.modules.inventory.mapper.SanPhamMapper;
 import com.kada.da.modules.inventory.repository.LoaiSanPhamRepository;
 import com.kada.da.modules.inventory.service.SanPhamService;
+import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
 
@@ -29,6 +30,7 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/api/v1/san-pham")
 @PreAuthorize("hasAnyRole('ADMIN', 'THU_KHO', 'BAC_SI')")
 @RequiredArgsConstructor
+@Transactional
 public class SanPhamController {
 
     private final SanPhamService sanPhamService;

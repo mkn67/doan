@@ -70,6 +70,13 @@ public class HoaDon {
     )
     private List<CtHoaDon> ctHoaDons;
 
+    @OneToMany(
+        mappedBy = "hoaDon",
+        cascade = CascadeType.ALL,
+        orphanRemoval = true
+    )
+    private List<CtHoaDonDv> ctHoaDonDvs;
+
     @OneToMany(mappedBy = "hoaDon", cascade = CascadeType.ALL)
     private List<ThanhToan> danhSachThanhToan;
 }

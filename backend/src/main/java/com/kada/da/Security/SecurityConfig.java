@@ -70,19 +70,21 @@ public class SecurityConfig {
                         "/api/v1/auth/forgot-password",
                         // 🔥 2 DÒNG NÀY LÀ CHÌA KHÓA MỞ DROPDOWN CHO KHÁCH ĐẶT LỊCH NÀY 🔥
                         "/api/v1/nhan-su/chuc-vu/**",
-                        "/api/v1/goi-kham/active"
+                        "/api/v1/goi-kham/active",
+                        // Public slot lookup for booking pages
+                        "/api/v1/lich-lam-viec/slot-trong"
                 ).permitAll()
                 // --- BẮT ĐẦU PHÂN QUYỀN CHUẨN THEO DB ---
 
-                // Kho hàng & Sản phẩm: Dành cho Thủ kho và Quản lý
+                // Kho hàng & Sản phẩm: Dành cho Thủ kho, Quản lý và Bác sĩ (để kê đơn thuốc/kính)
                 .requestMatchers("/api/v1/san-pham/**", "/api/v1/kho-hang/**")
-                .hasAnyRole("THU_KHO", "ADMIN")
+                .hasAnyRole("THU_KHO", "ADMIN", "BAC_SI")
                 // Lịch hẹn: Khách hàng xem lịch của họ, Lễ tân xếp lịch, Bác sĩ và Quản lý
                 .requestMatchers("/api/v1/lich-hen/**")
                 .hasAnyRole("BAC_SI", "LE_TAN", "ADMIN", "CUSTOMER")
                 // Khách hàng: Lễ tân tiếp nhận và Quản lý
                 .requestMatchers("/api/v1/khach-hang/**")
-                .hasAnyRole("LE_TAN", "ADMIN")
+                .hasAnyRole("LE_TAN", "ADMIN", "CUSTOMER")
                 // Khám bệnh: Bác sĩ trực tiếp khám và Quản lý theo dõi
                 .requestMatchers("/api/v1/kham-benh/**")
                 .hasAnyRole("BAC_SI", "ADMIN")

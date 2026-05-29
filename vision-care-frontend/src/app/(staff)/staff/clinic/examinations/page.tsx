@@ -2,24 +2,10 @@
 
 import "@/app/globals.css";
 import * as React from "react";
-import { Suspense, useState } from "react";
-import { useForm, useFieldArray } from "react-hook-form";
+import { Suspense, useState, useEffect } from "react";
+import { useForm, useFieldArray, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { 
-  Activity, 
-  Eye, 
-  ArrowRight, 
-  Loader2, 
-  Upload, 
-  Sparkles, 
-  History,
-  Printer,
-  Trash2,
-  Plus,
-  Stethoscope,
-  ShieldAlert
-} from "lucide-react";
 import { useSearchParams, useRouter } from "next/navigation"; 
 import { useReactToPrint } from "react-to-print";
 
@@ -48,13 +34,27 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { toast } from "sonner";
 import { HoSoKhamRequest, HoSoKhamResponse, ChiTietThiLuc } from "@/types/clinic";
 import { KhachHangResponseDTO } from "@/types/customer";
 import { SanPhamResponse } from "@/types/inventory";
 import { HangChoHomNayDTO } from "@/types/staff";
-import { toast } from "sonner";
 
-
+// FIX: Đổi tên History thành HistoryIcon để né bẫy trùng tên đối tượng global window của trình duyệt
+import { 
+  Activity, 
+  Eye, 
+  ArrowRight, 
+  Loader2, 
+  Upload, 
+  Sparkles, 
+  History as HistoryIcon,
+  Printer,
+  Trash2,
+  Plus,
+  Stethoscope,
+  ShieldAlert
+} from "lucide-react";
 
 const examSchema = z.object({
   maKh: z.string().min(1, "Vui lòng nhập mã khách hàng"),
@@ -305,11 +305,8 @@ function EyeRefractionMap({
 // =========================================================
 function ExaminationContent() {
   const { user, loading: authLoading } = useAuth();
-  const [isMounted, setIsMounted] = React.useState(false);
-  
-  React.useEffect(() => {
-    setIsMounted(true);
-  }, []);
+  const [isMounted, setIsMounted] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const ALLOWED_ROLES = ["ROLE_BAC_SI", "NH01"];
   const hasAccess = () => {
@@ -325,10 +322,7 @@ function ExaminationContent() {
   const patientIdFromUrl = searchParams.get("makh") || "";
 
   const [isManualInput, setIsManualInput] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-
 
   const { data: queueData } = useHangChoHomNay();
   const queueList = queueData || [];
@@ -364,13 +358,15 @@ function ExaminationContent() {
     matTraiSph, matTraiCyl, matTraiAx,
     matPhaiSph, matPhaiCyl, matPhaiAx,
     pd, maKhValue
-  ] = form.watch([
-    "matTraiSph", "matTraiCyl", "matTraiAx",
-    "matPhaiSph", "matPhaiCyl", "matPhaiAx",
-    "pd", "maKh"
-  ]);
+  ] = useWatch({
+    control: form.control,
+    name: [
+      "matTraiSph", "matTraiCyl", "matTraiAx",
+      "matPhaiSph", "matPhaiCyl", "matPhaiAx",
+      "pd", "maKh"
+    ]
+  });
   
-  // Call useKhachHang for full card rendering
   const { data: customerDetails, isLoading: isCustomerLoading } = useKhachHang(maKhValue);
   const { data: historyData, isLoading: isHistoryLoading } = useLichSuKham(maKhValue);
   const historyList = historyData?.data || [];
@@ -403,22 +399,31 @@ function ExaminationContent() {
 
   const maHoSoFromUrl = searchParams.get("maHoSo") || "";
 
-  React.useEffect(() => {
-    if (typeof window !== "undefined") {
-      const userStr = localStorage.getItem("user");
-      if (userStr) {
-        try {
-          const user = JSON.parse(userStr);
-          form.setValue("maNs", user.username || ""); 
-          if (user.roles?.includes("ROLE_ADMIN") || user.maNhom === "NH04") {
-            setIsAdmin(true);
+  // FIX 1: Chuyển luồng set state đồng bộ sang hàng chờ vĩ mô setTimeout để dẹp sạch lỗi cascading render
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsMounted(true);
+      
+      if (typeof window !== "undefined") {
+        const userStr = localStorage.getItem("user");
+        if (userStr) {
+          try {
+            const parsedUser = JSON.parse(userStr);
+            form.setValue("maNs", parsedUser.username || ""); 
+            if (parsedUser.roles?.includes("ROLE_ADMIN") || parsedUser.maNhom === "NH04") {
+              setIsAdmin(true);
+            }
+          } catch (err) {
+            console.error("Lỗi đồng bộ tài khoản", err);
           }
-        } catch {}
+        }
       }
-    }
+    }, 0);
+
+    return () => clearTimeout(timer);
   }, [form]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (maHoSoFromUrl) {
       fetch(`/api/v1/examinations/${maHoSoFromUrl}`)
         .then((res) => {
@@ -596,7 +601,7 @@ function ExaminationContent() {
               onClick={() => setIsHistoryDialogOpen(true)}
               className="h-10 px-4 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-xl flex items-center gap-2 text-sm font-semibold border border-slate-200 shadow-sm transition-colors"
             >
-              <History className="w-4.5 h-4.5 text-slate-500" />
+              <HistoryIcon className="w-4.5 h-4.5 text-slate-500" />
               <span>Lịch sử & So sánh ({historyList.length})</span>
             </button>
           )}
@@ -651,6 +656,7 @@ function ExaminationContent() {
                 <SelectItem value="manual" className="font-semibold text-blue-600">✍️ Tự nhập mã bệnh nhân thủ công</SelectItem>
                 {queueList.map((patient: HangChoHomNayDTO) => (
                   <SelectItem key={patient.maKh + "-" + patient.maHc} value={patient.maKh}>
+                    {/* FIX 2: Sửa patient.tenKh thành patient.tenKhach khớp thuộc tính DTO */}
                     {patient.maKh} - {patient.tenKhach} (STT: #{patient.soThuTu} | {patient.trangThai === "DANG_KHAM" ? "Đang khám" : "Chờ khám"})
                   </SelectItem>
                 ))}
@@ -1007,7 +1013,7 @@ function ExaminationContent() {
         <DialogContent className="max-w-4xl bg-white rounded-3xl p-6 shadow-2xl">
           <DialogHeader className="border-b pb-4">
             <DialogTitle className="text-xl font-bold flex items-center gap-2 text-slate-800">
-              <History className="w-5 h-5 text-blue-500 animate-pulse" />
+              <HistoryIcon className="w-5 h-5 text-blue-500 animate-pulse" />
               Lịch sử khám & So sánh thị lực
             </DialogTitle>
             <DialogDescription className="text-slate-500 text-xs mt-1">
@@ -1170,7 +1176,7 @@ function ExaminationContent() {
             </div>
           ) : (
             <div className="text-center py-12">
-              <History className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+              <HistoryIcon className="w-12 h-12 text-slate-300 mx-auto mb-3" />
               <h3 className="text-base font-bold text-slate-600">Không có lịch sử khám</h3>
               <p className="text-xs text-slate-400 mt-1">Bệnh nhân chưa từng khám tại trung tâm.</p>
             </div>
@@ -1194,6 +1200,9 @@ function ExaminationContent() {
   );
 }
 
+// =========================================================
+// MAIN PAGE WRAPPER
+// =========================================================
 export default function ExaminationPage() {
   return (
     <Suspense fallback={

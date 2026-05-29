@@ -6,6 +6,7 @@ import java.util.Map;
 import com.kada.da.modules.billing.domain.HoaDon;
 import com.kada.da.modules.billing.dto.HoaDonRequestDTO;
 import com.kada.da.modules.billing.dto.HoaDonResponseDTO;
+import com.kada.da.modules.billing.dto.PendingInvoiceResponseDTO;
 
 public interface HoaDonService {
 
@@ -21,4 +22,6 @@ public interface HoaDonService {
     HoaDonResponseDTO taoHoaDon(HoaDonRequestDTO request);
 
     List<HoaDonResponseDTO> getAllHoaDon();
+
+    List<PendingInvoiceResponseDTO> getPendingInvoices();
 }

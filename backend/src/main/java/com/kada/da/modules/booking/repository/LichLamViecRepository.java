@@ -37,6 +37,9 @@ public interface LichLamViecRepository extends JpaRepository<LichLamViec, String
 
         List<LichLamViec> findByGioBatDauAndGioKetThuc(Double gioBatDau, Double gioKetThuc);
 
+        @org.springframework.data.jpa.repository.Query("SELECT l FROM LichLamViec l WHERE l.isNghi = 0 AND l.ngayLam = :ngayLam")
+        List<LichLamViec> findByIsNghiFalseAndNgayLam(@org.springframework.data.repository.query.Param("ngayLam") LocalDate ngayLam);
+
         @org.springframework.data.jpa.repository.Query("SELECT l FROM LichLamViec l WHERE l.isNghi = 0 AND l.ngayLam >= :ngayLam")
         List<LichLamViec> findByIsNghiFalseAndNgayLamGreaterThanEqual(@org.springframework.data.repository.query.Param("ngayLam") LocalDate ngayLam);
 }

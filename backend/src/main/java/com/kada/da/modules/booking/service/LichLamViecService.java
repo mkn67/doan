@@ -41,5 +41,5 @@ public interface LichLamViecService {
 
     void deleteLichLamViec(String maLlv);
 
-    List<SlotTrongDto> getDanhSachSlotTrong();
+    List<SlotTrongDto> getDanhSachSlotTrong(LocalDate ngay, String maNs);
 }

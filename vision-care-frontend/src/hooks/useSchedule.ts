@@ -23,10 +23,10 @@ export const useCreateLichLamViec = () => {
     },
   });
 };
-export const useSlotTrong = (ngay?: string) => {
+export const useSlotTrong = (ngay?: string, maNs?: string) => {
   return useQuery({
-    queryKey: ["slot-trong", ngay],
-    queryFn: () => staffApi.getSlotTrong(ngay),
+    queryKey: ["slot-trong", ngay, maNs],
+    queryFn: () => staffApi.getSlotTrong(ngay, maNs),
     enabled: !!ngay, // chỉ gọi khi có ngày
     staleTime: 2 * 60 * 1000,
   });

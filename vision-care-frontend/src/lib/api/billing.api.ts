@@ -7,7 +7,8 @@ import {
   ThanhToanResponseDTO,
   DoanhThuResponseDTO,
   ThongKeDoanhThuTheoNgayDTO,
-  ThongKeTongQuanDTO
+  ThongKeTongQuanDTO,
+  PendingInvoiceResponseDTO
 } from '@/types/billing'; // DTO lấy từ file types/billing.ts
 
 export const billingApi = {
@@ -30,6 +31,11 @@ export const billingApi = {
   // 3. Lấy danh sách hóa đơn (Sửa thành /billing)
   getDanhSachHoaDon: async (): Promise<HoaDonResponseDTO[]> => {
     const response = await axiosClient.get<HoaDonResponseDTO[]>('/billing');
+    return response.data;
+  },
+
+  getPendingInvoices: async (): Promise<PendingInvoiceResponseDTO[]> => {
+    const response = await axiosClient.get<PendingInvoiceResponseDTO[]>('/billing/pending');
     return response.data;
   },
 

@@ -114,8 +114,17 @@ export default function AppointmentsPage() {
     defaultValues: { maKh: "", maGoi: "", maNs: "", ngayHen: "", gioHen: "" }
   });
 
+  const formatSlotTime = (val: number) => {
+    const hour = Math.floor(val);
+    const minutes = Math.round((val - hour) * 60);
+    const hh = String(hour).padStart(2, "0");
+    const mm = String(minutes).padStart(2, "0");
+    return `${hh}:${mm}`;
+  };
+
   const selectedDate = useWatch({ control: form.control, name: "ngayHen" });
-  const { data: slotsTrong } = useSlotTrong(selectedDate);
+  const selectedDoctor = useWatch({ control: form.control, name: "maNs" });
+  const { data: slotsTrong } = useSlotTrong(selectedDate, selectedDoctor);
 
   useEffect(() => {
     setIsMounted(true);
@@ -428,7 +437,7 @@ export default function AppointmentsPage() {
                         <FormControl><SelectTrigger className="rounded-xl"><SelectValue placeholder="Chọn giờ" /></SelectTrigger></FormControl>
                         <SelectContent className="bg-white">
                           {(slotsTrong as unknown as SlotTrongDTO[])?.map((slot, index) => (
-                            <SelectItem key={index} value={String(slot.gioBatDau)}>{slot.gioBatDau}</SelectItem>
+                            <SelectItem key={index} value={formatSlotTime(slot.gioBatDau)}>{formatSlotTime(slot.gioBatDau)}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>

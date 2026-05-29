@@ -393,16 +393,83 @@ BEGIN
     INSERT INTO HOA_DON(MAHD, MAKH, MANS, MAHOSO, MADON, NGAYLAP, TONGTIEN, TRANGTHAI, IS_DELETED)
     VALUES (v_mahd, p_makh, p_mans, p_mahoso, p_madon, SYSTIMESTAMP, 0, N'Chưa thanh toán', 0);
 
-    IF p_json_sp IS NOT NULL THEN
+    -- Nạp chi tiết sản phẩm
+    IF p_json_sp IS NOT NULL AND DBMS_LOB.GETLENGTH(p_json_sp) > 0 AND p_json_sp != '[]' THEN
         INSERT INTO CT_HOA_DON(MAHD, MALO, SOLUONG, DONGIA)
         SELECT v_mahd, j.malo, j.sl, j.gia
         FROM JSON_TABLE(p_json_sp, '$[*]' COLUMNS (malo VARCHAR2(20) PATH '$.malo', sl NUMBER PATH '$.sl', gia NUMBER PATH '$.gia')) j;
+    ELSIF p_madon IS NOT NULL THEN
+        DECLARE
+            v_malo    VARCHAR2(20);
+            v_dongia  NUMBER(15,2);
+            v_tensp   NVARCHAR2(100);
+        BEGIN
+            FOR rec IN (SELECT MASP, SOLUONG FROM CT_KE_DON WHERE MADON = p_madon) LOOP
+                -- Tìm lô hàng FEFO
+                v_malo := FN_GET_MALO_FEFO(rec.MASP, rec.SOLUONG);
+                
+                IF v_malo IS NULL THEN
+                    SELECT TENSP INTO v_tensp FROM SAN_PHAM WHERE MASP = rec.MASP;
+                    RAISE_APPLICATION_ERROR(-20035, 'Không đủ tồn kho cho sản phẩm ' || v_tensp || ' (Mã SP: ' || rec.MASP || ', Yêu cầu: ' || rec.SOLUONG || ')!');
+                END IF;
+
+                -- Lấy đơn giá bán
+                SELECT GIABAN INTO v_dongia FROM SAN_PHAM WHERE MASP = rec.MASP;
+
+                -- Lưu vào chi tiết hóa đơn
+                INSERT INTO CT_HOA_DON(MAHD, MALO, SOLUONG, DONGIA)
+                VALUES (v_mahd, v_malo, rec.SOLUONG, v_dongia);
+            END LOOP;
+        END;
     END IF;
 
-    IF p_json_dv IS NOT NULL THEN
+    -- Nạp chi tiết dịch vụ
+    IF p_json_dv IS NOT NULL AND DBMS_LOB.GETLENGTH(p_json_dv) > 0 AND p_json_dv != '[]' THEN
         INSERT INTO CT_HOA_DON_DV(MAHD, MADV, SOLUONG, DONGIA)
         SELECT v_mahd, j.madv, j.sl, j.gia
         FROM JSON_TABLE(p_json_dv, '$[*]' COLUMNS (madv VARCHAR2(20) PATH '$.madv', sl NUMBER PATH '$.sl', gia NUMBER PATH '$.gia')) j;
+    ELSIF p_mahoso IS NOT NULL THEN
+        DECLARE
+            v_makh      VARCHAR2(10);
+            v_ngaykham  DATE;
+            v_magoi     VARCHAR2(10);
+            v_has_dv    INT := 0;
+        BEGIN
+            SELECT MAKH, TRUNC(NGAYKHAM) INTO v_makh, v_ngaykham FROM HO_SO_THI_LUC WHERE MAHOSO = p_mahoso;
+            
+            BEGIN
+                SELECT MAGOI INTO v_magoi
+                FROM (
+                    SELECT MAGOI 
+                    FROM LICH_HEN 
+                    WHERE MAKH = v_makh 
+                      AND TRANGTHAI != N'Đã hủy'
+                      AND TRUNC(NGAYHEN) = v_ngaykham
+                    ORDER BY NGAYHEN DESC
+                ) WHERE ROWNUM = 1;
+            EXCEPTION WHEN NO_DATA_FOUND THEN
+                v_magoi := NULL;
+            END;
+
+            IF v_magoi IS NOT NULL THEN
+                FOR rec IN (
+                    SELECT cg.MADV, d.GIA
+                    FROM CT_GOI cg
+                    JOIN DICH_VU_KHAM d ON cg.MADV = d.MADV
+                    WHERE cg.MAGOI = v_magoi
+                ) LOOP
+                    INSERT INTO CT_HOA_DON_DV(MAHD, MADV, SOLUONG, DONGIA)
+                    VALUES (v_mahd, rec.MADV, 1, rec.GIA);
+                    v_has_dv := 1;
+                END LOOP;
+            END IF;
+
+            IF v_has_dv = 0 THEN
+                -- Mặc định thêm dịch vụ Khám mắt tổng quát (DV01) nếu không có gói khám
+                INSERT INTO CT_HOA_DON_DV(MAHD, MADV, SOLUONG, DONGIA)
+                VALUES (v_mahd, 'DV01', 1, 150000);
+            END IF;
+        END;
     END IF;
 
     p_mahd_out := v_mahd;

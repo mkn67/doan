@@ -1,13 +1,13 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Receipt, FilePlus, Loader2, Info, ArrowLeft, ShieldAlert } from "lucide-react";
+import { Receipt, FilePlus, Loader2, Info, ArrowLeft, ShieldAlert, User, Check, RefreshCw } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useRouter } from "next/navigation";
 
-import { useCreateHoaDonJson } from "@/hooks/useBilling"; 
+import { useCreateHoaDonJson, usePendingInvoices } from "@/hooks/useBilling"; 
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +28,7 @@ export default function BillingPage() {
   const router = useRouter();
   const { user, loading } = useAuth();
   const createMutation = useCreateHoaDonJson();
+  const { data: pendingInvoices, isLoading: isPendingLoading } = usePendingInvoices();
   const [isMounted, setIsMounted] = useState(false);
   const [maNs, setMaNs] = useState("");
 
@@ -182,19 +183,90 @@ export default function BillingPage() {
           </CardContent>
         </Card>
 
-        <Card className="bg-blue-50/50 border-blue-100 shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-base text-blue-800 flex items-center gap-2">
-              <Info className="w-5 h-5" /> Hướng dẫn nghiệp vụ
-            </CardTitle>
+        <Card className="shadow-sm border-slate-200 flex flex-col h-full bg-white">
+          <CardHeader className="bg-slate-50/50 border-b py-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-base flex items-center gap-2 text-slate-800">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
+                  Danh sách chờ lập hóa đơn
+                </CardTitle>
+                <CardDescription className="text-xs text-slate-500">
+                  Click chọn để tự động điền thông tin khám / đơn thuốc
+                </CardDescription>
+              </div>
+            </div>
           </CardHeader>
-          <CardContent className="text-sm text-blue-700 space-y-3 leading-relaxed">
-            <p><strong>Bước 1:</strong> Hỏi Mã khách hàng hoặc Số điện thoại để tra cứu.</p>
-            <p><strong>Bước 2:</strong> Nhập <b>Mã Hồ Sơ</b> nếu khách có thực hiện các dịch vụ như Đo khúc xạ, Soi đáy mắt...</p>
-            <p><strong>Bước 3:</strong> Nhập <b>Mã Đơn Kính/Thuốc</b> nếu khách có mua gọng, tròng hoặc thuốc nhỏ mắt.</p>
-            <p className="mt-4 p-3 bg-white rounded-lg border border-blue-100 text-slate-600">
-              💡 <i>Mẹo: Hệ thống sẽ tự động móc nối các mã này để tính ra Tổng tiền cuối cùng.</i>
-            </p>
+          <CardContent className="p-4 space-y-3 max-h-[450px] overflow-y-auto">
+            {isPendingLoading ? (
+              <div className="flex flex-col items-center justify-center py-12 text-slate-400">
+                <Loader2 className="w-8 h-8 animate-spin mb-2 text-blue-500" />
+                <span className="text-sm">Đang tải danh sách chờ...</span>
+              </div>
+            ) : !pendingInvoices || pendingInvoices.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-slate-400 border border-dashed rounded-xl p-4 bg-slate-50">
+                <Info className="w-8 h-8 mb-2 text-slate-300" />
+                <span className="text-sm font-medium">Hàng đợi trống</span>
+                <span className="text-xs text-center text-slate-400 mt-1">Không có bệnh nhân nào cần lập hóa đơn hiện tại.</span>
+              </div>
+            ) : (
+              pendingInvoices.map((item: any, idx: number) => (
+                <div 
+                  key={idx} 
+                  className="p-3 border border-slate-100 rounded-xl hover:border-blue-300 hover:bg-blue-50/20 transition-all duration-200 cursor-pointer relative group flex flex-col gap-1.5 shadow-sm bg-white"
+                  onClick={() => {
+                    form.setValue("maKh", item.maKh);
+                    form.setValue("maHoSo", item.maHoSo || "");
+                    form.setValue("maDon", item.maDon || "");
+                  }}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="font-bold text-slate-800 text-sm flex items-center gap-1.5">
+                        <User className="w-3.5 h-3.5 text-slate-400" />
+                        {item.tenKhachHang}
+                      </div>
+                      {item.sdtKhachHang && (
+                        <div className="text-xs text-slate-500 font-mono mt-0.5">
+                          SĐT: {item.sdtKhachHang}
+                        </div>
+                      )}
+                    </div>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
+                      item.loaiKham.includes("&")
+                        ? "bg-purple-50 text-purple-700 border border-purple-200"
+                        : item.loaiKham.includes("Khám")
+                        ? "bg-blue-50 text-blue-700 border border-blue-200"
+                        : "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                    }`}>
+                      {item.loaiKham}
+                    </span>
+                  </div>
+
+                  <div className="flex flex-wrap gap-1.5 mt-1">
+                    {item.maHoSo && (
+                      <span className="text-[10px] font-mono bg-slate-50 text-slate-600 px-1.5 py-0.5 rounded border border-slate-100">
+                        HS: {item.maHoSo}
+                      </span>
+                    )}
+                    {item.maDon && (
+                      <span className="text-[10px] font-mono bg-slate-50 text-slate-600 px-1.5 py-0.5 rounded border border-slate-100">
+                        Đơn: {item.maDon}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="absolute right-3 bottom-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    <span className="text-[10px] font-bold text-blue-600 bg-blue-50 border border-blue-200 rounded-lg px-2 py-0.5 flex items-center gap-1">
+                      Chọn <Check className="w-3 h-3" />
+                    </span>
+                  </div>
+                </div>
+              ))
+            )}
           </CardContent>
         </Card>
       </div>

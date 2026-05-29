@@ -95,11 +95,11 @@ public class LichHenRepositoryCustomImpl implements LichHenRepositoryCustom {
         // 3. Lọc theo Ngày (Từ ngày - Đến ngày)
         if (filter.getTuNgay() != null && !filter.getTuNgay().isEmpty()) {
             LocalDate start = LocalDate.parse(filter.getTuNgay());
-            predicates.add(cb.greaterThanOrEqualTo(root.get("ngayHen"), start));
+            predicates.add(cb.greaterThanOrEqualTo(root.get("ngayHen"), start.atStartOfDay()));
         }
         if (filter.getDenNgay() != null && !filter.getDenNgay().isEmpty()) {
             LocalDate end = LocalDate.parse(filter.getDenNgay());
-            predicates.add(cb.lessThanOrEqualTo(root.get("ngayHen"), end));
+            predicates.add(cb.lessThan(root.get("ngayHen"), end.plusDays(1).atStartOfDay()));
         }
 
         // 4. Lọc theo Trạng thái

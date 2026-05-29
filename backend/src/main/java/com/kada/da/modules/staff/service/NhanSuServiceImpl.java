@@ -98,7 +98,22 @@ public class NhanSuServiceImpl implements NhanSuService {
         nhanSu.setNgaySinh(request.getNgaySinh());
         nhanSu.setGioiTinh(request.getGioiTinh());
         nhanSu.setDiaChi(request.getDiaChi());
+        nhanSu.setCccd(request.getCccd());
         nhanSu.setChucVu(chucVu);
+
+        // Update role group of TaiKhoan if present
+        if (nhanSu.getTaiKhoan() != null && request.getMaNhom() != null) {
+            TaiKhoan taiKhoan = nhanSu.getTaiKhoan();
+            Nhom nhomQuyen = nhomRepository.findById(request.getMaNhom())
+                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy nhóm quyền: " + request.getMaNhom()));
+            if (taiKhoan.getDanhSachNhom() == null) {
+                taiKhoan.setDanhSachNhom(new java.util.ArrayList<>());
+            } else {
+                taiKhoan.getDanhSachNhom().clear();
+            }
+            taiKhoan.getDanhSachNhom().add(nhomQuyen);
+            taiKhoanRepository.save(taiKhoan);
+        }
 
         return mapToResponse(nhanSuRepository.save(nhanSu));
     }
@@ -130,15 +145,7 @@ public class NhanSuServiceImpl implements NhanSuService {
     }
 
     private NhanSuResponseDTO mapToResponse(NhanSu entity) {
-        return NhanSuResponseDTO.builder()
-                .maNs(entity.getMaNs())
-                .hoTen(entity.getHoTen())
-                .sdt(entity.getSdt())
-                .diaChi(entity.getDiaChi())
-                .ngaySinh(entity.getNgaySinh())
-                .gioiTinh(entity.getGioiTinh())
-                .tenChucVu(entity.getChucVu() != null ? entity.getChucVu().getTenCv() : null)
-                .build();
+        return com.kada.da.modules.staff.mapper.NhanSuMapper.toResponse(entity);
     }
 
     @Override
