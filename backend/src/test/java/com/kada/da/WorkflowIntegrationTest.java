@@ -1,5 +1,23 @@
 package com.kada.da;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.kada.da.modules.billing.dto.HoaDonResponseDTO;
+import com.kada.da.modules.billing.dto.ThanhToanRequestDTO;
+import com.kada.da.modules.billing.dto.ThanhToanResponseDTO;
+import com.kada.da.modules.billing.service.HoaDonService;
+import com.kada.da.modules.billing.service.ThanhToanService;
 import com.kada.da.modules.booking.dto.DatLichResponseDTO;
 import com.kada.da.modules.booking.dto.HangChoResponseDTO;
 import com.kada.da.modules.booking.dto.LichHenResponseDTO;
@@ -8,25 +26,9 @@ import com.kada.da.modules.booking.service.LichHenService;
 import com.kada.da.modules.examination.service.HoSoThiLucService;
 import com.kada.da.modules.prescription.dto.PhieuKeDonRequestDTO;
 import com.kada.da.modules.prescription.dto.PhieuKeDonResponseDTO;
+import com.kada.da.modules.prescription.dto.XuLyKinhResponseDTO;
 import com.kada.da.modules.prescription.service.PhieuKeDonService;
 import com.kada.da.modules.prescription.service.XuLyKinhService;
-import com.kada.da.modules.prescription.dto.XuLyKinhResponseDTO;
-import com.kada.da.modules.billing.service.HoaDonService;
-import com.kada.da.modules.billing.service.ThanhToanService;
-import com.kada.da.modules.billing.dto.HoaDonResponseDTO;
-import com.kada.da.modules.billing.dto.ThanhToanRequestDTO;
-import com.kada.da.modules.billing.dto.ThanhToanResponseDTO;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 @Transactional
@@ -164,7 +166,7 @@ public class WorkflowIntegrationTest {
 
         // 6. Chuyển sang bên thu ngân lập hóa đơn
         System.out.println("--- BƯỚC 6: Thu ngân lập hóa đơn ---");
-        Map<String, String> hoaDonRes = hoaDonService.taoHoaDonTuJson(maKh, maNsBs, maHoSo, maDon, "", "");
+        Map<String, String> hoaDonRes = hoaDonService.taoHoaDonTuJson(maKh, maNsBs, maHoSo, maDon, "", "", "KhamBenh");
         String maHd = hoaDonRes.get("maHd");
         assertNotNull(maHd);
         System.out.println("Lập hóa đơn thành công! Mã hóa đơn: " + maHd);

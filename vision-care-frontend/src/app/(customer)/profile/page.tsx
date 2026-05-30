@@ -114,6 +114,16 @@ export default function ProfilePage() {
             </div>
             <h2 className="mt-4 text-xl font-bold text-slate-900">{customerDetails?.hoTen || user?.hoTen || "Chưa cập nhật"}</h2>
             <p className="text-sm text-slate-500">{customerDetails?.sdt || user?.sdt}</p>
+            <div className="mt-4 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm space-y-2 text-left max-w-[240px] mx-auto">
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-slate-400 font-medium">⭐ Điểm tích lũy:</span>
+                <span className="font-bold text-amber-600">{customerDetails?.diemTichLuy ?? 0}</span>
+              </div>
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-slate-400 font-medium">💰 Tổng chi tiêu:</span>
+                <span className="font-bold text-emerald-600">{(customerDetails?.tongChiTieu ?? 0).toLocaleString("vi-VN")}₫</span>
+              </div>
+            </div>
           </CardContent>
         </Card>
 

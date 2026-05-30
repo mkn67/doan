@@ -66,28 +66,35 @@ type WorkshopFormValues = z.infer<typeof workshopSchema>;
 function WorkshopContent() {
   const searchParams = useSearchParams();
   
-  // UI state & Hydration Fix State
   const [isMounted, setIsMounted] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [userData, setUserData] = useState<UserData>({});
   const [currentFilter, setCurrentFilter] = useState<FilterType>("all");
   
-  // Role & Details computed reactively from state to prevent hydration mismatch
-  const isTechnician = userData.roles?.includes("NH05") || userData.maNhom === "NH05" || userData.roles?.includes("ROLE_KY_THUAT");
-  const isAdmin = userData.roles?.includes("NH04") || userData.maNhom === "NH04" || userData.roles?.includes("ROLE_ADMIN");
-  const isWarehouse = userData.roles?.includes("NH03") || userData.maNhom === "NH03" || userData.roles?.includes("ROLE_THU_KHO") || userData.maNhom === "ROLE_THU_KHO";
-  const currentUsername = userData.username || "";
+  const isTechnician = 
+    userData.roles?.some(r => r === "NH05" || r === "ROLE_KY_THUAT") ||
+    userData.maNhom === "NH05";
+  const isAdmin = 
+    userData.roles?.some(r => r === "NH04" || r === "ROLE_ADMIN") ||
+    userData.maNhom === "NH04";
+  const isWarehouse = 
+    userData.roles?.some(r => r === "NH03" || r === "ROLE_THU_KHO") ||
+    userData.maNhom === "NH03";
   const currentMaNs = userData.maNs || "";
 
-  // Custom dialog state for note updates (failures / cancellations)
   const [showNoteModal, setShowNoteModal] = useState<{
     maXl: string;
     action: "fail" | "cancel";
   } | null>(null);
   const [noteText, setNoteText] = useState("");
 
-  // Query and Mutation hooks
-  const { data: activeOrdersList, isLoading: ordersLoading, refetch, isRefetching } = useXuLyKinhCanXuLy();
+  const { 
+    data: activeOrdersList, 
+    isLoading: ordersLoading, 
+    refetch, 
+    isRefetching,
+    error: ordersError 
+  } = useXuLyKinhCanXuLy();
   const createMutation = useCreateXuLyKinh();
   const batDauMutation = useBatDauXuLyKinh();
   const hoanThanhMutation = useHoanThanhXuLyKinh();
@@ -96,7 +103,15 @@ function WorkshopContent() {
 
   const orders: XuLyKinhResponseDTO[] = activeOrdersList || [];
 
-  // Lấy mã đơn từ URL (?maDon=...)
+  // Debug log
+  useEffect(() => {
+    if (orders.length > 0) {
+      console.log("✅ [Workshop] Nhận được đơn gia công:", orders);
+    } else if (!ordersLoading && !ordersError) {
+      console.log("ℹ️ [Workshop] Không có đơn gia công nào.");
+    }
+  }, [orders, ordersLoading, ordersError]);
+
   const maDonFromUrl = searchParams.get("maDon") || "";
 
   const form = useForm<WorkshopFormValues>({
@@ -113,7 +128,6 @@ function WorkshopContent() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsMounted(true);
-      
       if (typeof window !== "undefined") {
         const userStr = localStorage.getItem("user");
         if (userStr) {
@@ -127,11 +141,9 @@ function WorkshopContent() {
         }
       }
     }, 0);
-
     return () => clearTimeout(timer);
   }, [form]);
 
-  // Handle manual form submission
   const onSubmit: SubmitHandler<WorkshopFormValues> = (values) => {
     if (isWarehouse) {
       toast.error("Thủ kho không được phép giao việc hoặc xử lý kính!");
@@ -170,12 +182,11 @@ function WorkshopContent() {
 
     toast.promise(promise, {
       loading: "Đang lưu kết quả gia công...",
-      success: (msg: unknown) => typeof msg === "string" ? msg : "Thành công",
+      success: (msg) => msg as string,
       error: (err) => `Lỗi: ${err}`
     });
   };
 
-  // State update actions
   const triggerBatDau = (maXl: string) => {
     if (isWarehouse) return;
     const promise = new Promise((resolve, reject) => {
@@ -195,7 +206,7 @@ function WorkshopContent() {
 
     toast.promise(promise, {
       loading: "Đang phân công kỹ thuật viên...",
-      success: (msg: unknown) => typeof msg === "string" ? msg : "Thành công",
+      success: (msg) => msg as string,
       error: (err) => `Lỗi: ${err}`
     });
   };
@@ -205,7 +216,7 @@ function WorkshopContent() {
     const promise = new Promise((resolve, reject) => {
       hoanThanhMutation.mutate(maXl, {
         onSuccess: () => {
-          resolve("Đã hoàn thành lắp kính!");
+          resolve("Đã hoàn thành lắp kính! Vui lòng sang màn hình Hóa đơn để thanh toán nếu cần.");
           refetch();
         },
         onError: (err) => reject(err.message)
@@ -214,7 +225,7 @@ function WorkshopContent() {
 
     toast.promise(promise, {
       loading: "Đang xác nhận hoàn tất...",
-      success: (msg: unknown) => typeof msg === "string" ? msg : "Thành công",
+      success: (msg) => msg as string,
       error: (err) => `Lỗi: ${err}`
     });
   };
@@ -233,7 +244,7 @@ function WorkshopContent() {
 
     toast.promise(promise, {
       loading: "Đang cập nhật trạng thái...",
-      success: (msg: unknown) => typeof msg === "string" ? msg : "Thành công",
+      success: (msg) => msg as string,
       error: (err) => `Lỗi: ${err}`
     });
   };
@@ -256,7 +267,7 @@ function WorkshopContent() {
 
       toast.promise(promise, {
         loading: "Đang cập nhật lỗi kỹ thuật...",
-        success: (msg: unknown) => typeof msg === "string" ? msg : "Thành công",
+        success: (msg) => msg as string,
         error: (err) => `Thất bại: ${err}`
       });
     } else if (action === "cancel") {
@@ -273,13 +284,26 @@ function WorkshopContent() {
 
       toast.promise(promise, {
         loading: "Đang hủy đơn gia công...",
-        success: (msg: unknown) => typeof msg === "string" ? msg : "Thành công",
+        success: (msg) => msg as string,
         error: (err) => `Lỗi: ${err}`
       });
     }
   };
 
   if (!isMounted) return null;
+
+  if (ordersError) {
+    return (
+      <div className="p-10 text-center flex flex-col items-center justify-center space-y-4 min-h-[60vh] bg-white text-slate-900 rounded-2xl border border-slate-200 shadow-sm m-6">
+        <AlertCircle className="w-12 h-12 text-rose-500" />
+        <h2 className="text-xl font-bold text-slate-800">Không thể tải danh sách đơn gia công</h2>
+        <p className="text-slate-500">{(ordersError as Error)?.message || "Lỗi kết nối đến máy chủ. Vui lòng thử lại sau."}</p>
+        <Button onClick={() => refetch()} variant="outline" className="mt-2">
+          <RefreshCw className="w-4 h-4 mr-2" /> Thử lại
+        </Button>
+      </div>
+    );
+  }
 
   if (!isTechnician) {
     return (
@@ -291,13 +315,11 @@ function WorkshopContent() {
     );
   }
 
-  // Count states for Tabs badges
   const countPending = orders.filter(o => o.trangThai === "Chờ xử lý").length;
   const countProcessing = orders.filter(o => o.trangThai === "Đang xử lý").length;
   const countFailed = orders.filter(o => o.trangThai === "Lỗi gia công").length;
   const countCompleted = orders.filter(o => o.trangThai === "Hoàn thành").length;
 
-  // Filter list conditionally based on Active Tab
   const filteredOrders = currentFilter === "all" 
     ? orders 
     : orders.filter(o => o.trangThai === currentFilter);
@@ -307,8 +329,7 @@ function WorkshopContent() {
     batDauMutation.isPending || 
     hoanThanhMutation.isPending || 
     huyMutation.isPending || 
-    updateTrangThaiMutation.isPending ||
-    isAdmin;
+    updateTrangThaiMutation.isPending;
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -327,7 +348,6 @@ function WorkshopContent() {
 
   return (
     <div className="p-6 md:p-8 space-y-6 bg-slate-50 min-h-[calc(100vh-4rem)] text-slate-900 relative overflow-hidden">
-      {/* Decorative Blur Backgrounds */}
       <div className="absolute top-0 right-1/4 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-10 left-10 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -342,12 +362,11 @@ function WorkshopContent() {
               Quản Trị Phân Xưởng Mài Lắp
             </h1>
             <p className="text-slate-500 text-sm mt-1">
-              Hệ thống xử lý tiến độ cắt mài tròng kính và lắp gọng theo toa thuốc bác sĩ dạng bảng biểu cổ điển.
+              Hệ thống xử lý tiến độ cắt mài tròng kính và lắp gọng theo toa thuốc bác sĩ
             </p>
           </div>
         </div>
 
-        {/* TOP LEVEL ACTIONS */}
         <div className="flex items-center gap-3">
           <Button
             onClick={() => setIsFormOpen(!isFormOpen)}
@@ -370,9 +389,9 @@ function WorkshopContent() {
         </div>
       </div>
 
-      {/* COLLAPSIBLE MANUAL ENTRY FORM */}
-      {isFormOpen && (
-        <Card className="border-slate-200 bg-white text-slate-900 relative z-10 shadow-md overflow-hidden max-w-3xl">
+      {/* COLLAPSIBLE MANUAL ENTRY FORM - no framer-motion, simple CSS */}
+      <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isFormOpen ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'}`}>
+        <Card className="border-slate-200 bg-white text-slate-900 relative z-10 shadow-md max-w-3xl mb-6">
           <CardHeader className="border-b border-slate-100 bg-slate-50/50">
             <CardTitle className="text-lg text-slate-800 flex items-center gap-2">
               <ClipboardCheck className="w-5 h-5 text-amber-600" />
@@ -457,7 +476,7 @@ function WorkshopContent() {
                   {(isTechnician || isAdmin) ? (
                     <Button 
                       type="submit" 
-                      disabled={createMutation.isPending || isAdmin} 
+                      disabled={createMutation.isPending} 
                       className="w-full bg-amber-600 hover:bg-amber-500 h-11 text-md font-bold shadow-md transition-all active:scale-95 text-white"
                     >
                       {createMutation.isPending ? (
@@ -476,9 +495,9 @@ function WorkshopContent() {
             </Form>
           </CardContent>
         </Card>
-      )}
+      </div>
 
-      {/* CLASSIC BUT GOLD FILTER TABS */}
+      {/* FILTER TABS */}
       <div className="flex flex-wrap items-center gap-2 bg-slate-200/60 p-1.5 rounded-xl border border-slate-200/80 backdrop-blur-xl relative z-10">
         <button
           onClick={() => setCurrentFilter("all")}
@@ -508,16 +527,11 @@ function WorkshopContent() {
           <span>Lỗi kỹ thuật</span>
           <span className={`px-2 py-0.5 text-xs rounded-md ${currentFilter === "Lỗi gia công" ? "bg-rose-800 text-rose-100" : "bg-slate-300/70 text-slate-700"}`}>{countFailed}</span>
         </button>
-        <button
-          onClick={() => setCurrentFilter("Hoàn thành")}
-          className={`px-4 py-2 text-sm font-bold rounded-lg transition-all flex items-center gap-2 ${currentFilter === "Hoàn thành" ? "bg-emerald-700 text-white shadow-sm" : "text-slate-400 hover:text-slate-200 hover:bg-slate-100"}`}
-        >
-          <span>Hoàn thành</span>
-          <span className={`px-2 py-0.5 text-xs rounded-md ${currentFilter === "Hoàn thành" ? "bg-emerald-800 text-emerald-100" : "bg-slate-300/70 text-slate-700"}`}>{countCompleted}</span>
-        </button>
+        {/* Tab Hoàn thành tạm ẩn vì API không trả về đơn hoàn thành, có thể bỏ comment nếu cần */}
+        {/* <button ...>Hoàn thành</button> */}
       </div>
 
-      {/* CLASSIC DATA TABLE VIEW */}
+      {/* DATA TABLE */}
       <Card className="border-slate-200 bg-white text-slate-900 relative z-10 shadow-md overflow-hidden">
         <div className="overflow-x-auto w-full scrollbar-thin scrollbar-thumb-slate-200">
           <table className="w-full text-left border-collapse min-w-[900px]">
@@ -544,7 +558,20 @@ function WorkshopContent() {
                     </div>
                   </td>
                 </tr>
-              ) : filteredOrders.length > 0 ? (
+              ) : filteredOrders.length === 0 ? (
+                <tr>
+                  <td colSpan={9} className="p-16 text-center text-slate-400">
+                    <div className="flex flex-col items-center justify-center space-y-2">
+                      <Info className="w-8 h-8 text-slate-300" />
+                      <p className="text-sm font-semibold text-slate-500">
+                        {orders.length === 0 
+                          ? "Hiện tại chưa có đơn gia công nào cần xử lý." 
+                          : `Không có đơn gia công nào với trạng thái "${currentFilter}".`}
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
                 filteredOrders.map((item) => (
                   <tr key={item.maXl} className="hover:bg-slate-50 transition-colors group">
                     <td className="p-4 pl-6 font-mono text-xs text-slate-400 group-hover:text-amber-600 transition-colors">
@@ -601,8 +628,6 @@ function WorkshopContent() {
                     </td>
                     <td className="p-4 pr-6 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        
-                        {/* BUTTONS FOR PENDING STATE */}
                         {item.trangThai === "Chờ xử lý" && (
                           <>
                             <Button
@@ -637,7 +662,6 @@ function WorkshopContent() {
                           </>
                         )}
 
-                        {/* BUTTONS FOR PROCESSING STATE */}
                         {item.trangThai === "Đang xử lý" && (
                           <>
                             <Button
@@ -674,7 +698,6 @@ function WorkshopContent() {
                           </>
                         )}
 
-                        {/* BUTTONS FOR FAILED STATE */}
                         {item.trangThai === "Lỗi gia công" && (
                           <>
                             <Button
@@ -702,34 +725,22 @@ function WorkshopContent() {
                           </>
                         )}
 
-                        {/* STATUS FOR COMPLETED STATE */}
                         {item.trangThai === "Hoàn thành" && (
                           <div className="flex items-center gap-1 text-emerald-700 font-medium text-xs bg-emerald-50 border border-emerald-200 px-2 py-1 rounded-md">
                             <CheckCircle2 className="w-3.5 h-3.5" />
                             <span>Sẵn sàng giao trả</span>
                           </div>
                         )}
-
                       </div>
                     </td>
                   </tr>
                 ))
-              ) : (
-                <tr>
-                  <td colSpan={9} className="p-16 text-center text-slate-400">
-                    <div className="flex flex-col items-center justify-center space-y-2">
-                      <Info className="w-8 h-8 text-slate-300" />
-                      <p className="text-sm font-semibold text-slate-500">Không tìm thấy đơn gia công nào thuộc trạng thái này</p>
-                    </div>
-                  </td>
-                </tr>
               )}
             </tbody>
           </table>
         </div>
       </Card>
 
-      {/* MODAL FOR NOTES (FAILURES AND CANCELLATIONS) */}
       {showNoteModal && (
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-xl text-slate-900">
@@ -777,9 +788,6 @@ function WorkshopContent() {
   );
 }
 
-// =========================================================
-// MAIN PAGE WRAPPER
-// =========================================================
 export default function WorkshopGlassesPage() {
   return (
     <Suspense fallback={

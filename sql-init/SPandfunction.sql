@@ -407,13 +407,14 @@ END SP_GIAO_XU_LY_KINH;
 
 -- SP 10: Tạo hóa đơn tổng hợp qua JSON
 CREATE OR REPLACE PROCEDURE SP_TAO_HOA_DON (
-    p_makh     IN  VARCHAR2,
-    p_mans     IN  VARCHAR2,
-    p_mahoso   IN  VARCHAR2,
-    p_madon    IN  VARCHAR2,
-    p_json_sp  IN  CLOB,
-    p_json_dv  IN  CLOB,
-    p_mahd_out OUT VARCHAR2
+    p_makh        IN  VARCHAR2,
+    p_mans        IN  VARCHAR2,
+    p_mahoso      IN  VARCHAR2,
+    p_madon       IN  VARCHAR2,
+    p_json_sp     IN  CLOB,
+    p_json_dv     IN  CLOB,
+    p_mahd_out    OUT VARCHAR2,
+    p_loai_ke_don IN  VARCHAR2 DEFAULT 'CA_HAI'
 ) AS
     v_mahd VARCHAR2(20);
     v_total_sp NUMBER := 0;
@@ -437,7 +438,17 @@ BEGIN
             v_dongia  NUMBER(15,2);
             v_tensp   NVARCHAR2(100);
         BEGIN
-            FOR rec IN (SELECT MASP, SOLUONG FROM CT_KE_DON WHERE MADON = p_madon) LOOP
+            FOR rec IN (
+                SELECT c.MASP, c.SOLUONG 
+                FROM CT_KE_DON c
+                JOIN SAN_PHAM s ON c.MASP = s.MASP
+                WHERE c.MADON = p_madon
+                  AND (
+                      p_loai_ke_don = 'CA_HAI'
+                      OR (p_loai_ke_don = 'THUOC' AND s.LATHUOC = 1)
+                      OR (p_loai_ke_don = 'KINH' AND s.LATHUOC = 0)
+                  )
+            ) LOOP
                 -- Tìm lô hàng FEFO còn hạn và đủ số lượng tồn khả dụng
                 v_malo := FN_GET_MALO_FEFO(rec.MASP, rec.SOLUONG);
                 
@@ -506,7 +517,7 @@ BEGIN
     END IF;
 
     -- Tự động quét bổ sung phí dịch vụ gia công mài lắp kính (DV06) nếu có lệnh kỹ thuật
-    IF p_madon IS NOT NULL THEN
+    IF p_madon IS NOT NULL AND (p_loai_ke_don = 'CA_HAI' OR p_loai_ke_don = 'KINH') THEN
         DECLARE
             v_has_xlk INT := 0;
             v_dv_gia  NUMBER(15,2);

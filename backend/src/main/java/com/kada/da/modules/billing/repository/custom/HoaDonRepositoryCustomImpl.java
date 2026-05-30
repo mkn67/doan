@@ -13,6 +13,7 @@ import com.kada.da.modules.billing.domain.HoaDon;
 import java.util.HashMap;
 import java.util.Map;
 
+
 @Repository
 public class HoaDonRepositoryCustomImpl implements HoaDonRepositoryCustom {
 
@@ -21,7 +22,7 @@ public class HoaDonRepositoryCustomImpl implements HoaDonRepositoryCustom {
 
     @Override
     public Map<String, String> taoHoaDonTuJson(String maKh, String maNs, String maHoso, String maDon, String jsonSp,
-            String jsonDv) {
+            String jsonDv, String loaiKeDon) {
         StoredProcedureQuery query = entityManager.createStoredProcedureQuery("SP_TAO_HOA_DON");
 
         query.registerStoredProcedureParameter(1, String.class, ParameterMode.IN); // p_makh
@@ -31,6 +32,7 @@ public class HoaDonRepositoryCustomImpl implements HoaDonRepositoryCustom {
         query.registerStoredProcedureParameter(5, String.class, ParameterMode.IN); // p_json_sp
         query.registerStoredProcedureParameter(6, String.class, ParameterMode.IN); // p_json_dv
         query.registerStoredProcedureParameter(7, String.class, ParameterMode.OUT); // p_mahd_out
+        query.registerStoredProcedureParameter(8, String.class, ParameterMode.IN); // p_loai_ke_don
 
         query.setParameter(1, maKh);
         query.setParameter(2, maNs);
@@ -38,6 +40,7 @@ public class HoaDonRepositoryCustomImpl implements HoaDonRepositoryCustom {
         query.setParameter(4, maDon);
         query.setParameter(5, jsonSp);
         query.setParameter(6, jsonDv);
+        query.setParameter(8, loaiKeDon);
 
         query.execute();
 

@@ -8,6 +8,8 @@ public class TaoHoaDonJsonRequest {
     private String maNs;
     private String maHoso;
     private String maDon;
+    private String maDonThuoc;
+    private String maDonKinh;
     private String jsonSp;
     private String jsonDv;
 }

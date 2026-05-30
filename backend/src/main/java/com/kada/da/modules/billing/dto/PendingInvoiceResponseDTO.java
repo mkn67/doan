@@ -14,6 +14,8 @@ public class PendingInvoiceResponseDTO {
     private String maHoSo;
     private LocalDateTime ngayKham;
     private String maDon;
+    private String maDonThuoc;
+    private String maDonKinh;
     private LocalDateTime ngayKeDon;
     private String loaiKham; // e.g. "Khám mắt", "Đơn kính/thuốc", "Khám & Đơn kính/thuốc"
 }

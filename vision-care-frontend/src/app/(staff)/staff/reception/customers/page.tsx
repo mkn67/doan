@@ -442,7 +442,7 @@ export default function CustomersPage() {
                   {/* Grid 3: Stats */}
                   <div className="space-y-3.5">
                     <h4 className="text-xs font-bold text-slate-700 uppercase tracking-widest border-b pb-1">Thống kê hoạt động</h4>
-                    <div className="grid grid-cols-3 gap-4 text-center">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
                       <div className="p-3 bg-blue-50/40 border border-blue-100 rounded-xl">
                         <span className="text-slate-400 font-bold text-[9px] uppercase tracking-wider block">Tổng số lần khám</span>
                         <span className="text-blue-700 text-lg font-black">{selectedDetailCustomer.tongSoLanKham ?? 0}</span>
@@ -450,6 +450,10 @@ export default function CustomersPage() {
                       <div className="p-3 bg-emerald-50/40 border border-emerald-100 rounded-xl">
                         <span className="text-slate-400 font-bold text-[9px] uppercase tracking-wider block">Tổng chi tiêu</span>
                         <span className="text-emerald-700 text-base font-black">{(selectedDetailCustomer.tongChiTieu ?? 0).toLocaleString("vi-VN")}₫</span>
+                      </div>
+                      <div className="p-3 bg-amber-50/40 border border-amber-100 rounded-xl">
+                        <span className="text-slate-400 font-bold text-[9px] uppercase tracking-wider block">Điểm tích lũy</span>
+                        <span className="text-amber-700 text-lg font-black">{selectedDetailCustomer.diemTichLuy ?? 0}</span>
                       </div>
                       <div className="p-3 bg-purple-50/40 border border-purple-100 rounded-xl">
                         <span className="text-slate-400 font-bold text-[9px] uppercase tracking-wider block">Lịch hẹn gần nhất</span>

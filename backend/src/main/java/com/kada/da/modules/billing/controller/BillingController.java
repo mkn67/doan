@@ -83,9 +83,20 @@ public class BillingController {
 
     @PostMapping("/tao-tu-json")
     public ResponseEntity<Map<String, String>> taoHoaDonTuJson(@RequestBody TaoHoaDonJsonRequest request) {
+        String maDon = request.getMaDon();
+        String loaiKeDon = "CA_HAI";
+        
+        if (request.getMaDonThuoc() != null && !request.getMaDonThuoc().isEmpty()) {
+            maDon = request.getMaDonThuoc();
+            loaiKeDon = "THUOC";
+        } else if (request.getMaDonKinh() != null && !request.getMaDonKinh().isEmpty()) {
+            maDon = request.getMaDonKinh();
+            loaiKeDon = "KINH";
+        }
+
         Map<String, String> result = hoaDonService.taoHoaDonTuJson(
                 request.getMaKh(), request.getMaNs(), request.getMaHoso(),
-                request.getMaDon(), request.getJsonSp(), request.getJsonDv());
+                maDon, request.getJsonSp(), request.getJsonDv(), loaiKeDon);
         return ResponseEntity.ok(result);
     }
 

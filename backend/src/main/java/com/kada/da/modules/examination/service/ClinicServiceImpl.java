@@ -1,19 +1,21 @@
 package com.kada.da.modules.examination.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.kada.da.Exception.BusinessRuleException;
-import com.kada.da.Exception.ResourceNotFoundException;
-import com.kada.da.modules.examination.dto.HoSoKhamRequestDTO;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.sql.Types;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.kada.da.Exception.BusinessRuleException;
+import com.kada.da.Exception.ResourceNotFoundException;
+import com.kada.da.modules.examination.dto.HoSoKhamRequestDTO;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
@@ -265,6 +267,11 @@ public class ClinicServiceImpl implements ClinicService {
             jdbcTemplate.update("DELETE FROM XU_LY_KINH WHERE MADON = ?", maDonThuocResult);
         }
 
+        // 4. Tự động tạo hóa đơn tách biệt cho kính và thuốc (nếu có)
+        if (maDonThuocResult != null) {
+            createInvoicesForPrescription(maDonThuocResult, mans);
+        }
+
         Map<String, Object> response = new HashMap<>();
         response.put("maHoSo", maHoSoResult);
         response.put("maDonThuoc", maDonThuocResult);
@@ -368,5 +375,63 @@ public class ClinicServiceImpl implements ClinicService {
             );
             log.info("Tự động tạo mới yêu cầu gia công kính: {} cho đơn thuốc: {} với trạng thái Chờ gia công", maXl, maDon);
         }
+    }
+
+    private void createInvoicesForPrescription(String maDon, String maNsThuNgan) {
+        // Lấy danh sách sản phẩm trong đơn thuốc (CT_KE_DON)
+        String sql = "SELECT c.MASP, s.LATHUOC " +
+                     "FROM CT_KE_DON c JOIN SAN_PHAM s ON c.MASP = s.MASP " +
+                     "WHERE c.MADON = ?";
+        List<Map<String, Object>> items = jdbcTemplate.queryForList(sql, maDon);
+        if (items.isEmpty()) return;
+
+        String maHoso = jdbcTemplate.queryForObject(
+                "SELECT MAHOSO FROM PHIEU_KE_DON WHERE MADON = ?", String.class, maDon);
+        String maKh = jdbcTemplate.queryForObject(
+                "SELECT MAKH FROM HO_SO_THI_LUC WHERE MAHOSO = ?", String.class, maHoso);
+
+        boolean hasGlass = items.stream().anyMatch(row -> Integer.valueOf(0).equals(row.get("LATHUOC")));
+        boolean hasMedicine = items.stream().anyMatch(row -> Integer.valueOf(1).equals(row.get("LATHUOC")));
+
+        try {
+            if (hasGlass && hasMedicine) {
+                // 1. Tạo hóa đơn kính
+                callSpTaoHoaDon(maKh, maNsThuNgan, maHoso, maDon, "KINH");
+
+                // 2. Tạo hóa đơn thuốc
+                callSpTaoHoaDon(maKh, maNsThuNgan, maHoso, maDon, "THUOC");
+            } else if (hasGlass) {
+                // Chỉ có kính
+                callSpTaoHoaDon(maKh, maNsThuNgan, maHoso, maDon, "KINH");
+            } else if (hasMedicine) {
+                // Chỉ có thuốc
+                callSpTaoHoaDon(maKh, maNsThuNgan, maHoso, maDon, "THUOC");
+            }
+        } catch (Exception e) {
+            log.error("Lỗi tự động tạo hóa đơn từ đơn thuốc {}: {}", maDon, e.getMessage());
+        }
+    }
+
+    private void callSpTaoHoaDon(String maKh, String maNs, String maHoso, String maDon, String loaiKeDon) {
+        jdbcTemplate.execute(
+            "{call SP_TAO_HOA_DON(?, ?, ?, ?, ?, ?, ?, ?)}",
+            (java.sql.CallableStatement cs) -> {
+                cs.setString(1, maKh);
+                cs.setString(2, maNs);
+                cs.setString(3, maHoso);
+                cs.setString(4, maDon);
+                cs.setString(5, null);
+                cs.setString(6, null);
+                cs.registerOutParameter(7, Types.VARCHAR); // p_mahd_out
+                cs.setString(8, loaiKeDon);
+                
+                cs.execute();
+                
+                String maHd = cs.getString(7);
+                log.info("[AUTO-BILLING] Đã tự động lập hóa đơn {} cho đơn thuốc {} (loại: {})", 
+                        maHd, maDon, loaiKeDon);
+                return maHd;
+            }
+        );
     }
 }

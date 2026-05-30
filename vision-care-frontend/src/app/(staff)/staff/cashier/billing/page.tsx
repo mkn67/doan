@@ -19,7 +19,8 @@ import { TaoHoaDonJsonRequest } from "@/types/billing";
 const billingSchema = z.object({
   maKh: z.string().min(1, "Vui lòng nhập mã khách hàng"),
   maHoSo: z.string().optional(), 
-  maDon: z.string().optional(),
+  maDonThuoc: z.string().optional(),
+  maDonKinh: z.string().optional(),
 });
 
 type BillingFormValues = z.infer<typeof billingSchema>;
@@ -42,7 +43,12 @@ export default function BillingPage() {
 
   const form = useForm<BillingFormValues>({
     resolver: zodResolver(billingSchema),
-    defaultValues: { maKh: "", maHoSo: "", maDon: "" },
+    defaultValues: { 
+      maKh: "", 
+      maHoSo: "", 
+      maDonThuoc: "", 
+      maDonKinh: "" 
+    },
   });
 
   useEffect(() => {
@@ -68,7 +74,8 @@ export default function BillingPage() {
       maKh: values.maKh,
       maNs: maNs,
       maHoso: values.maHoSo || undefined,
-      maDon: values.maDon || undefined,
+      maDonThuoc: values.maDonThuoc || undefined,
+      maDonKinh: values.maDonKinh || undefined,
       jsonSp: "",
       jsonDv: "",
     };
@@ -159,15 +166,25 @@ export default function BillingPage() {
                   <FormField control={form.control} name="maHoSo" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Mã Hồ sơ khám (Tùy chọn)</FormLabel>
-                      <FormControl><Input placeholder="VD: HS_S01" {...field} /></FormControl>
+                      <FormControl><Input placeholder="VD: HS_S01" {...field} value={field.value ?? ""} /></FormControl>
                       <FormDescription className="text-xs">Dùng để tính tiền dịch vụ khám</FormDescription>
                     </FormItem>
                   )} />
-                  <FormField control={form.control} name="maDon" render={({ field }) => (
+                  <FormField control={form.control} name="maDonThuoc" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Mã Đơn thuốc/kính (Tùy chọn)</FormLabel>
-                      <FormControl><Input placeholder="VD: KD_S01" {...field} /></FormControl>
-                      <FormDescription className="text-xs">Dùng để tính tiền sản phẩm</FormDescription>
+                      <FormLabel>Mã Đơn thuốc (Tùy chọn)</FormLabel>
+                      <FormControl><Input placeholder="VD: KD_S01" {...field} value={field.value ?? ""} /></FormControl>
+                      <FormDescription className="text-xs">Dùng để tính tiền dược phẩm</FormDescription>
+                    </FormItem>
+                  )} />
+                </div>
+
+                <div className="grid grid-cols-2 gap-6">
+                  <FormField control={form.control} name="maDonKinh" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Mã Đơn kính (Tùy chọn)</FormLabel>
+                      <FormControl><Input placeholder="VD: DK_S01" {...field} value={field.value ?? ""} /></FormControl>
+                      <FormDescription className="text-xs">Dùng để tính tiền gọng & tròng</FormDescription>
                     </FormItem>
                   )} />
                 </div>
@@ -220,7 +237,8 @@ export default function BillingPage() {
                   onClick={() => {
                     form.setValue("maKh", item.maKh);
                     form.setValue("maHoSo", item.maHoSo || "");
-                    form.setValue("maDon", item.maDon || "");
+                    form.setValue("maDonThuoc", item.maDonThuoc || "");
+                    form.setValue("maDonKinh", item.maDonKinh || "");
                   }}
                 >
                   <div className="flex items-start justify-between gap-2">
@@ -252,9 +270,14 @@ export default function BillingPage() {
                         HS: {item.maHoSo}
                       </span>
                     )}
-                    {item.maDon && (
+                    {item.maDonThuoc && (
                       <span className="text-[10px] font-mono bg-slate-50 text-slate-600 px-1.5 py-0.5 rounded border border-slate-100">
-                        Đơn: {item.maDon}
+                        Thuốc: {item.maDonThuoc}
+                      </span>
+                    )}
+                    {item.maDonKinh && (
+                      <span className="text-[10px] font-mono bg-slate-50 text-slate-600 px-1.5 py-0.5 rounded border border-slate-100">
+                        Kính: {item.maDonKinh}
                       </span>
                     )}
                   </div>

@@ -36,6 +36,8 @@ export interface TaoHoaDonJsonRequest {
   maNs: string
   maHoso?: string
   maDon?: string
+  maDonThuoc?: string
+  maDonKinh?: string
   jsonSp?: string
   jsonDv?: string
 }
@@ -109,6 +111,8 @@ export interface PendingInvoiceResponseDTO {
   maHoSo?: string
   ngayKham?: string
   maDon?: string
+  maDonThuoc?: string
+  maDonKinh?: string
   ngayKeDon?: string
   loaiKham: string // e.g. "Khám mắt", "Đơn kính/thuốc", "Khám & Đơn kính/thuốc"
 }

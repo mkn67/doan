@@ -11,6 +11,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kada.da.Exception.BusinessRuleException;
+import com.kada.da.modules.billing.domain.HoaDon;
+import com.kada.da.modules.billing.repository.HoaDonRepository;
 import com.kada.da.modules.inventory.domain.LoHang;
 import com.kada.da.modules.inventory.domain.SanPham;
 import com.kada.da.modules.inventory.repository.LoHangRepository;
@@ -23,8 +25,6 @@ import com.kada.da.modules.prescription.repository.PhieuKeDonRepository;
 import com.kada.da.modules.prescription.repository.XuLyKinhRepository;
 import com.kada.da.modules.staff.dto.PageResponseDTO;
 import com.kada.da.modules.staff.repository.NhanSuRepository;
-import com.kada.da.modules.billing.repository.HoaDonRepository;
-import com.kada.da.modules.billing.domain.HoaDon;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,60 +35,22 @@ import lombok.extern.slf4j.Slf4j;
 @Transactional(readOnly = true)
 public class XuLyKinhServiceImpl implements XuLyKinhService {
 
-    private static final String TRANG_THAI_CHO_XU_LY = "Ch\u00e1\u00bb\u009d x\u00e1\u00bb\u00ad l\u00c3\u00bd";
+    // SỬA: dùng chuỗi UTF-8 đúng "Chờ xử lý"
+    private static final String TRANG_THAI_CHO_XU_LY = "Chờ xử lý";
 
     private final XuLyKinhRepository xuLyKinhRepository;
     private final PhieuKeDonRepository phieuKeDonRepository;
     private final NhanSuRepository nhanSuRepository;
     private final LoHangRepository loHangRepository;
     private final HoaDonRepository hoaDonRepository;
-    private final ObjectMapper objectMapper; // DÃ¹ng Ä‘á»ƒ Ã©p cá»¥c JSON thÃ´ng sá»‘ kÃ­nh thÃ nh String
+    private final ObjectMapper objectMapper;
 
-    @Override
-    @Transactional
-    public String taoPhieuGiaoKinh(String maDon, String maNsKyThuat, String thongSoKinh) {
-        List<XuLyKinh> existing = xuLyKinhRepository.findByPhieuKeDon_MaDon(maDon);
-        if (existing != null && !existing.isEmpty()) {
-            XuLyKinh xuLyKinh = existing.get(0);
-            if (xuLyKinh.getNhanSuKyThuat() == null && maNsKyThuat != null && !maNsKyThuat.isBlank()) {
-                xuLyKinh.setNhanSuKyThuat(nhanSuRepository.findById(maNsKyThuat)
-                        .orElseThrow(() -> new RuntimeException("Khong tim thay nhan su ky thuat: " + maNsKyThuat)));
-                xuLyKinhRepository.save(xuLyKinh);
-            }
-            return xuLyKinh.getMaXl();
-        }
-
-        if (maNsKyThuat == null || maNsKyThuat.isBlank()) {
-            PhieuKeDon phieuKeDon = phieuKeDonRepository.findById(maDon)
-                    .orElseThrow(() -> new RuntimeException("Khong tim thay phieu ke don: " + maDon));
-
-            XuLyKinh xuLyKinh = XuLyKinh.builder()
-                    .maXl(generateMaXl())
-                    .phieuKeDon(phieuKeDon)
-                    .thongSoKinh(thongSoKinh)
-                    .trangThai(TRANG_THAI_CHO_XU_LY)
-                    .ngayBatDau(null)
-                    .ngayHoanThanh(null)
-                    .nhanSuKyThuat(null)
-                    .build();
-
-            XuLyKinh saved = xuLyKinhRepository.save(xuLyKinh);
-            log.info("Auto-created unassigned XuLyKinh {} for prescription {}", saved.getMaXl(), maDon);
-            return saved.getMaXl();
-        }
-        log.info("Gá»i SP_GIAO_XU_LY_KINH: Ä‘Æ¡n={}, ktv={}", maDon, maNsKyThuat);
-
-        // Chuyá»n bÃ³ng tháº³ng cho Oracle lo liá»‡u!
-        String maXl = xuLyKinhRepository.giaoXuLyKinh(maDon, maNsKyThuat, thongSoKinh);
-
-        log.info("ÄÃ£ táº¡o phiáº¿u xá»­ lÃ½ kÃ­nh thÃ nh cÃ´ng, mÃ£: {}", maXl);
-        return maXl; // Frontend ráº¥t thÃ­ch cÃ¡i mÃ£ nÃ y Ä‘á»ƒ má»Ÿ chi tiáº¿t
-    }
+    // ========== PHƯƠNG THỨC CÔNG KHAI ==========
 
     @Override
     public XuLyKinhResponseDTO getXuLyKinhById(String maXl) {
         return toDTO(xuLyKinhRepository.findById(maXl)
-                .orElseThrow(() -> new RuntimeException("KhÃ´ng tÃ¬m tháº¥y phiáº¿u xá»­ lÃ½ kÃ­nh: " + maXl)));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy phiếu xử lý kính: " + maXl)));
     }
 
     @Override
@@ -109,18 +71,24 @@ public class XuLyKinhServiceImpl implements XuLyKinhService {
 
     @Override
     public List<XuLyKinhResponseDTO> getXuLyKinhByMaDon(String maDon) {
-        return xuLyKinhRepository.findByPhieuKeDon_MaDon(maDon).stream().map(this::toDTO).collect(Collectors.toList());
+        return xuLyKinhRepository.findByPhieuKeDon_MaDon(maDon).stream()
+                .map(this::toDTO).collect(Collectors.toList());
     }
 
     @Override
     public List<XuLyKinhResponseDTO> getXuLyKinhByTrangThai(String trangThai) {
-        return xuLyKinhRepository.findByTrangThai(trangThai).stream().map(this::toDTO).collect(Collectors.toList());
+        return xuLyKinhRepository.findByTrangThai(trangThai).stream()
+                .map(this::toDTO).collect(Collectors.toList());
     }
 
+    /**
+     * 🔧 SỬA LỖI CHÍNH: thay thế chuỗi bị lỗi encoding bằng chuỗi đúng.
+     * Chỉ lấy các đơn cần xử lý: Chờ xử lý, Đang xử lý, Lỗi gia công.
+     */
     @Override
     public List<XuLyKinhResponseDTO> getXuLyKinhCanXuLy() {
-        return xuLyKinhRepository.findByTrangThaiIn(List.of("Chá» xá»­ lÃ½", "Äang xá»­ lÃ½", "Lá»—i gia cÃ´ng", "HoÃ n thÃ nh")).stream()
-                .map(this::toDTO).collect(Collectors.toList());
+        return xuLyKinhRepository.findByTrangThaiIn(List.of("Chờ xử lý", "Đang xử lý", "Lỗi gia công"))
+                .stream().map(this::toDTO).collect(Collectors.toList());
     }
 
     @Override
@@ -129,16 +97,83 @@ public class XuLyKinhServiceImpl implements XuLyKinhService {
                 .stream().map(this::toDTO).collect(Collectors.toList());
     }
 
+    // ========== PHƯƠNG THỨC TRANSACTIONAL ==========
+
+    @Override
+    @Transactional
+    public String taoPhieuGiaoKinh(String maDon, String maNsKyThuat, String thongSoKinh) {
+        List<XuLyKinh> existing = xuLyKinhRepository.findByPhieuKeDon_MaDon(maDon);
+        if (existing != null && !existing.isEmpty()) {
+            XuLyKinh xuLyKinh = existing.get(0);
+            if (xuLyKinh.getNhanSuKyThuat() == null && maNsKyThuat != null && !maNsKyThuat.isBlank()) {
+                xuLyKinh.setNhanSuKyThuat(nhanSuRepository.findById(maNsKyThuat)
+                        .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân sự kỹ thuật: " + maNsKyThuat)));
+                xuLyKinhRepository.save(xuLyKinh);
+            }
+            return xuLyKinh.getMaXl();
+        }
+
+        if (maNsKyThuat == null || maNsKyThuat.isBlank()) {
+            PhieuKeDon phieuKeDon = phieuKeDonRepository.findById(maDon)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy phiếu kê đơn: " + maDon));
+
+            XuLyKinh xuLyKinh = XuLyKinh.builder()
+                    .maXl(generateMaXl())
+                    .phieuKeDon(phieuKeDon)
+                    .thongSoKinh(thongSoKinh)
+                    .trangThai(TRANG_THAI_CHO_XU_LY)
+                    .ngayBatDau(null)
+                    .ngayHoanThanh(null)
+                    .nhanSuKyThuat(null)
+                    .build();
+
+            XuLyKinh saved = xuLyKinhRepository.save(xuLyKinh);
+            log.info("Auto-created unassigned XuLyKinh {} for prescription {}", saved.getMaXl(), maDon);
+            return saved.getMaXl();
+        }
+
+        log.info("Gọi SP_GIAO_XU_LY_KINH: đơn={}, ktv={}", maDon, maNsKyThuat);
+        String maXl = xuLyKinhRepository.giaoXuLyKinh(maDon, maNsKyThuat, thongSoKinh);
+        log.info("Đã tạo phiếu xử lý kính thành công, mã: {}", maXl);
+        return maXl;
+    }
+
+    @Override
+    @Transactional
+    public XuLyKinhResponseDTO createXuLyKinh(XuLyKinhRequestDTO request) {
+        String thongSoKinhStr = "";
+        try {
+            if (request.getThongSoKinh() != null) {
+                thongSoKinhStr = objectMapper.writeValueAsString(request.getThongSoKinh());
+            }
+        } catch (Exception e) {
+            log.error("Lỗi parse JSON thongSoKinh: ", e);
+        }
+        String maXl = taoPhieuGiaoKinh(request.getMaDon(), request.getMaNsKyThuat(), thongSoKinhStr);
+
+        if (request.getTrangThai() != null && !request.getTrangThai().isEmpty()) {
+            updateTrangThai(maXl, request.getTrangThai());
+        }
+        if (request.getGhiChu() != null && !request.getGhiChu().isEmpty()) {
+            XuLyKinh existing = xuLyKinhRepository.findById(maXl).orElse(null);
+            if (existing != null) {
+                existing.setGhiChu(request.getGhiChu());
+                xuLyKinhRepository.save(existing);
+            }
+        }
+        return getXuLyKinhById(maXl);
+    }
+
     @Override
     @Transactional
     public XuLyKinhResponseDTO updateThongSoKinh(String maXl, Object thongSoKinh) {
         XuLyKinh existing = xuLyKinhRepository.findById(maXl)
-                .orElseThrow(() -> new RuntimeException("KhÃ´ng tÃ¬m tháº¥y phiáº¿u xá»­ lÃ½ kÃ­nh: " + maXl));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy phiếu xử lý kính: " + maXl));
         try {
             existing.setThongSoKinh(objectMapper.writeValueAsString(thongSoKinh));
         } catch (Exception e) {
-            log.error("Lá»—i parse JSON thÃ´ng sá»‘ kÃ­nh: ", e);
-            throw new BusinessRuleException("Dá»¯ liá»‡u thÃ´ng sá»‘ kÃ­nh khÃ´ng há»£p lá»‡!");
+            log.error("Lỗi parse JSON thông số kính: ", e);
+            throw new BusinessRuleException("Dữ liệu thông số kính không hợp lệ!");
         }
         return toDTO(xuLyKinhRepository.save(existing));
     }
@@ -147,11 +182,10 @@ public class XuLyKinhServiceImpl implements XuLyKinhService {
     @Transactional
     public XuLyKinhResponseDTO updateTrangThai(String maXl, String trangThai) {
         XuLyKinh existing = xuLyKinhRepository.findById(maXl)
-                .orElseThrow(() -> new RuntimeException("KhÃ´ng tÃ¬m tháº¥y phiáº¿u xá»­ lÃ½ kÃ­nh: " + maXl));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy phiếu xử lý kính: " + maXl));
         existing.setTrangThai(trangThai);
 
-        // Tá»± Ä‘á»™ng chá»‘t giá» náº¿u hoÃ n thÃ nh
-        if ("HoÃ n thÃ nh".equalsIgnoreCase(trangThai) || "ÄÃ£ xong".equalsIgnoreCase(trangThai)) {
+        if ("Hoàn thành".equalsIgnoreCase(trangThai) || "Đã xong".equalsIgnoreCase(trangThai)) {
             existing.setNgayHoanThanh(LocalDateTime.now());
         }
         return toDTO(xuLyKinhRepository.save(existing));
@@ -161,39 +195,37 @@ public class XuLyKinhServiceImpl implements XuLyKinhService {
     @Transactional
     public XuLyKinhResponseDTO batDauXuLy(String maXl, String maKyThuat) {
         XuLyKinh existing = xuLyKinhRepository.findById(maXl)
-                .orElseThrow(() -> new RuntimeException("KhÃ´ng tÃ¬m tháº¥y phiáº¿u: " + maXl));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy phiếu: " + maXl));
 
-        // Logic cÅ© dÃ¹ng JPA, náº¿u muá»‘n Ä‘á»“ng bá»™ SP thÃ¬ nÃªn gá»i SP tÆ°Æ¡ng á»©ng á»Ÿ Ä‘Ã¢y
         if (maKyThuat != null && !maKyThuat.isBlank()) {
             existing.setNhanSuKyThuat(nhanSuRepository.findById(maKyThuat)
-                    .orElseThrow(() -> new RuntimeException("Khong tim thay nhan su ky thuat: " + maKyThuat)));
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân sự kỹ thuật: " + maKyThuat)));
         }
-        existing.setNgayBatDau(LocalDateTime.now()); // Ghi nháº­n giá» báº¯t Ä‘áº§u cáº¯t kÃ­nh
-
+        existing.setNgayBatDau(LocalDateTime.now());
         return toDTO(xuLyKinhRepository.save(existing));
     }
 
     @Override
     @Transactional
     public XuLyKinhResponseDTO hoanThanhXuLy(String maXl) {
-        return updateTrangThai(maXl, "HoÃ n thÃ nh");
+        return updateTrangThai(maXl, "Hoàn thành");
     }
 
     @Override
     @Transactional
     public XuLyKinhResponseDTO huyXuLy(String maXl, String lyDo) {
         XuLyKinh existing = xuLyKinhRepository.findById(maXl)
-                .orElseThrow(() -> new RuntimeException("KhÃ´ng tÃ¬m tháº¥y phiáº¿u: " + maXl));
-        existing.setTrangThai("ÄÃ£ há»§y");
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy phiếu: " + maXl));
+        existing.setTrangThai("Đã hủy");
         existing.setGhiChu(lyDo);
 
-        // Check if the cancellation reason is a manufacturing error (lá»—i mÃ i/láº¯p)
+        // Xử lý hao hụt kho nếu lý do là lỗi gia công
         boolean isMfgError = lyDo != null && (
-            lyDo.toLowerCase().contains("lá»—i") ||
-            lyDo.toLowerCase().contains("há»ng") ||
-            lyDo.toLowerCase().contains("vá»¡") ||
-            lyDo.toLowerCase().contains("mÃ i") ||
-            lyDo.toLowerCase().contains("láº¯p") ||
+            lyDo.toLowerCase().contains("lỗi") ||
+            lyDo.toLowerCase().contains("hỏng") ||
+            lyDo.toLowerCase().contains("vỡ") ||
+            lyDo.toLowerCase().contains("mài") ||
+            lyDo.toLowerCase().contains("lắp") ||
             lyDo.toLowerCase().contains("damage") ||
             lyDo.toLowerCase().contains("error") ||
             lyDo.toLowerCase().contains("breakage")
@@ -204,9 +236,7 @@ public class XuLyKinhServiceImpl implements XuLyKinhService {
             if (details != null) {
                 for (CtKeDon detail : details) {
                     SanPham sp = detail.getSanPham();
-                    // If it is a glass/lens product (laThuoc == 0 or null)
                     if (sp != null && (sp.getLaThuoc() == null || sp.getLaThuoc() == 0)) {
-                        // Find active batches for this product and perform FIFO deduction
                         List<LoHang> activeBatches = loHangRepository.findBySanPham(sp).stream()
                                 .filter(l -> l.getSoLuongTon() != null && l.getSoLuongTon() > 0)
                                 .sorted((l1, l2) -> {
@@ -222,22 +252,21 @@ public class XuLyKinhServiceImpl implements XuLyKinhService {
                             lo.setSoLuongTon(lo.getSoLuongTon() - 1);
                             loHangRepository.save(lo);
 
-                            log.info("[AUDIT_LOG] KTV bÃ¡o há»ng kÃ­nh. ÄÃ£ kháº¥u hao 1 sáº£n pháº©m {} tá»« lÃ´ {} theo cÆ¡ cháº¿ FIFO.", sp.getMaSp(), lo.getMaLo());
+                            log.info("[AUDIT_LOG] KTV báo hỏng kính. Đã khấu hao 1 sản phẩm {} từ lô {} theo FIFO.", sp.getMaSp(), lo.getMaLo());
 
-                            // Write to a dedicated waste report log file
                             try {
                                 java.nio.file.Files.writeString(
                                     java.nio.file.Paths.get("waste_report.log"),
-                                    String.format("[%s] [WASTE_REPORT_LOG] KÃ­nh lá»—i mÃ i láº¯p - Phiáº¿u XL: %s, MÃ£ SP: %s, TÃªn SP: %s, LÃ´ kháº¥u hao: %s, Sá»‘ lÆ°á»£ng: 1, LÃ½ do: %s\n",
+                                    String.format("[%s] [WASTE_REPORT_LOG] Kính lỗi mài lắp - Phiếu XL: %s, Mã SP: %s, Tên SP: %s, Lô khấu hao: %s, Số lượng: 1, Lý do: %s\n",
                                         LocalDateTime.now(), maXl, sp.getMaSp(), sp.getTenSp(), lo.getMaLo(), lyDo),
                                     java.nio.file.StandardOpenOption.CREATE,
                                     java.nio.file.StandardOpenOption.APPEND
                                 );
                             } catch (Exception ex) {
-                                log.error("Lá»—i ghi file waste_report.log: ", ex);
+                                log.error("Lỗi ghi file waste_report.log: ", ex);
                             }
                         } else {
-                            log.warn("[AUDIT_LOG] KTV bÃ¡o há»ng sáº£n pháº©m {} nhÆ°ng khÃ´ng cÃ²n lÃ´ hÃ ng nÃ o cÃ³ tá»“n kho Ä‘á»ƒ kháº¥u hao.", sp.getMaSp());
+                            log.warn("[AUDIT_LOG] KTV báo hỏng sản phẩm {} nhưng không còn lô hàng nào có tồn kho để khấu hao.", sp.getMaSp());
                         }
                     }
                 }
@@ -247,34 +276,7 @@ public class XuLyKinhServiceImpl implements XuLyKinhService {
         return toDTO(xuLyKinhRepository.save(existing));
     }
 
-    // ==================== PRIVATE METHODS ====================
-    @Override
-    @Transactional
-    public XuLyKinhResponseDTO createXuLyKinh(XuLyKinhRequestDTO request) {
-        String thongSoKinhStr = "";
-        try {
-            if (request.getThongSoKinh() != null) {
-                thongSoKinhStr = objectMapper.writeValueAsString(request.getThongSoKinh());
-            }
-        } catch (Exception e) {
-            log.error("Lá»—i parse JSON thongSoKinh: ", e);
-        }
-        String maXl = taoPhieuGiaoKinh(request.getMaDon(), request.getMaNsKyThuat(), thongSoKinhStr);
-        
-        // Cáº­p nháº­t thÃªm tráº¡ng thÃ¡i vÃ  ghi chÃº náº¿u Ä‘Æ°á»£c truyá»n tá»« form
-        if (request.getTrangThai() != null && !request.getTrangThai().isEmpty()) {
-            updateTrangThai(maXl, request.getTrangThai());
-        }
-        if (request.getGhiChu() != null && !request.getGhiChu().isEmpty()) {
-            XuLyKinh existing = xuLyKinhRepository.findById(maXl).orElse(null);
-            if (existing != null) {
-                existing.setGhiChu(request.getGhiChu());
-                xuLyKinhRepository.save(existing);
-            }
-        }
-        
-        return getXuLyKinhById(maXl);
-    }
+    // ========== PHƯƠNG THỨC HỖ TRỢ ==========
 
     private synchronized String generateMaXl() {
         String maxCode = xuLyKinhRepository.findMaxMaXl();
@@ -291,27 +293,22 @@ public class XuLyKinhServiceImpl implements XuLyKinhService {
 
     private XuLyKinhResponseDTO toDTO(XuLyKinh entity) {
         String tenKhachHang = null;
-
-        // TrÃ­ch xuáº¥t an toÃ n TÃªn khÃ¡ch hÃ ng tá»« PhieuKeDon
-        if (entity.getPhieuKeDon() != null && entity.getPhieuKeDon().getHoSoThiLuc() != null) {
-            // Giáº£ sá»­ HoSoThiLuc cá»§a Ã´ng cÃ³ ná»‘i vá»›i KhachHang Ä‘á»ƒ láº¥y tÃªn
-            if (entity.getPhieuKeDon().getHoSoThiLuc().getKhachHang() != null) {
-                tenKhachHang = entity.getPhieuKeDon().getHoSoThiLuc().getKhachHang().getHoTen();
-            }
+        if (entity.getPhieuKeDon() != null && entity.getPhieuKeDon().getHoSoThiLuc() != null
+                && entity.getPhieuKeDon().getHoSoThiLuc().getKhachHang() != null) {
+            tenKhachHang = entity.getPhieuKeDon().getHoSoThiLuc().getKhachHang().getHoTen();
         }
 
-        // Chuyá»ƒn ngÆ°á»£c chuá»—i JSON trong DB thÃ nh Object Ä‘á»ƒ nhÃ©t vÃ o DTO
         Object thongSoObj = null;
         try {
             if (entity.getThongSoKinh() != null && !entity.getThongSoKinh().isEmpty()) {
                 thongSoObj = objectMapper.readValue(entity.getThongSoKinh(), Object.class);
             }
         } catch (Exception e) {
-            thongSoObj = entity.getThongSoKinh(); // Lá»¡ lá»—i thÃ¬ tráº£ nguyÃªn chuá»—i
+            thongSoObj = entity.getThongSoKinh();
         }
 
         String maHd = null;
-        String trangThaiThanhToan = "ChÆ°a láº­p hÃ³a Ä‘Æ¡n";
+        String trangThaiThanhToan = "Chưa lập hóa đơn";
         if (entity.getPhieuKeDon() != null) {
             String maDon = entity.getPhieuKeDon().getMaDon();
             List<HoaDon> hoaDons = hoaDonRepository.findByPhieuKeDon_MaDon(maDon);
@@ -321,7 +318,7 @@ public class XuLyKinhServiceImpl implements XuLyKinhService {
                         .findFirst().orElse(null);
                 if (activeHd != null) {
                     maHd = activeHd.getMaHd();
-                    trangThaiThanhToan = activeHd.getTrangThai() != null ? activeHd.getTrangThai().getValue() : "ChÆ°a thanh toÃ¡n";
+                    trangThaiThanhToan = activeHd.getTrangThai() != null ? activeHd.getTrangThai().getValue() : "Chưa thanh toán";
                 }
             }
         }
@@ -329,7 +326,7 @@ public class XuLyKinhServiceImpl implements XuLyKinhService {
         return XuLyKinhResponseDTO.builder()
                 .maXl(entity.getMaXl())
                 .maDon(entity.getPhieuKeDon() != null ? entity.getPhieuKeDon().getMaDon() : null)
-                .tenKhachHang(tenKhachHang) // Láº¥y tá»« Há»“ SÆ¡ (thay vÃ¬ HÃ³a ÄÆ¡n vÃ¬ xá»­ lÃ½ kÃ­nh ná»‘i vá»›i ÄÆ¡n Thuá»‘c)
+                .tenKhachHang(tenKhachHang)
                 .tenKyThuatVien(entity.getNhanSuKyThuat() != null ? entity.getNhanSuKyThuat().getHoTen() : null)
                 .trangThai(entity.getTrangThai())
                 .maHd(maHd)
@@ -337,7 +334,7 @@ public class XuLyKinhServiceImpl implements XuLyKinhService {
                 .ngayBatDau(entity.getNgayBatDau())
                 .ngayHoanThanh(entity.getNgayHoanThanh())
                 .ghiChu(entity.getGhiChu())
-                .thongSoKinh(thongSoObj) // ÄÃ£ chuyá»ƒn thÃ nh Object siÃªu xá»‹n
+                .thongSoKinh(thongSoObj)
                 .build();
     }
 }
