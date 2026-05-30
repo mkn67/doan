@@ -56,6 +56,9 @@ export interface SanPhamResponse {
   tongTonKho: number;
   trangThai: string;
   laThuoc: boolean;
+  donViTinh?: string;
+  donViTinhKho?: string;
+  tonKhoToiThieu?: number;
 }
 
 export interface LoHangResponse {

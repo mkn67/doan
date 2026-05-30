@@ -15,6 +15,9 @@ import com.kada.da.modules.booking.repository.HangChoRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -40,10 +43,11 @@ public class HangChoServiceImpl implements HangChoService {
     @Override
     @Transactional(readOnly = true) // ĐÃ SỬA: Tối ưu cho hàm chỉ đọc
     public List<HangChoHomNayDto> getHangChoHomNay() {
-        // Lấy list hàng chờ của ngày hôm nay từ Repo (Viết thêm hàm
-        // findByGioDangKyToday trong Repo nhé)
-        List<HangCho> listHc = hangChoRepository.findHangChoToday();
-        LocalDateTime now = LocalDateTime.now();
+        java.time.ZoneId zoneId = java.time.ZoneId.of("Asia/Ho_Chi_Minh");
+        LocalDateTime startOfToday = LocalDate.now(zoneId).atStartOfDay();
+        LocalDateTime endOfToday = LocalDate.now(zoneId).atTime(LocalTime.MAX);
+        List<HangCho> listHc = hangChoRepository.findHangChoToday(startOfToday, endOfToday);
+        LocalDateTime now = LocalDateTime.now(zoneId);
 
         return listHc.stream()
                 .filter(hc -> hc.getTrangThai() != null && !hc.getTrangThai().name().equals("HOAN_THANH")

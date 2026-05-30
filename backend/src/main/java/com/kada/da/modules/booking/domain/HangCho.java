@@ -26,7 +26,7 @@ public class HangCho {
     @Column(name = "TEN_KHACH", length = 100)
     private String tenKhach;
 
-    @Column(name = "SO_THU_TU", nullable = false)
+    @Column(name = "SO_THU_TU")
     private Integer soThuTu;
 
     @Column(name = "LOAI_KHACH", length = 20)

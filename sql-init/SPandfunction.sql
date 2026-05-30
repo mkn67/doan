@@ -299,7 +299,32 @@ BEGIN
         WHERE MAHC = p_mahc;
     ELSIF v_current_state = N'Đang chờ' AND p_trang_thai = N'Bỏ về' THEN
         UPDATE HANG_CHO SET TRANG_THAI = p_trang_thai WHERE MAHC = p_mahc;
-    ELSIF v_current_state = N'Đang khám' AND p_trang_thai IN (N'Hoàn thành', N'Bỏ về') THEN
+    ELSIF v_current_state = N'Đang khám' AND p_trang_thai = N'Bỏ về' THEN
+        UPDATE HANG_CHO SET TRANG_THAI = p_trang_thai WHERE MAHC = p_mahc;
+        IF v_malh IS NOT NULL THEN
+            UPDATE LICH_HEN SET TRANGTHAI = N'Đã khám'
+            WHERE MALH = v_malh AND TRANGTHAI != N'Đã hủy';
+        END IF;
+    ELSIF v_current_state = N'Đang khám' AND p_trang_thai = N'Hoàn thành' THEN
+        -- Kiểm tra xem bệnh nhân đã được nhập hồ sơ khám bệnh ngày hôm nay chưa
+        DECLARE
+            v_makh HANG_CHO.MAKH%TYPE;
+            v_has_hoso NUMBER;
+        BEGIN
+            SELECT MAKH INTO v_makh FROM HANG_CHO WHERE MAHC = p_mahc;
+            
+            IF v_makh IS NULL THEN
+                RAISE_APPLICATION_ERROR(-20073, 'LOI: Khach hang chua dang ky ho so ca nhan, khong the hoan thanh!');
+            END IF;
+
+            SELECT COUNT(*) INTO v_has_hoso FROM HO_SO_THI_LUC
+            WHERE MAKH = v_makh AND TRUNC(NGAYKHAM) = TRUNC(SYSDATE);
+
+            IF v_has_hoso = 0 THEN
+                RAISE_APPLICATION_ERROR(-20074, 'LOI: Benh nhan chua duoc nhap ho so kham benh ngay hom nay!');
+            END IF;
+        END;
+
         UPDATE HANG_CHO SET TRANG_THAI = p_trang_thai WHERE MAHC = p_mahc;
         IF v_malh IS NOT NULL THEN
             UPDATE LICH_HEN SET TRANGTHAI = N'Đã khám'
@@ -351,22 +376,22 @@ BEGIN
    -- Tự sinh mã xử lý kính
    v_maxl := 'XL' || LPAD(SEQ_XU_LY_KINH.NEXTVAL, 6, '0');
 
-   INSERT INTO XU_LY_KINH (
-      MAXL,
-      MADON,
-      THONG_SO_KINH,
-      TRANG_THAI,
-      NGAY_BAT_DAU,
-      MANS_KY_THUAT
-   )
-   VALUES (
-      v_maxl,
-      p_madon,
-      p_thong_so_kinh,
-      N'Đang cắt',
-      SYSTIMESTAMP,
-      p_mans_ky_thuat
-   );
+    INSERT INTO XU_LY_KINH (
+       MAXL,
+       MADON,
+       THONG_SO_KINH,
+       TRANG_THAI,
+       NGAY_BAT_DAU,
+       MANS_KY_THUAT
+    )
+    VALUES (
+       v_maxl,
+       p_madon,
+       p_thong_so_kinh,
+       N'Chờ xử lý',
+       NULL,
+       p_mans_ky_thuat
+    );
 
    p_maxl_out := v_maxl;
 EXCEPTION
@@ -395,8 +420,8 @@ BEGIN
 
     -- Nạp chi tiết sản phẩm
     IF p_json_sp IS NOT NULL AND DBMS_LOB.GETLENGTH(p_json_sp) > 0 AND p_json_sp != '[]' THEN
-        INSERT INTO CT_HOA_DON(MAHD, MALO, SOLUONG, DONGIA)
-        SELECT v_mahd, j.malo, j.sl, j.gia
+        INSERT INTO CT_HOA_DON(MAHD, MALO, MASP, SOLUONG, DONGIA)
+        SELECT v_mahd, j.malo, (SELECT MASP FROM LO_HANG WHERE MALO = j.malo), j.sl, j.gia
         FROM JSON_TABLE(p_json_sp, '$[*]' COLUMNS (malo VARCHAR2(20) PATH '$.malo', sl NUMBER PATH '$.sl', gia NUMBER PATH '$.gia')) j;
     ELSIF p_madon IS NOT NULL THEN
         DECLARE
@@ -417,8 +442,8 @@ BEGIN
                 SELECT GIABAN INTO v_dongia FROM SAN_PHAM WHERE MASP = rec.MASP;
 
                 -- Lưu vào chi tiết hóa đơn
-                INSERT INTO CT_HOA_DON(MAHD, MALO, SOLUONG, DONGIA)
-                VALUES (v_mahd, v_malo, rec.SOLUONG, v_dongia);
+                INSERT INTO CT_HOA_DON(MAHD, MALO, MASP, SOLUONG, DONGIA)
+                VALUES (v_mahd, v_malo, rec.MASP, rec.SOLUONG, v_dongia);
             END LOOP;
         END;
     END IF;
@@ -454,7 +479,7 @@ BEGIN
             IF v_magoi IS NOT NULL THEN
                 FOR rec IN (
                     SELECT cg.MADV, d.GIA
-                    FROM CT_GOI cg
+                    FROM CT_GOI_KHAM cg
                     JOIN DICH_VU_KHAM d ON cg.MADV = d.MADV
                     WHERE cg.MAGOI = v_magoi
                 ) LOOP
@@ -469,6 +494,28 @@ BEGIN
                 INSERT INTO CT_HOA_DON_DV(MAHD, MADV, SOLUONG, DONGIA)
                 VALUES (v_mahd, 'DV01', 1, 150000);
             END IF;
+        END;
+    END IF;
+
+    -- Tự động thêm dịch vụ mài lắp kính nếu có phiếu gia công kính
+    IF p_madon IS NOT NULL THEN
+        DECLARE
+            v_has_xlk INT := 0;
+            v_dv_gia  NUMBER(15,2);
+            v_exists  INT := 0;
+        BEGIN
+            SELECT COUNT(*) INTO v_has_xlk FROM XU_LY_KINH WHERE MADON = p_madon;
+            IF v_has_xlk > 0 THEN
+                SELECT COUNT(*) INTO v_exists FROM CT_HOA_DON_DV WHERE MAHD = v_mahd AND MADV = 'DV06';
+                IF v_exists = 0 THEN
+                    SELECT GIA INTO v_dv_gia FROM DICH_VU_KHAM WHERE MADV = 'DV06';
+                    INSERT INTO CT_HOA_DON_DV(MAHD, MADV, SOLUONG, DONGIA)
+                    VALUES (v_mahd, 'DV06', 1, v_dv_gia);
+                END IF;
+            END IF;
+        EXCEPTION
+            WHEN OTHERS THEN
+                NULL;
         END;
     END IF;
 
@@ -607,8 +654,9 @@ BEGIN
         FROM LO_HANG
         WHERE MASP = p_masp
           AND SOLUONGTON >= p_soluong_can
-          AND NGAYHETHAN >= TRUNC(SYSDATE)
-        ORDER BY NGAYHETHAN ASC,
+          AND (NGAYHETHAN IS NULL OR NGAYHETHAN >= TRUNC(SYSDATE))
+        ORDER BY CASE WHEN NGAYHETHAN IS NULL THEN 1 ELSE 0 END ASC,
+                 NGAYHETHAN ASC,
                  SOLUONGTON DESC
     )
     WHERE ROWNUM = 1;

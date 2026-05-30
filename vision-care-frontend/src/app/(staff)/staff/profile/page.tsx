@@ -17,9 +17,12 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (profile) {
-      setHoTen(profile.hoTen || "");
-      setSdt(profile.sdt || "");
-      setDiaChi(profile.diaChi || "");
+      const timer = setTimeout(() => {
+        setHoTen(profile.hoTen || "");
+        setSdt(profile.sdt || "");
+        setDiaChi(profile.diaChi || "");
+      }, 0);
+      return () => clearTimeout(timer);
     }
   }, [profile]);
 

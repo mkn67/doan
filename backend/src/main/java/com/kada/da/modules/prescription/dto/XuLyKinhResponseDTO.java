@@ -20,6 +20,8 @@ public class XuLyKinhResponseDTO {
     private String tenKyThuatVien;
 
     private String trangThai;
+    private String maHd;
+    private String trangThaiThanhToan;
 
     private LocalDateTime ngayBatDau;
     private LocalDateTime ngayHoanThanh;

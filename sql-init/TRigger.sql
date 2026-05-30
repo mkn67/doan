@@ -73,10 +73,12 @@ COMPOUND TRIGGER
         SELECT COUNT(*) INTO v_ton_ns FROM NHAN_SU WHERE MANS = :NEW.MANS AND IS_DELETED = 0;
         IF v_ton_ns = 0 THEN RAISE_APPLICATION_ERROR(-20033, 'LOI: Bac si khong ton tai hoac da nghi!'); END IF;
 
-        -- Chỉ chặn nếu bác sĩ có đăng ký nghỉ (IS_NGHI = 1). Nếu chưa có lịch thì mặc định là rảnh để khách đặt dễ dàng.
-        SELECT COUNT(*) INTO v_ca_lam FROM LICH_LAM_VIEC
-        WHERE MANS = :NEW.MANS AND TRUNC(NGAY_LAM) = TRUNC(:NEW.NGAYHEN) AND IS_NGHI = 1;
-        IF v_ca_lam > 0 THEN RAISE_APPLICATION_ERROR(-20030, 'LOI: Bac si da dang ky nghi phep vao ngay nay!'); END IF;
+        -- Chỉ chặn nếu bác sĩ có đăng ký nghỉ (IS_NGHI = 1) và lịch hẹn không phải là Hủy
+        IF :NEW.TRANGTHAI != N'Đã hủy' THEN
+            SELECT COUNT(*) INTO v_ca_lam FROM LICH_LAM_VIEC
+            WHERE MANS = :NEW.MANS AND TRUNC(NGAY_LAM) = TRUNC(:NEW.NGAYHEN) AND IS_NGHI = 1;
+            IF v_ca_lam > 0 THEN RAISE_APPLICATION_ERROR(-20030, 'LOI: Bac si da dang ky nghi phep vao ngay nay!'); END IF;
+        END IF;
 
         IF :NEW.GIO_HEN IS NOT NULL AND :NEW.TRANGTHAI != N'Đã hủy' THEN
             v_idx := v_idx + 1;
@@ -97,9 +99,9 @@ COMPOUND TRIGGER
               AND TRANGTHAI != N'Đã hủy'
               AND (v_lich_arr(i).malh IS NULL OR MALH != v_lich_arr(i).malh);
               
-            IF v_trung > 0 THEN
-                RAISE_APPLICATION_ERROR(-20031, 'LOI: Bac si da co lich slot nay!');
-            END IF;
+            -- IF v_trung > 0 THEN
+            --     RAISE_APPLICATION_ERROR(-20031, 'LOI: Bac si da co lich slot nay!');
+            -- END IF;
         END LOOP;
     END AFTER STATEMENT;
 END TRG_VALIDATE_LICH_HEN;
@@ -132,15 +134,34 @@ BEFORE INSERT OR UPDATE OR DELETE ON HOA_DON
 FOR EACH ROW
 DECLARE
     v_tencv NVARCHAR2(100);
+    v_macv  VARCHAR2(10);
 BEGIN
     IF INSERTING OR UPDATING THEN
         BEGIN
-            SELECT cv.TENCV INTO v_tencv
+            SELECT ns.MACV, cv.TENCV INTO v_macv, v_tencv
             FROM NHAN_SU ns JOIN CHUC_VU cv ON ns.MACV = cv.MACV
             WHERE ns.MANS = :NEW.MANS;
 
-            IF v_tencv NOT IN (N'Thu ngân', N'Quản lý') THEN
-                RAISE_APPLICATION_ERROR(-20003, 'LOI: Nhan vien khong co quyen tao Hoa Don!');
+            IF v_macv NOT IN ('CV01', 'CV02', 'CV04', 'CV06', 'CV07', 'CV08', 'CV10', 'CV11', 'CV001', 'CV002', 'CV004') THEN
+                DECLARE
+                    v_clean NVARCHAR2(100);
+                BEGIN
+                    v_clean := UPPER(TRIM(v_tencv));
+                    IF v_clean NOT LIKE '%THU NGAN%' 
+                       AND v_clean NOT LIKE '%THU NGÂN%'
+                       AND v_clean NOT LIKE '%QUAN LY%' 
+                       AND v_clean NOT LIKE '%QUẢN LÝ%'
+                       AND v_clean NOT LIKE '%BAC SI%' 
+                       AND v_clean NOT LIKE '%BÁC SĨ%'
+                       AND v_clean NOT LIKE '%LE TAN%' 
+                       AND v_clean NOT LIKE '%LỄ TÂN%'
+                       AND v_clean NOT LIKE '%KY THUAT%' 
+                       AND v_clean NOT LIKE '%KỸ THUẬT%' 
+                       AND v_clean NOT LIKE '%SEP TONG%'
+                       AND v_clean NOT LIKE '%SẾP TỔNG%' THEN
+                        RAISE_APPLICATION_ERROR(-20003, 'LOI: Nhan vien khong co quyen tao Hoa Don!');
+                    END IF;
+                END;
             END IF;
         EXCEPTION
             WHEN NO_DATA_FOUND THEN
@@ -342,8 +363,8 @@ AFTER UPDATE OF KETLUAN ON HO_SO_THI_LUC
 FOR EACH ROW
 BEGIN
     IF NVL(:OLD.KETLUAN, ' ') != NVL(:NEW.KETLUAN, ' ') THEN
-        INSERT INTO AUDIT_HOSO_THILUC(MAAUDIT, MAHOSO, OLD_KETLUAN, NEW_KETLUAN, NGUOI_THUC_HIEN)
-        VALUES ('AUD' || LPAD(SEQ_AUDIT.NEXTVAL, 9, '0'), :OLD.MAHOSO, :OLD.KETLUAN, :NEW.KETLUAN, USER);
+        INSERT INTO AUDIT_HOSO_THILUC(MAAUDIT, MAHOSO, OLD_KETLUAN, NEW_KETLUAN, THOI_GIAN, NGUOI_THUC_HIEN)
+        VALUES ('AUD' || LPAD(SEQ_AUDIT.NEXTVAL, 9, '0'), :OLD.MAHOSO, :OLD.KETLUAN, :NEW.KETLUAN, SYSTIMESTAMP, USER);
     END IF;
 END;
 /
@@ -430,6 +451,50 @@ WHEN (OLD.GIABAN != NEW.GIABAN)
 BEGIN
     INSERT INTO LICH_SU_GIA(MALSG, MASP, GIA_CU, GIA_MOI, NGUOI_CAP_NHAT)
     VALUES ('LG' || LPAD(SEQ_LICH_SU_GIA.NEXTVAL, 6, '0'), :NEW.MASP, :OLD.GIABAN, :NEW.GIABAN, USER);
+END;
+/
+
+-- 15. Tự sinh mã hàng chờ và số thứ tự
+CREATE OR REPLACE TRIGGER TRG_GEN_MAHC
+BEFORE INSERT ON HANG_CHO
+FOR EACH ROW
+DECLARE
+    v_seq NUMBER;
+    v_max_stt NUMBER;
+    v_start_of_day TIMESTAMP;
+    v_end_of_day TIMESTAMP;
+BEGIN
+    IF :NEW.MAHC IS NULL THEN
+        SELECT SEQ_HANG_CHO.NEXTVAL INTO v_seq FROM DUAL;
+        :NEW.MAHC := 'HC' || LPAD(v_seq, 6, '0');
+    END IF;
+
+    IF :NEW.SO_THU_TU IS NULL THEN
+        v_start_of_day := TRUNC(CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Ho_Chi_Minh' AS DATE));
+        v_end_of_day := v_start_of_day + 1 - 1/86400;
+
+        SELECT NVL(MAX(SO_THU_TU), 0) INTO v_max_stt
+        FROM HANG_CHO
+        WHERE GIO_DANG_KY >= v_start_of_day AND GIO_DANG_KY <= v_end_of_day;
+
+        :NEW.SO_THU_TU := v_max_stt + 1;
+    END IF;
+
+    IF :NEW.LOAI_KHACH IS NULL THEN
+        IF :NEW.MALH IS NOT NULL THEN
+            :NEW.LOAI_KHACH := N'Đặt lịch';
+        ELSE
+            :NEW.LOAI_KHACH := N'Walk-in';
+        END IF;
+    END IF;
+
+    IF :NEW.TRANG_THAI IS NULL THEN
+        :NEW.TRANG_THAI := N'Đang chờ';
+    END IF;
+
+    IF :NEW.TEN_KHACH IS NULL AND :NEW.MAKH IS NOT NULL THEN
+        SELECT HOTEN INTO :NEW.TEN_KHACH FROM KHACH_HANG WHERE MAKH = :NEW.MAKH;
+    END IF;
 END;
 /
 

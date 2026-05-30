@@ -45,6 +45,11 @@ public class SanPhamController {
                 tongTon = entity.getDanhSachLoHang().stream()
                         .mapToInt(lh -> lh.getSoLuongTon() != null ? lh.getSoLuongTon() : 0)
                         .sum();
+                
+                List<com.kada.da.modules.inventory.dto.LoHangResponseDTO> loHangDtos = entity.getDanhSachLoHang().stream()
+                        .map(com.kada.da.modules.inventory.mapper.LoHangMapper::toResponse)
+                        .collect(Collectors.toList());
+                dto.setLoHangList(loHangDtos);
             }
             dto.setTongTonKho(tongTon);
             dto.setTrangThai(tongTon > 0 ? "Còn hàng" : "Hết hàng");

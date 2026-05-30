@@ -22,8 +22,9 @@ export interface AuthUser {
 
   // ---- 🔥 DÀNH CHO STAFF / PHÂN QUYỀN (THÊM VÀO ĐÂY) 🔥 ----
   loaiTk?: string;   // "INTERNAL" (Nhân viên) hoặc "EXTERNAL" (Khách)
-  maNhom?: string;   // VD: "NH04"
-  roles?: string[];  // VD: ["ROLE_NH04"]
+  maNhom?: string;   // VD: "NH04" (Mã nhóm cũ, nếu còn dùng)
+  roles?: string[];  // VD: ["ROLE_LE_TAN", "ROLE_BAC_SI", "ROLE_ADMIN"] (Các roles mới)
+  maNs?: string;
 }
 
 export const useForgotPassword = () => {

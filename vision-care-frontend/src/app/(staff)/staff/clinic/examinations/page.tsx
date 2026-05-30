@@ -80,7 +80,13 @@ const examSchema = z.object({
   ketluan: z.string().min(1, "Vui lòng điền kết luận của bác sĩ"),
   maHoSo: z.string().optional(),
   donKinh: z.string().optional(),
-  danhSachKeDon: z.array(
+  danhSachKinh: z.array(
+    z.object({
+      maSp: z.string().min(1, "Vui lòng chọn sản phẩm"),
+      soLuong: z.number({ message: "Phải là số" }).min(1, "Số lượng phải >= 1"),
+    })
+  ).optional(),
+  danhSachThuoc: z.array(
     z.object({
       maSp: z.string().min(1, "Vui lòng chọn sản phẩm"),
       soLuong: z.number({ message: "Phải là số" }).min(1, "Số lượng phải >= 1"),
@@ -308,7 +314,7 @@ function ExaminationContent() {
   const [isMounted, setIsMounted] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
-  const ALLOWED_ROLES = ["ROLE_BAC_SI", "NH01"];
+  const ALLOWED_ROLES = ["ROLE_BAC_SI", "NH01", "ROLE_ADMIN", "NH04"];
   const hasAccess = () => {
     if (!user) return false;
     const userRoles = user?.roles || [];
@@ -345,13 +351,19 @@ function ExaminationContent() {
       ketluan: "Thị lực ổn định, khúc xạ bình thường",
       maHoSo: "",
       donKinh: "",
-      danhSachKeDon: [],
+      danhSachKinh: [],
+      danhSachThuoc: [],
     },
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields: kinhFields, append: appendKinh, remove: removeKinh } = useFieldArray({
     control: form.control,
-    name: "danhSachKeDon",
+    name: "danhSachKinh",
+  });
+
+  const { fields: thuocFields, append: appendThuoc, remove: removeThuoc } = useFieldArray({
+    control: form.control,
+    name: "danhSachThuoc",
   });
 
   const [
@@ -409,7 +421,7 @@ function ExaminationContent() {
         if (userStr) {
           try {
             const parsedUser = JSON.parse(userStr);
-            form.setValue("maNs", parsedUser.username || ""); 
+            form.setValue("maNs", parsedUser.maNs || ""); 
             if (parsedUser.roles?.includes("ROLE_ADMIN") || parsedUser.maNhom === "NH04") {
               setIsAdmin(true);
             }
@@ -435,7 +447,7 @@ function ExaminationContent() {
           const os = data.danhSachThiLuc?.find((ct: ChiTietThiLuc) => ct.loaiMat === "T");
           form.reset({
             maKh: data.maKh || "",
-            maNs: form.getValues("maNs") || data.tenBacSi || "",
+            maNs: data.maNs || form.getValues("maNs") || "",
             matTraiSph: os?.sph ?? 0,
             matTraiCyl: os?.cyl ?? 0,
             matTraiAx: os?.axis ?? 0,
@@ -446,7 +458,8 @@ function ExaminationContent() {
             ketluan: data.ketLuan || "",
             maHoSo: data.maHoSo || "",
             donKinh: data.donKinh || "",
-            danhSachKeDon: [],
+            danhSachKinh: [],
+            danhSachThuoc: [],
           });
           toast.success(`📝 Đã tải dữ liệu hồ sơ ${data.maHoSo} để cập nhật!`);
         })
@@ -541,7 +554,9 @@ function ExaminationContent() {
       pd: Number(values.pd) || 60,
       ketluan: values.ketluan,
       maHoSo: values.maHoSo || undefined,
-      donKinh: values.donKinh || undefined,
+      donKinh: values.danhSachKinh?.length 
+        ? values.danhSachKinh.map(k => productsList.find((p: SanPhamResponse) => p.maSp === k.maSp)?.tenSp).filter(Boolean).join(", ")
+        : (values.donKinh || undefined),
     };
 
     setIsSubmitting(true);
@@ -551,8 +566,9 @@ function ExaminationContent() {
       const newMaHoSo = hoSoRes.maHoSo;
 
       // 2. Lưu đơn thuốc/kính nếu có sản phẩm được kê
-      if (values.danhSachKeDon && values.danhSachKeDon.length > 0) {
-        const validItems = values.danhSachKeDon.filter(item => item.maSp !== "");
+      const allItems = [...(values.danhSachKinh || []), ...(values.danhSachThuoc || [])];
+      if (allItems && allItems.length > 0) {
+        const validItems = allItems.filter(item => item.maSp !== "");
         if (validItems.length > 0) {
           const phieuKeDonPayload = {
             maHoSo: newMaHoSo,
@@ -566,8 +582,8 @@ function ExaminationContent() {
         }
       }
 
-      toast.success("Lưu hồ sơ khám bệnh và đơn kính/thuốc thành công!");
-      router.push(`/staff/clinic`);
+      toast.success("Kê đơn và lưu hồ sơ khám bệnh thành công!");
+      router.push(`/staff/clinic/queue`);
     } catch (err: unknown) {
       const errorResponse = err as { response?: { data?: { message?: string } }; message?: string };
       const msg = errorResponse.response?.data?.message || errorResponse.message || "Lỗi lưu hồ sơ hoặc đơn thuốc";
@@ -595,6 +611,17 @@ function ExaminationContent() {
 
         {/* Actions header */}
         <div className="flex items-center gap-3">
+          {maHoSoFromUrl && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => triggerPrintRecord(form.getValues() as any)}
+              className="h-10 px-4 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200 rounded-xl flex items-center gap-2 text-sm font-bold shadow-sm"
+            >
+              <Printer className="w-4.5 h-4.5" />
+              <span>In kết quả hiện tại</span>
+            </Button>
+          )}
           {maKhValue && (
             <button
               type="button"
@@ -870,69 +897,45 @@ function ExaminationContent() {
                       </div>
                     </div>
 
-                    {/* Đơn kính gia công */}
-                    <div className="pt-2">
-                      <FormField control={form.control} name="donKinh" render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="font-semibold text-xs text-slate-700">Đơn kính gia công (Tự động liên kết xưởng)</FormLabel>
-                          <FormControl>
-                            <Input 
-                              className="bg-white h-10 font-medium" 
-                              placeholder="Ví dụ: Gọng nhựa dẻo, Tròng Essilor 1.60 (ngăn cách bằng dấu phẩy)" 
-                              {...field} 
-                              readOnly={isAdmin}
-                            />
-                          </FormControl>
-                          <FormDescription className="text-[10px] text-slate-400">
-                            Hệ thống sẽ tự động liên kết và cập nhật trạng thái &quot;Chờ gia công&quot; tại xưởng khi nhập gọng và tròng.
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )} />
-                    </div>
                   </div>
 
-                  {/* Kê đơn thuốc / Cắt kính */}
-                  <div className="p-5 border border-slate-200 rounded-2xl bg-slate-50/50 space-y-4">
-                    <div className="flex items-center justify-between border-b pb-2">
-                      <h3 className="font-bold flex items-center text-slate-800 uppercase text-xs tracking-wider">
-                        <Stethoscope className="w-4 h-4 mr-2 text-emerald-600" /> Kê đơn thuốc / Mua kính tại quầy (Tích hợp)
+                  {/* Kê đơn kính (Gọng & Tròng) */}
+                  <div className="p-5 border border-slate-200 rounded-2xl bg-blue-50/50 space-y-4">
+                    <div className="flex items-center justify-between border-b border-blue-100 pb-2">
+                      <h3 className="font-bold flex items-center text-blue-800 uppercase text-xs tracking-wider">
+                        <Eye className="w-4 h-4 mr-2 text-blue-600" /> Kê đơn kính (Gọng & Tròng) - Tự động liên kết xưởng
                       </h3>
                       <Button
                         type="button"
                         variant="outline"
                         size="sm"
                         disabled={isAdmin}
-                        onClick={() => append({ maSp: "", soLuong: 1 })}
-                        className="h-8 text-xs bg-white text-slate-700 shadow-sm border-slate-200"
+                        onClick={() => appendKinh({ maSp: "", soLuong: 1 })}
+                        className="h-8 text-xs bg-white text-slate-700 shadow-sm border-blue-200"
                       >
-                        <Plus className="w-3.5 h-3.5 mr-1" /> Thêm sản phẩm
+                        <Plus className="w-3.5 h-3.5 mr-1" /> Thêm Gọng/Tròng
                       </Button>
                     </div>
 
-                    {fields.length === 0 ? (
-                      <div className="text-center py-5 text-xs text-slate-400 font-medium italic border border-dashed rounded-xl bg-white/40">
-                        Chưa có sản phẩm nào được kê. Bấm &quot;Thêm sản phẩm&quot; nếu muốn bán kèm thuốc hoặc tròng kính.
+                    {kinhFields.length === 0 ? (
+                      <div className="text-center py-4 text-xs text-blue-400 font-medium italic border border-dashed border-blue-200 rounded-xl bg-white/40">
+                        Chưa kê Gọng hoặc Tròng kính nào.
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        {fields.map((item, index) => (
-                          <div key={item.id} className="flex items-start gap-3 bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
+                        {kinhFields.map((item, index) => (
+                          <div key={item.id} className="flex items-start gap-3 bg-white p-3 rounded-xl border border-blue-100 shadow-sm">
                             <div className="flex-1">
-                              <FormField control={form.control} name={`danhSachKeDon.${index}.maSp`} render={({ field }) => (
+                              <FormField control={form.control} name={`danhSachKinh.${index}.maSp`} render={({ field }) => (
                                 <FormItem>
-                                  <FormLabel className="text-xs font-semibold text-slate-500">Sản phẩm / Thuốc</FormLabel>
+                                  <FormLabel className="text-xs font-semibold text-slate-500">Sản phẩm (Gọng/Tròng)</FormLabel>
                                   <FormControl>
-                                    <Select
-                                      value={field.value}
-                                      onValueChange={field.onChange}
-                                      disabled={isAdmin}
-                                    >
+                                    <Select value={field.value} onValueChange={field.onChange} disabled={isAdmin}>
                                       <SelectTrigger className="bg-white h-9 border-slate-200 text-xs">
-                                        <SelectValue placeholder="Chọn sản phẩm..." />
+                                        <SelectValue placeholder="Chọn Gọng / Tròng kính..." />
                                       </SelectTrigger>
                                       <SelectContent className="bg-white max-h-60">
-                                        {productsList.map((prod: SanPhamResponse) => (
+                                        {productsList.filter((p: SanPhamResponse) => !p.laThuoc).map((prod: SanPhamResponse) => (
                                           <SelectItem key={prod.maSp} value={prod.maSp} className="text-xs">
                                             {prod.tenSp} ({prod.maSp} - Giá: {prod.giaBan?.toLocaleString("vi-VN")}đ - Tồn: {prod.tongTonKho})
                                           </SelectItem>
@@ -945,7 +948,7 @@ function ExaminationContent() {
                               )} />
                             </div>
                             <div className="w-24">
-                              <FormField control={form.control} name={`danhSachKeDon.${index}.soLuong`} render={({ field }) => (
+                              <FormField control={form.control} name={`danhSachKinh.${index}.soLuong`} render={({ field }) => (
                                 <FormItem>
                                   <FormLabel className="text-xs font-semibold text-slate-500">Số lượng</FormLabel>
                                   <FormControl>
@@ -966,7 +969,88 @@ function ExaminationContent() {
                               type="button"
                               variant="ghost"
                               disabled={isAdmin}
-                              onClick={() => remove(index)}
+                              onClick={() => removeKinh(index)}
+                              className="mt-6 text-red-500 hover:text-red-700 hover:bg-red-50 p-2 h-9 w-9 rounded-lg"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Kê đơn thuốc */}
+                  <div className="p-5 border border-slate-200 rounded-2xl bg-emerald-50/50 space-y-4">
+                    <div className="flex items-center justify-between border-b border-emerald-100 pb-2">
+                      <h3 className="font-bold flex items-center text-emerald-800 uppercase text-xs tracking-wider">
+                        <Stethoscope className="w-4 h-4 mr-2 text-emerald-600" /> Kê đơn thuốc (Dược phẩm)
+                      </h3>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={isAdmin}
+                        onClick={() => appendThuoc({ maSp: "", soLuong: 1 })}
+                        className="h-8 text-xs bg-white text-slate-700 shadow-sm border-emerald-200"
+                      >
+                        <Plus className="w-3.5 h-3.5 mr-1" /> Thêm Thuốc
+                      </Button>
+                    </div>
+
+                    {thuocFields.length === 0 ? (
+                      <div className="text-center py-4 text-xs text-emerald-400 font-medium italic border border-dashed border-emerald-200 rounded-xl bg-white/40">
+                        Chưa có thuốc nào được kê.
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {thuocFields.map((item, index) => (
+                          <div key={item.id} className="flex items-start gap-3 bg-white p-3 rounded-xl border border-emerald-100 shadow-sm">
+                            <div className="flex-1">
+                              <FormField control={form.control} name={`danhSachThuoc.${index}.maSp`} render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel className="text-xs font-semibold text-slate-500">Sản phẩm (Thuốc)</FormLabel>
+                                  <FormControl>
+                                    <Select value={field.value} onValueChange={field.onChange} disabled={isAdmin}>
+                                      <SelectTrigger className="bg-white h-9 border-slate-200 text-xs">
+                                        <SelectValue placeholder="Chọn loại Thuốc..." />
+                                      </SelectTrigger>
+                                      <SelectContent className="bg-white max-h-60">
+                                        {productsList.filter((p: SanPhamResponse) => p.laThuoc).map((prod: SanPhamResponse) => (
+                                          <SelectItem key={prod.maSp} value={prod.maSp} className="text-xs">
+                                            {prod.tenSp} ({prod.maSp} - Giá: {prod.giaBan?.toLocaleString("vi-VN")}đ - Tồn: {prod.tongTonKho})
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )} />
+                            </div>
+                            <div className="w-24">
+                              <FormField control={form.control} name={`danhSachThuoc.${index}.soLuong`} render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel className="text-xs font-semibold text-slate-500">Số lượng</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      type="number"
+                                      min="1"
+                                      className="h-9"
+                                      disabled={isAdmin}
+                                      {...field}
+                                      onChange={(e) => field.onChange(e.target.value === "" ? 1 : Number(e.target.value))}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )} />
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              disabled={isAdmin}
+                              onClick={() => removeThuoc(index)}
                               className="mt-6 text-red-500 hover:text-red-700 hover:bg-red-50 p-2 h-9 w-9 rounded-lg"
                             >
                               <Trash2 className="w-4 h-4" />

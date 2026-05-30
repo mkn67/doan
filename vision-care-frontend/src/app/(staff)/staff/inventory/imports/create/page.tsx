@@ -251,23 +251,7 @@ export default function CreateImportPage() {
               </div>
             </div>
 
-            {/* Action buttons */}
-            <div className="pt-2 space-y-3">
-              <Button
-                onClick={handleSave}
-                disabled={createMutation.isPending}
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-12 font-bold shadow-lg shadow-indigo-600/10 hover:shadow-indigo-600/25 transition-all gap-2"
-              >
-                <Save className="w-4.5 h-4.5" /> {createMutation.isPending ? "Đang xử lý..." : "Lưu phiếu nhập"}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => router.push("/staff/inventory/imports")}
-                className="w-full border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-700 rounded-xl h-11"
-              >
-                Hủy bỏ
-              </Button>
-            </div>
+
 
           </div>
         </div>
@@ -409,6 +393,25 @@ export default function CreateImportPage() {
                 </div>
               ))}
             </div>
+
+            {/* Action buttons */}
+            <div className="mt-8 pt-6 border-t border-slate-200 flex items-center justify-end gap-3">
+              <Button
+                variant="outline"
+                onClick={() => router.push("/staff/inventory/imports")}
+                className="border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-700 rounded-xl h-11 px-6 font-semibold"
+              >
+                Hủy bỏ
+              </Button>
+              <Button
+                onClick={handleSave}
+                disabled={createMutation.isPending}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-11 px-8 font-bold shadow-lg shadow-indigo-600/10 hover:shadow-indigo-600/25 transition-all gap-2"
+              >
+                <Save className="w-4.5 h-4.5" /> {createMutation.isPending ? "Đang xử lý..." : "Lưu phiếu nhập"}
+              </Button>
+            </div>
+
           </div>
         </div>
 

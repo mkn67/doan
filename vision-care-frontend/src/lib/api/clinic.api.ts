@@ -89,10 +89,15 @@ export const clinicApi = {
     const response = await axiosClient.put(`/hang-cho/${maHc}/ket-thuc`, null, { params: { trangThai } });
     return response.data;
   },
-  getHangChoHomNay: async (maNs?: string) => {
+    getHangChoHomNay: async (maNs?: string) => {
     const response = await axiosClient.get(`/hang-cho/hom-nay`, {
       params: { maNs } // Truyền mã bác sĩ lên để lọc (nếu có)
     });
+    return response.data;
+  },
+
+  getHoSoKhamByBacSi: async (maNs: string): Promise<{ message: string; data: HoSoKhamResponse[] }> => {
+    const response = await axiosClient.get(`/examinations/bac-si/${maNs}`);
     return response.data;
   },
 };

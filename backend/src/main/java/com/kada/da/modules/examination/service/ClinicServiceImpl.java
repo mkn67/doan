@@ -92,6 +92,24 @@ public class ClinicServiceImpl implements ClinicService {
                     req.getMatPhaiSph(), req.getMatPhaiCyl(), req.getMatPhaiAx(),
                     req.getPd(), ketluan);
 
+            // Ghi vào bảng lịch sử AUDIT_HOSO_THILUC (Khởi tạo)
+            try {
+                Integer auditSeq = jdbcTemplate.queryForObject("SELECT SEQ_AUDIT.NEXTVAL FROM dual", Integer.class);
+                String maAudit = String.format("AUD%09d", auditSeq);
+                
+                StringBuilder initDiff = new StringBuilder();
+                initDiff.append("Khởi tạo: Trai_SPH=").append(req.getMatTraiSph() != null ? req.getMatTraiSph() : 0.0)
+                        .append(", Phai_SPH=").append(req.getMatPhaiSph() != null ? req.getMatPhaiSph() : 0.0)
+                        .append(", KL=\"").append(ketluan).append("\"");
+
+                jdbcTemplate.update(
+                        "INSERT INTO AUDIT_HOSO_THILUC(MAAUDIT, MAHOSO, OLD_KETLUAN, NEW_KETLUAN, THOI_GIAN, NGUOI_THUC_HIEN) VALUES (?, ?, ?, ?, SYSTIMESTAMP, ?)",
+                        maAudit, maHoSoResult, "Hồ sơ mới", initDiff.toString(), mans
+                );
+            } catch (Exception e) {
+                log.error("Lỗi khi lưu audit log khởi tạo: ", e);
+            }
+
         } else {
             // CẬP NHẬT HỒ SƠ
             maHoSoResult = maHoSo;

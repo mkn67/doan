@@ -12,7 +12,9 @@ import {
   ReceiptText,
   ArrowLeft,
   ShieldAlert,
+  Download,
 } from "lucide-react";
+import { billingApi } from "@/lib/api/billing.api";
 import { useReactToPrint } from "react-to-print";
 import { QRCodeSVG } from "qrcode.react";
 import { useRouter } from "next/navigation";
@@ -57,9 +59,37 @@ interface PageResponseDTO {
 export default function PaymentsPage() {
   const router = useRouter();
   const { user } = useAuth();
+
+  // Move all hooks to the top level, before any conditional returns
+  const { data: listHoaDon, isLoading } = useDanhSachHoaDon();
+  const thanhToanMutation = useThanhToan();
+  const deleteMutation = useDeleteHoaDon();
+
+  const [searchTerm, setSearchTerm] = useState("");
+  const [scanTerm, setScanTerm] = useState("");
+  const [sortBy, setSortBy] = useState<"unpaid_first" | "paid_first" | "default">("unpaid_first");
+
+  const [isOpen, setIsOpen] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] =
+    useState<HoaDonResponseDTO | null>(null);
+  const [phuongThuc, setPhuongThuc] = useState("Tiền mặt");
+
+  const printRef = useRef<HTMLDivElement>(null);
+  const [invoiceToPrint, setInvoiceToPrint] =
+    useState<HoaDonResponseDTO | null>(null);
+
   const isAdmin = user?.roles?.includes("ROLE_ADMIN") || user?.maNhom === "NH04";
-  
-  const ALLOWED_ROLES = ["ROLE_THU_NGAN", "NH02"];
+
+  // ==========================================
+  // STATE & LOGIC: IN HÓA ĐƠN PDF
+  // ==========================================
+  const handlePrint = useReactToPrint({
+    contentRef: printRef,
+    documentTitle: `HoaDon_VisionCare_${invoiceToPrint?.maHd || "New"}`,
+    onAfterPrint: () => setInvoiceToPrint(null),
+  });
+
+  const ALLOWED_ROLES = ["ROLE_THU_NGAN", "NH02", "ROLE_ADMIN", "NH04"];
   const hasAccess = () => {
     if (!user) return false;
     const userRoles = user?.roles || [];
@@ -67,53 +97,30 @@ export default function PaymentsPage() {
     return ALLOWED_ROLES.some(role => userRoles.includes(role) || role === userGroup);
   };
 
-  const { data: listHoaDon, isLoading } = useDanhSachHoaDon();
-  const thanhToanMutation = useThanhToan();
-  const deleteMutation = useDeleteHoaDon();
-  const [searchTerm, setSearchTerm] = useState("");
-  const [scanTerm, setScanTerm] = useState("");
-
-  // ==========================================
-  // STATE: THANH TOÁN
-  // ==========================================
-  const [isOpen, setIsOpen] = useState(false);
-  const [selectedInvoice, setSelectedInvoice] =
-    useState<HoaDonResponseDTO | null>(null);
-  const [phuongThuc, setPhuongThuc] = useState("Tiền mặt");
-
-  if (!hasAccess()) {
-    return (
-      <div className="flex h-[calc(100vh-4rem)] flex-col items-center justify-center bg-slate-50/50 rounded-2xl border-2 border-dashed border-slate-200 m-6 p-8 text-center">
-        <ShieldAlert className="w-16 h-16 text-rose-500 mb-4 animate-bounce mx-auto" />
-        <h2 className="text-2xl font-bold text-slate-800">Truy Cập Bị Từ Chối</h2>
-        <p className="text-slate-500 mt-2 max-w-md mx-auto">
-          Tài khoản của bạn không có nghiệp vụ Thu ngân. Vui lòng quay lại!
-        </p>
-        <Button onClick={() => router.back()} className="mt-6 bg-slate-800 hover:bg-slate-900 rounded-xl px-5 h-11 font-bold">
-          Quay lại trang trước
-        </Button>
-      </div>
-    );
-  }
-
-  // ==========================================
-  // STATE & LOGIC: IN HÓA ĐƠN PDF
-  // ==========================================
-  const printRef = useRef<HTMLDivElement>(null);
-  const [invoiceToPrint, setInvoiceToPrint] =
-    useState<HoaDonResponseDTO | null>(null);
-
-  const handlePrint = useReactToPrint({
-    contentRef: printRef,
-    documentTitle: `HoaDon_VisionCare_${invoiceToPrint?.maHd || "New"}`,
-    onAfterPrint: () => setInvoiceToPrint(null),
-  });
-
   const triggerPrint = (invoice: HoaDonResponseDTO) => {
     setInvoiceToPrint(invoice);
     setTimeout(() => {
       handlePrint();
     }, 100);
+  };
+
+  const handleDownloadPdf = async (maHd: string) => {
+    const toastId = toast.loading("Đang tạo file PDF...");
+    try {
+      const blob = await billingApi.exportPdf(maHd);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `HoaDon_${maHd}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast.success("Tải PDF hóa đơn thành công!", { id: toastId });
+    } catch (error) {
+      console.error("Error downloading PDF:", error);
+      toast.error("Không thể tải file PDF hóa đơn!", { id: toastId });
+    }
   };
 
   // ==========================================
@@ -129,6 +136,24 @@ export default function PaymentsPage() {
       hd.maHd?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       hd.tenKhachHang?.toLowerCase().includes(searchTerm.toLowerCase()),
   );
+
+  const sortedInvoices = [...filteredInvoices].sort((a, b) => {
+    if (sortBy === "unpaid_first") {
+      const aUnpaid = a.trangThai === "Chưa thanh toán" || a.trangThai === "Chờ thanh toán";
+      const bUnpaid = b.trangThai === "Chưa thanh toán" || b.trangThai === "Chờ thanh toán";
+      if (aUnpaid && !bUnpaid) return -1;
+      if (!aUnpaid && bUnpaid) return 1;
+      return 0;
+    }
+    if (sortBy === "paid_first") {
+      const aPaid = a.trangThai === "Đã thanh toán" || a.trangThai === "Thành công";
+      const bPaid = b.trangThai === "Đã thanh toán" || b.trangThai === "Thành công";
+      if (aPaid && !bPaid) return -1;
+      if (!aPaid && bPaid) return 1;
+      return 0;
+    }
+    return 0;
+  });
 
   const handleOpenPayment = (invoice: HoaDonResponseDTO) => {
     setSelectedInvoice(invoice);
@@ -190,6 +215,19 @@ export default function PaymentsPage() {
 
   return (
     <div className="p-6 md:p-8 space-y-6 bg-slate-50 min-h-[calc(100vh-4rem)]">
+      {!hasAccess() ? (
+        <div className="flex h-[calc(100vh-4rem)] flex-col items-center justify-center bg-slate-50/50 rounded-2xl border-2 border-dashed border-slate-200 p-8 text-center mx-auto my-12 max-w-lg">
+          <ShieldAlert className="w-16 h-16 text-rose-500 mb-4 animate-bounce mx-auto" />
+          <h2 className="text-2xl font-bold text-slate-800">Truy Cập Bị Từ Chối</h2>
+          <p className="text-slate-505 mt-2 max-w-md mx-auto">
+            Tài khoản của bạn không có nghiệp vụ Thu ngân. Vui lòng quay lại!
+          </p>
+          <Button onClick={() => router.back()} className="mt-6 bg-slate-800 hover:bg-slate-900 rounded-xl px-5 h-11 font-bold">
+            Quay lại trang trước
+          </Button>
+        </div>
+      ) : (
+        <>
       {/* HEADER TÌM KIẾM */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
         <div className="flex items-center gap-4">
@@ -213,14 +251,25 @@ export default function PaymentsPage() {
             </p>
           </div>
         </div>
-        <div className="relative w-full md:w-80 group">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
-          <Input
-            placeholder="Tìm theo Mã HĐ, Tên khách hàng..."
-            className="pl-10 h-10 border-slate-200 bg-slate-50 focus-visible:ring-emerald-500 rounded-xl"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto items-center">
+          <div className="relative w-full sm:w-72 group">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
+            <Input
+              placeholder="Tìm theo Mã HĐ, Tên khách hàng..."
+              className="pl-10 h-10 border-slate-200 bg-slate-50 focus-visible:ring-emerald-500 rounded-xl"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as any)}
+            className="h-10 px-4 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all font-medium text-slate-700 w-full sm:w-48"
+          >
+            <option value="unpaid_first">Chưa thanh toán trước</option>
+            <option value="paid_first">Đã thanh toán trước</option>
+            <option value="default">Mặc định (Mã HĐ)</option>
+          </select>
         </div>
       </div>
 
@@ -285,8 +334,8 @@ export default function PaymentsPage() {
                   </div>
                 </TableCell>
               </TableRow>
-            ) : filteredInvoices.length > 0 ? (
-              filteredInvoices.map((hd: HoaDonResponseDTO) => (
+            ) : sortedInvoices.length > 0 ? (
+              sortedInvoices.map((hd: HoaDonResponseDTO) => (
                 <TableRow
                   key={hd.maHd}
                   className="hover:bg-emerald-50/30 transition-colors group"
@@ -356,14 +405,24 @@ export default function PaymentsPage() {
                         </Button>
                       </div>
                     ) : (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="border-blue-200 text-blue-600 hover:bg-blue-50 w-full rounded-lg transition-all"
-                        onClick={() => triggerPrint(hd)}
-                      >
-                        <Printer className="w-4 h-4 mr-1.5" /> In Bill
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-blue-200 text-blue-600 hover:bg-blue-50 flex-1 rounded-lg transition-all"
+                          onClick={() => triggerPrint(hd)}
+                        >
+                          <Printer className="w-3.5 h-3.5 mr-1" /> In Bill
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-slate-300 text-slate-650 hover:bg-slate-50 flex-1 rounded-lg transition-all"
+                          onClick={() => handleDownloadPdf(hd.maHd)}
+                        >
+                          <Download className="w-3.5 h-3.5 mr-1" /> PDF
+                        </Button>
+                      </div>
                     )}
                   </TableCell>
                 </TableRow>
@@ -681,6 +740,8 @@ export default function PaymentsPage() {
           </div>
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 }

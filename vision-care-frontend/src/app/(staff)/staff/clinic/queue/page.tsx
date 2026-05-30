@@ -59,7 +59,7 @@ export default function QueuePage() {
     }, 0);
   }, []);
 
-  const ALLOWED_ROLES = ["ROLE_BAC_SI", "NH01"];
+  const ALLOWED_ROLES = ["ROLE_BAC_SI", "NH01", "ROLE_ADMIN", "NH04"];
   const hasAccess = () => {
     if (!user) return false;
     const userRoles = user?.roles || [];

@@ -65,6 +65,11 @@ export const staffApi = {
     return response.data;
   },
 
+  checkInLichHen: async (maLh: string | number): Promise<HangChoResponseDTO> => {
+    const response = await axiosClient.post<HangChoResponseDTO>(`/bookings/${maLh}/check-in`);
+    return response.data;
+  },
+
   // --- HÀNG CHỜ (MÀN HÌNH LỄ TÂN) ---
   themVaoHangCho: async (data: HangChoRequestDTO): Promise<HangChoResponseDTO> => {
     const response = await axiosClient.post<HangChoResponseDTO>('/hang-cho', data);
@@ -114,7 +119,7 @@ export const staffApi = {
   },
 
   getLichHenTrieuChung: async (): Promise<LichHenTrieuChungDTO[]> => {
-    const response = await axiosClient.get<LichHenTrieuChungDTO[]>("/lich-hen/trieu-chung");
+    const response = await axiosClient.get<LichHenTrieuChungDTO[]>("/bookings/trieu-chung");
     return response.data;
   },
 
@@ -122,7 +127,7 @@ export const staffApi = {
       const params: any = {};
       if (ngay) params.ngay = ngay;
       if (maNs) params.maNs = maNs;
-      const response = await axiosClient.get<SlotTrongDTO[]>("/lich-lam-viec/slot-trong", { params });
+      const response = await axiosClient.get<SlotTrongDTO[]>("/lich-lam-viec/nhan-su-ranh", { params });
       return response.data;
   },
 

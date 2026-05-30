@@ -68,7 +68,6 @@ public class SecurityConfig {
                         "/api/v1/auth/login",
                         "/api/v1/auth/register",
                         "/api/v1/auth/forgot-password",
-                        // 🔥 2 DÒNG NÀY LÀ CHÌA KHÓA MỞ DROPDOWN CHO KHÁCH ĐẶT LỊCH NÀY 🔥
                         "/api/v1/nhan-su/chuc-vu/**",
                         "/api/v1/goi-kham/active",
                         // Public slot lookup for booking pages
@@ -82,9 +81,8 @@ public class SecurityConfig {
                 // Lịch hẹn: Khách hàng xem lịch của họ, Lễ tân xếp lịch, Bác sĩ và Quản lý
                 .requestMatchers("/api/v1/lich-hen/**")
                 .hasAnyRole("BAC_SI", "LE_TAN", "ADMIN", "CUSTOMER")
-                // Khách hàng: Lễ tân tiếp nhận và Quản lý
                 .requestMatchers("/api/v1/khach-hang/**")
-                .hasAnyRole("LE_TAN", "ADMIN", "CUSTOMER")
+                .hasAnyRole("LE_TAN", "ADMIN", "CUSTOMER", "BAC_SI")
                 // Khám bệnh: Bác sĩ trực tiếp khám và Quản lý theo dõi
                 .requestMatchers("/api/v1/kham-benh/**")
                 .hasAnyRole("BAC_SI", "ADMIN")

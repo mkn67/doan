@@ -32,7 +32,7 @@ export default function BillingPage() {
   const [isMounted, setIsMounted] = useState(false);
   const [maNs, setMaNs] = useState("");
 
-  const ALLOWED_ROLES = ["ROLE_THU_NGAN", "NH02"];
+  const ALLOWED_ROLES = ["ROLE_THU_NGAN", "NH02", "ROLE_ADMIN", "NH04"];
   const hasAccess = () => {
     if (!user) return false;
     const userRoles = user?.roles || [];
@@ -53,7 +53,7 @@ export default function BillingPage() {
       if (userStr) {
         try {
           const user = JSON.parse(userStr);
-          setMaNs(user.username || "NS000"); 
+          setMaNs(user.maNs || "NS000"); 
         } catch (error) {
           console.error("Lỗi đọc dữ liệu người dùng:", error);
         }

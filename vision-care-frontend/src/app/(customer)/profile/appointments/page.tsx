@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import * as React from "react";
 import { useState, useEffect } from "react";
@@ -9,9 +9,11 @@ import {
 import { useRouter } from "next/navigation";
 
 import { useDanhSachLichHen } from "@/hooks/useStaff"; 
+import { useGoiKham } from "@/hooks/useClinic";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 // Định nghĩa Interface chuẩn thay vì dùng any
 interface Appointment {
@@ -46,6 +48,17 @@ export default function CustomerAppointmentsPage() {
     size: 100
   });
 
+  const { data: goiKhamData } = useGoiKham();
+  const goiKhamList = Array.isArray(goiKhamData) ? goiKhamData : [];
+
+  const [selectedAppt, setSelectedAppt] = useState<Appointment | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
+
+  const handleOpenDetails = (appt: Appointment) => {
+    setSelectedAppt(appt);
+    setIsOpen(true);
+  };
+
   const appointments = (data as unknown as APIResponse)?.content || [];
 
   const upcoming = appointments.filter((item) => 
@@ -55,6 +68,10 @@ export default function CustomerAppointmentsPage() {
   const history = appointments.filter((item) => 
     item.trangThai === "DA_CHECK_IN" || item.trangThai === "DA_HUY" || item.trangThai === "HOAN_THANH"
   );
+
+  const matchedGoi = selectedAppt 
+    ? goiKhamList.find((g: any) => g.tenGoi?.toLowerCase() === selectedAppt.tenGoiKham?.toLowerCase())
+    : null;
 
   return (
     <div className="max-w-4xl mx-auto p-4 md:p-8 space-y-8 animate-in fade-in duration-700">
@@ -85,7 +102,7 @@ export default function CustomerAppointmentsPage() {
           {isLoading ? (
              <LoadingState />
           ) : upcoming.length > 0 ? (
-            upcoming.map((item) => <AppointmentCard key={item.maLh} item={item} isHistory={false} />)
+            upcoming.map((item) => <AppointmentCard key={item.maLh} item={item} isHistory={false} onSelect={handleOpenDetails} />)
           ) : (
             <EmptyState message="Ông giáo chưa có lịch hẹn sắp tới nào." />
           )}
@@ -95,17 +112,99 @@ export default function CustomerAppointmentsPage() {
           {isLoading ? (
              <LoadingState />
           ) : history.length > 0 ? (
-            history.map((item) => <AppointmentCard key={item.maLh} item={item} isHistory={true} />)
+            history.map((item) => <AppointmentCard key={item.maLh} item={item} isHistory={true} onSelect={handleOpenDetails} />)
           ) : (
             <EmptyState message="Chưa có dữ liệu lịch sử khám bệnh." />
           )}
         </TabsContent>
       </Tabs>
+
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <DialogContent className="max-w-md bg-white rounded-3xl p-6 shadow-xl border border-slate-100">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-extrabold text-slate-900 flex items-center gap-2">
+              <Stethoscope className="w-5 h-5 text-blue-600 animate-pulse" />
+              Chi Tiết Lịch Hẹn
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-500 mt-1">
+              Thông tin chi tiết về gói khám và thời gian đăng ký.
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedAppt && (
+            <div className="space-y-5 mt-4">
+              {/* Thẻ Trạng thái */}
+              <div className="flex items-center justify-between p-3 bg-slate-50 rounded-2xl border border-slate-150">
+                <span className="text-xs font-semibold text-slate-500">Mã Lịch Hẹn: #{selectedAppt.maLh}</span>
+                <StatusBadge status={selectedAppt.trangThai} />
+              </div>
+
+              {/* Thông tin bác sĩ / thời gian */}
+              <div className="space-y-3 p-4 bg-blue-50/30 rounded-2xl border border-blue-100 text-sm text-slate-700">
+                <div className="flex items-center gap-3">
+                  <CalendarDays className="w-4 h-4 text-blue-500" />
+                  <span>Ngày hẹn: <strong>{selectedAppt.ngayHen}</strong></span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Clock className="w-4 h-4 text-blue-500" />
+                  <span>Giờ hẹn: <strong>{selectedAppt.gioHen}</strong></span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <User className="w-4 h-4 text-blue-500" />
+                  <span>Bác sĩ phụ trách: <strong>{selectedAppt.tenBacSi || "Hệ thống sẽ phân công"}</strong></span>
+                </div>
+              </div>
+
+              {/* Chi tiết gói dịch vụ */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-bold text-slate-800">Gói Khám Đã Đăng Ký</h4>
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <p className="font-bold text-slate-900 text-sm">{selectedAppt.tenGoiKham}</p>
+                      {matchedGoi?.moTa && (
+                        <p className="text-xs text-slate-500 mt-1">{matchedGoi.moTa}</p>
+                      )}
+                    </div>
+                    <span className="font-extrabold text-blue-600 text-sm shrink-0 ml-4">
+                      {matchedGoi?.giaGoi
+                        ? new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(matchedGoi.giaGoi)
+                        : "Chưa cập nhật giá"}
+                    </span>
+                  </div>
+
+                  {/* Danh sách các dịch vụ con */}
+                  {matchedGoi?.chiTietDichVu && matchedGoi.chiTietDichVu.length > 0 && (
+                    <div className="pt-3 border-t border-slate-200 space-y-2">
+                      <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Chi tiết các bước khám:</p>
+                      <ul className="space-y-1.5">
+                        {matchedGoi.chiTietDichVu.map((dv: any) => (
+                          <li key={dv.maDv} className="flex items-center justify-between text-xs text-slate-600">
+                            <span className="flex items-center gap-1.5">
+                              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
+                              <span className="truncate">{dv.tenDv}</span>
+                            </span>
+                            {dv.giaDv && (
+                              <span className="text-slate-400 font-medium shrink-0 ml-2">
+                                ({new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(dv.giaDv)})
+                              </span>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
-function AppointmentCard({ item, isHistory }: { item: Appointment, isHistory: boolean }) {
+function AppointmentCard({ item, isHistory, onSelect }: { item: Appointment, isHistory: boolean, onSelect: (appt: Appointment) => void }) {
   return (
     <Card className={`group border-l-4 transition-all hover:shadow-md ${isHistory ? 'border-l-slate-300' : 'border-l-blue-500'}`}>
       <CardContent className="p-5">
@@ -130,11 +229,9 @@ function AppointmentCard({ item, isHistory }: { item: Appointment, isHistory: bo
 
           <div className="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center gap-2">
             <StatusBadge status={item.trangThai} />
-            {!isHistory && (
-              <Button variant="ghost" size="sm" className="text-blue-600 group">
-                Xem chi tiết <ChevronRight className="ml-1 w-4 h-4 transition-transform group-hover:translate-x-1" />
-              </Button>
-            )}
+            <Button variant="ghost" size="sm" className="text-blue-600 group" onClick={() => onSelect(item)}>
+              Xem chi tiết <ChevronRight className="ml-1 w-4 h-4 transition-transform group-hover:translate-x-1" />
+            </Button>
           </div>
         </div>
       </CardContent>

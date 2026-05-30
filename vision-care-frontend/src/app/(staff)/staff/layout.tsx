@@ -18,13 +18,13 @@ const staffMenuItems = [
     name: "Tổng quan (Dashboard)", 
     href: "/staff/dashboard", 
     icon: LayoutDashboard, 
-    roles: ["ROLE_ADMIN", "NH04"] 
+    roles: ["ROLE_ADMIN"] 
   },
   { 
     name: "Quản trị hệ thống", 
     href: "/staff/admin", 
     icon: Users, 
-    roles: ["ROLE_ADMIN", "NH04"] 
+    roles: ["ROLE_ADMIN"] 
   },
 
   // --- LỄ TÂN (RECEPTIONIST) ---
@@ -32,13 +32,13 @@ const staffMenuItems = [
     name: "Duyệt Lịch Hẹn", 
     href: "/staff/reception/appointments", 
     icon: CalendarDays, 
-    roles: ["ROLE_LE_TAN", "NH06"] 
+    roles: ["ROLE_LE_TAN"] 
   },
   { 
     name: "Hồ Sơ Khách Hàng", 
     href: "/staff/reception/customers", 
     icon: Users, 
-    roles: ["ROLE_LE_TAN", "NH06"] 
+    roles: ["ROLE_LE_TAN"] 
   },
 
   // --- BÁC SĨ (DOCTOR) ---
@@ -46,19 +46,19 @@ const staffMenuItems = [
     name: "Đo Khúc Xạ & Khám", 
     href: "/staff/clinic/examinations", 
     icon: Stethoscope, 
-    roles: ["ROLE_BAC_SI", "NH01"] 
+    roles: ["ROLE_BAC_SI"] 
   },
   { 
     name: "Hàng Chờ Hôm Nay", 
     href: "/staff/clinic/queue", 
     icon: Activity, 
-    roles: ["ROLE_BAC_SI", "NH01"] 
+    roles: ["ROLE_BAC_SI"] 
   },
   { 
     name: "Nhật Ký Thay Đổi", 
     href: "/staff/clinic/audit", 
     icon: History, 
-    roles: ["ROLE_BAC_SI", "NH01"] 
+    roles: ["ROLE_BAC_SI"] 
   },
 
   // --- THU NGÂN (CASHIER) ---
@@ -66,13 +66,13 @@ const staffMenuItems = [
     name: "Thanh Toán Hóa Đơn", 
     href: "/staff/cashier/payments", 
     icon: Wallet, 
-    roles: ["ROLE_THU_NGAN", "NH02"] 
+    roles: ["ROLE_THU_NGAN"] 
   },
   { 
     name: "Tạo Hóa Đơn Bán", 
     href: "/staff/cashier/billing", 
     icon: FileText, 
-    roles: ["ROLE_THU_NGAN", "NH02"] 
+    roles: ["ROLE_THU_NGAN"] 
   },
 
   // --- THỦ KHO (WAREHOUSE KEEPER) ---
@@ -80,19 +80,13 @@ const staffMenuItems = [
     name: "Sản phẩm & Vật tư", 
     href: "/staff/inventory/products", 
     icon: Package, 
-    roles: ["ROLE_THU_KHO", "NH03"] 
+    roles: ["ROLE_THU_KHO"] 
   },
   { 
     name: "Nhập kho lô hàng", 
     href: "/staff/inventory/imports", 
     icon: ClipboardList, 
-    roles: ["ROLE_THU_KHO", "NH03"] 
-  },
-  { 
-    name: "Nhà cung cấp", 
-    href: "/staff/inventory/suppliers", 
-    icon: Truck, 
-    roles: ["ROLE_THU_KHO", "NH03"] 
+    roles: ["ROLE_THU_KHO"] 
   },
 
   // --- KỸ THUẬT VIÊN (TECHNICIAN) ---
@@ -100,7 +94,7 @@ const staffMenuItems = [
     name: "Xưởng mài lắp kính", 
     href: "/staff/workshop/glasses", 
     icon: Hammer, 
-    roles: ["ROLE_KY_THUAT", "NH05"] 
+    roles: ["ROLE_KY_THUAT"] 
   },
 ];
 
@@ -127,11 +121,10 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
   const hasAccess = (allowedRoles: string[]) => {
     if (!user) return false;
 
-    // Kiểm tra theo roles (mảng) hoặc maNhom (chuỗi đơn lẻ) từ LoginResponseDTO
+    // Kiểm tra theo roles (mảng) từ LoginResponseDTO
     const userRoles = user?.roles || [];
-    const userGroup = user?.maNhom ? user.maNhom : null;
 
-    return allowedRoles.some(role => userRoles.includes(role) || role === userGroup);
+    return allowedRoles.some(role => userRoles.includes(role));
   };
 
   // Lọc menu: Chỉ giữ lại những mục mà User hiện tại có quyền xem
@@ -248,20 +241,21 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
           {(() => {
             let allowedRoles: string[] | null = null;
             if (pathname.startsWith("/staff/admin") || pathname.startsWith("/staff/dashboard")) {
-              allowedRoles = ["ROLE_ADMIN", "NH04"];
+              allowedRoles = ["ROLE_ADMIN"];
             } else if (pathname.startsWith("/staff/reception")) {
-              allowedRoles = ["ROLE_LE_TAN", "NH06"];
+              allowedRoles = ["ROLE_LE_TAN"];
             } else if (pathname.startsWith("/staff/clinic")) {
-              allowedRoles = ["ROLE_BAC_SI", "NH01"];
+              allowedRoles = ["ROLE_BAC_SI"];
             } else if (pathname.startsWith("/staff/cashier")) {
-              allowedRoles = ["ROLE_THU_NGAN", "NH02"];
+              allowedRoles = ["ROLE_THU_NGAN"];
             } else if (pathname.startsWith("/staff/inventory")) {
-              allowedRoles = ["ROLE_THU_KHO", "NH03"];
+              allowedRoles = ["ROLE_THU_KHO"];
             } else if (pathname.startsWith("/staff/workshop")) {
-              allowedRoles = ["ROLE_KY_THUAT", "NH05"];
+              allowedRoles = ["ROLE_KY_THUAT"];
             }
 
-            const isAuthorized = allowedRoles === null || hasAccess(allowedRoles);
+            const isAdmin = user?.roles?.includes("ROLE_ADMIN");
+            const isAuthorized = allowedRoles === null || isAdmin || hasAccess(allowedRoles);
             if (!isAuthorized) {
               return (
                 <div className="flex flex-col items-center justify-center min-h-[50vh] bg-white rounded-3xl border border-slate-100 shadow-xl p-8 text-center max-w-xl mx-auto mt-10">

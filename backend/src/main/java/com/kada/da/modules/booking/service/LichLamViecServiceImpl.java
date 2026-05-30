@@ -214,7 +214,7 @@ public class LichLamViecServiceImpl implements LichLamViecService {
         if (ngay != null) {
             danhSachLich = lichLamViecRepository.findByIsNghiFalseAndNgayLam(ngay);
         } else {
-            LocalDate today = LocalDate.now();
+            LocalDate today = LocalDate.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"));
             danhSachLich = lichLamViecRepository.findByIsNghiFalseAndNgayLamGreaterThanEqual(today);
         }
 
@@ -224,30 +224,50 @@ public class LichLamViecServiceImpl implements LichLamViecService {
                     .collect(Collectors.toList());
         }
 
-        List<LichHen> tatCaLichHen = lichHenRepository.findByTrangThaiNot(TrangThaiLichHen.DA_HUY); // dùng enum
+        List<LichHen> tatCaLichHen = lichHenRepository.findByTrangThaiNot(TrangThaiLichHen.DA_HUY);
 
-        return danhSachLich.stream()
-                .filter(llv -> llv.getNhanSu() != null && llv.getNhanSu().getIsDeleted() == 0)
-                .map(llv -> {
-                    boolean isBooked = tatCaLichHen.stream().anyMatch(lh -> lh.getNhanSu() != null
-                            && lh.getNhanSu().getMaNs().equals(llv.getNhanSu().getMaNs())
-                            && lh.getGioHen() != null
-                            && lh.getGioHen().toLocalDate().equals(llv.getNgayLam())
-                            && isTimeBetween(lh.getGioHen().toLocalTime(), llv.getGioBatDau(), llv.getGioKetThuc()));
-                    return SlotTrongDto.builder()
-                            .maNs(llv.getNhanSu().getMaNs())
-                            .tenBacSi(llv.getNhanSu().getHoTen())
-                            .ngayLam(llv.getNgayLam())
-                            .gioBatDau(llv.getGioBatDau())
-                            .gioKetThuc(llv.getGioKetThuc())
-                            .trangThaiSlot(isBooked ? "Đã đặt" : "Còn trống")
-                            .build();
-                })
-                .collect(Collectors.toList());
-    }
+        List<SlotTrongDto> result = new java.util.ArrayList<>();
 
-    private boolean isTimeBetween(LocalTime time, Double start, Double end) {
-        double timeAsDouble = time.getHour() + (time.getMinute() / 60.0);
-        return timeAsDouble >= start && timeAsDouble < end;
+        for (LichLamViec llv : danhSachLich) {
+            if (llv.getNhanSu() == null || llv.getNhanSu().getIsDeleted() == 1) {
+                continue;
+            }
+            double start = llv.getGioBatDau() != null ? llv.getGioBatDau() : 8.0;
+            double end = llv.getGioKetThuc() != null ? llv.getGioKetThuc() : 17.0;
+            
+            // Loop from start to end in 30-minute (0.5 hour) increments
+            for (double slotStart = start; slotStart < end; slotStart += 0.5) {
+                // Skip lunch break: 12:00 to 13:30 (12.0 to 13.5)
+                if (slotStart >= 12.0 && slotStart < 13.5) {
+                    continue;
+                }
+                double currentSlotStart = slotStart;
+                
+                // Check if there is an active appointment at this exact slot start time
+                boolean isBooked = tatCaLichHen.stream().anyMatch(lh -> {
+                    if (lh.getNhanSu() == null || !lh.getNhanSu().getMaNs().equals(llv.getNhanSu().getMaNs())) {
+                        return false;
+                    }
+                    if (lh.getGioHen() == null || !lh.getGioHen().toLocalDate().equals(llv.getNgayLam())) {
+                        return false;
+                    }
+                    LocalTime lhTime = lh.getGioHen().toLocalTime();
+                    double lhTimeDouble = lhTime.getHour() + (lhTime.getMinute() / 60.0);
+                    // Match if appointment is at the exact slot start hour
+                    return Math.abs(lhTimeDouble - currentSlotStart) < 0.01;
+                });
+
+                result.add(SlotTrongDto.builder()
+                        .maNs(llv.getNhanSu().getMaNs())
+                        .tenBacSi(llv.getNhanSu().getHoTen())
+                        .ngayLam(llv.getNgayLam())
+                        .gioBatDau(currentSlotStart)
+                        .gioKetThuc(currentSlotStart + 0.5)
+                        .trangThaiSlot(isBooked ? "Đã đặt" : "Còn trống")
+                        .build());
+            }
+        }
+
+        return result;
     }
 }

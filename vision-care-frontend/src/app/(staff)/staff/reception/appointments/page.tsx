@@ -16,7 +16,7 @@ import { useRouter } from "next/navigation";
 
 import { useAuth } from "@/hooks/useAuth";
 import { useDatLich, useDanhSachDichVu, useBacSi } from "@/hooks/useClinic"; 
-import { useDanhSachLichHen, useSlotTrong, useUpdateTrangThaiLichHen } from "@/hooks/useStaff"; 
+import { useDanhSachLichHen, useSlotTrong, useUpdateTrangThaiLichHen, useCheckInLichHen } from "@/hooks/useStaff"; 
 import { useDanhSachKhachHang, useCreateKhachHang } from "@/hooks/useCustomer";
 import { LichHenFilterDTO, SlotTrongDTO, LichHenResponseDTO } from "@/types/staff";
 import { DatLichRequest, DichVuKhamResponse } from "@/types/clinic";
@@ -65,7 +65,7 @@ const bookingSchema = z.object({
 type BookingFormValues = z.infer<typeof bookingSchema>;
 
 // Allowed roles for this page: Receptionist Only
-const ALLOWED_ROLES = ["ROLE_LE_TAN", "NH06"];
+const ALLOWED_ROLES = ["ROLE_LE_TAN", "NH06", "ROLE_ADMIN", "NH04"];
 
 export default function AppointmentsPage() {
   const queryClient = useQueryClient();
@@ -78,6 +78,7 @@ export default function AppointmentsPage() {
   const [searchKeyword, setSearchKeyword] = useState("");
   const [filterDate, setFilterDate] = useState("");
   const [filterDoctor, setFilterDoctor] = useState("");
+  const [hidePast, setHidePast] = useState(false);
 
   // Booking customer tabs state
   const [bookingTab, setBookingTab] = useState<"existing" | "new">("existing");
@@ -104,6 +105,7 @@ export default function AppointmentsPage() {
   const datLichMutation = useDatLich();
   const updateStatusMutation = useUpdateTrangThaiLichHen();
   const createKhachHangMutation = useCreateKhachHang();
+  const checkInMutation = useCheckInLichHen();
 
   // Load existing customers for search
   const { data: searchCustomersResult } = useDanhSachKhachHang({ keyword: customerSearch || undefined });
@@ -167,10 +169,39 @@ export default function AppointmentsPage() {
     (listGoiKham as PageResponseDTO<DichVuKhamResponse>)?.data || 
     (Array.isArray(listGoiKham) ? listGoiKham : []);
 
-  const arrLichHen: UI_LichHen[] = 
+  const now = new Date();
+  const rawLichHen: UI_LichHen[] = 
     (listLichHen as PageResponseDTO<UI_LichHen>)?.content || 
     (listLichHen as PageResponseDTO<UI_LichHen>)?.data || 
     (Array.isArray(listLichHen) ? listLichHen : []);
+
+  // Bỏ những lịch hẹn đã hết thời gian (quá giờ/ngày cũ) mà chưa được duyệt (trạng thái là "Chờ xác nhận")
+  const filteredRawLichHen = rawLichHen.filter(item => {
+    if (!item.ngayHen || !item.gioHen) return true;
+    try {
+      const apptTime = new Date(`${item.ngayHen}T${item.gioHen}`);
+      const isPast = apptTime < now;
+      const isUnapproved = item.trangThai === "CHO_XAC_NHAN" || item.trangThai === "Chờ xác nhận";
+      if (isPast && isUnapproved) {
+        return false; // Bỏ đi khỏi list
+      }
+      return true;
+    } catch (e) {
+      return true;
+    }
+  });
+
+  const arrLichHen = hidePast 
+    ? filteredRawLichHen.filter(item => {
+        if (!item.ngayHen || !item.gioHen) return true;
+        try {
+          const apptTime = new Date(`${item.ngayHen}T${item.gioHen}`);
+          return apptTime >= now;
+        } catch (e) {
+          return true;
+        }
+      })
+    : filteredRawLichHen;
 
   const doctorsList = Array.isArray(doctorsData) ? doctorsData : [];
 
@@ -248,6 +279,22 @@ export default function AppointmentsPage() {
       onSuccess: () => {
         alert("✅ Đã cập nhật trạng thái!");
         queryClient.invalidateQueries({ queryKey: ["lich-hen"] });
+      }
+    });
+  };
+
+  const handleCheckIn = (maLh: string | number) => {
+    if (isAdmin) {
+      alert("⚠️ Tài khoản Admin đang ở chế độ Chỉ đọc, không thể thực hiện check-in!");
+      return;
+    }
+    checkInMutation.mutate(maLh, {
+      onSuccess: () => {
+        alert("✅ Check-in thành công! Bệnh nhân đã được thêm vào hàng chờ.");
+        queryClient.invalidateQueries({ queryKey: ["lich-hen"] });
+      },
+      onError: (err: any) => {
+        alert("❌ Lỗi check-in: " + (err.response?.data?.message || err.message));
       }
     });
   };
@@ -498,11 +545,21 @@ export default function AppointmentsPage() {
 
         <Button 
           variant="outline" 
-          onClick={() => { setSearchKeyword(""); setFilterDate(""); setFilterDoctor(""); }}
+          onClick={() => { setSearchKeyword(""); setFilterDate(""); setFilterDoctor(""); setHidePast(false); }}
           className="rounded-xl border-slate-200"
         >
           Làm mới bộ lọc
         </Button>
+
+        <label className="flex items-center gap-2 text-xs font-bold text-slate-600 cursor-pointer select-none bg-slate-100 px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-200/60 transition-all">
+          <input 
+            type="checkbox" 
+            checked={hidePast} 
+            onChange={(e) => setHidePast(e.target.checked)} 
+            className="rounded text-blue-600 focus:ring-blue-500 accent-blue-600 w-4 h-4"
+          />
+          <span>Ẩn lịch hẹn đã quá giờ</span>
+        </label>
       </div>
 
       {/* DATA TABLE */}
@@ -560,8 +617,19 @@ export default function AppointmentsPage() {
                           <Check className="w-3.5 h-3.5" /> Duyệt
                         </Button>
                       )}
+
+                      {item.trangThai === "DA_XAC_NHAN" && (
+                        <Button
+                          size="sm"
+                          onClick={() => handleCheckIn(item.maLh)}
+                          className="h-8 px-2.5 text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg gap-1 transition-colors"
+                          disabled={isAdmin}
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5" /> Check-in
+                        </Button>
+                      )}
                       
-                      {item.trangThai !== "DA_HUY" && item.trangThai !== "DA_DEN" && (
+                      {item.trangThai !== "DA_HUY" && item.trangThai !== "DA_DEN" && item.trangThai !== "DA_CHECK_IN" && item.trangThai !== "HOAN_THANH" && (
                         <Button
                           size="sm"
                           onClick={() => handleUpdateStatus(item.maLh, "DA_HUY")}
@@ -572,7 +640,7 @@ export default function AppointmentsPage() {
                         </Button>
                       )}
 
-                      {item.trangThai !== "CHUA_XAC_NHAN" && item.trangThai !== "CHO_XAC_NHAN" && (item.trangThai === "DA_HUY" || item.trangThai === "DA_DEN") && (
+                      {(item.trangThai === "DA_HUY" || item.trangThai === "DA_DEN" || item.trangThai === "DA_CHECK_IN" || item.trangThai === "HOAN_THANH") && (
                         <span className="text-xs text-slate-400 italic font-semibold">Không có thao tác</span>
                       )}
                     </div>
