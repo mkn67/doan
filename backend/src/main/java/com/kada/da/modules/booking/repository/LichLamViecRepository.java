@@ -3,7 +3,7 @@ package com.kada.da.modules.booking.repository;
 import com.kada.da.modules.booking.domain.LichLamViec;
 import com.kada.da.modules.staff.domain.NhanSu;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.query.Procedure;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
@@ -14,16 +14,8 @@ import java.util.List;
 public interface LichLamViecRepository extends JpaRepository<LichLamViec, String> {
 
         // =========================================================
-        // 1. GỌI STORED PROCEDURE (SP 7: Tạo lịch làm việc)
+        // 1. Query hỗ trợ tạo lịch làm việc
         // =========================================================
-        @Procedure(procedureName = "SP_TAO_LICH_LAM_VIEC")
-        void taoLichLamViec(
-                        @Param("p_mans") String maNs,
-                        @Param("p_ngay_lam") LocalDate ngayLam,
-                        @Param("p_gio_bat_dau") Double gioBatDau,
-                        @Param("p_gio_ket_thuc") Double gioKetThuc,
-                        @Param("p_is_nghi") Integer isNghi);
-
         // =========================================================
         // 2. CÁC QUERY MẶC ĐỊNH CỦA JPA (Dùng để hiển thị dữ liệu)
         // =========================================================
@@ -36,6 +28,20 @@ public interface LichLamViecRepository extends JpaRepository<LichLamViec, String
         List<LichLamViec> findByNgayLam(LocalDate ngayLam);
 
         List<LichLamViec> findByGioBatDauAndGioKetThuc(Double gioBatDau, Double gioKetThuc);
+
+        @Query("""
+                        SELECT l FROM LichLamViec l
+                        WHERE l.nhanSu.maNs = :maNs
+                          AND l.ngayLam = :ngayLam
+                          AND l.isNghi = 0
+                          AND :gioBatDau < l.gioKetThuc
+                          AND :gioKetThuc > l.gioBatDau
+                        """)
+        List<LichLamViec> findOverlappingWorkingSlots(
+                        @Param("maNs") String maNs,
+                        @Param("ngayLam") LocalDate ngayLam,
+                        @Param("gioBatDau") Double gioBatDau,
+                        @Param("gioKetThuc") Double gioKetThuc);
 
         @org.springframework.data.jpa.repository.Query("SELECT l FROM LichLamViec l WHERE l.isNghi = 0 AND l.ngayLam = :ngayLam")
         List<LichLamViec> findByIsNghiFalseAndNgayLam(@org.springframework.data.repository.query.Param("ngayLam") LocalDate ngayLam);

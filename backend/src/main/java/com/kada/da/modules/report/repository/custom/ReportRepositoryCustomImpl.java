@@ -1,12 +1,15 @@
 package com.kada.da.modules.report.repository.custom;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.stereotype.Repository;
 
 import com.kada.da.modules.inventory.dto.CanhBaoHetHanDTO;
+import com.kada.da.modules.inventory.domain.LoHang;
 import com.kada.da.modules.report.dto.DoanhThuResponseDTO;
 
 import jakarta.persistence.EntityManager;
@@ -22,26 +25,36 @@ public class ReportRepositoryCustomImpl implements ReportRepositoryCustom {
 
     @Override
     public List<CanhBaoHetHanDTO> getCanhBaoHetHan(int soNgay) {
-        StoredProcedureQuery query = entityManager.createStoredProcedureQuery("SP_CANH_BAO_HANG_HET_HAN");
-        query.registerStoredProcedureParameter(1, Integer.class, ParameterMode.IN);
-        query.registerStoredProcedureParameter(2, void.class, ParameterMode.REF_CURSOR);
-        query.setParameter(1, soNgay);
-        query.execute();
+        LocalDate today = LocalDate.now();
+        LocalDate limitDate = today.plusDays(soNgay);
 
-        @SuppressWarnings("unchecked")
-        List<Object[]> results = query.getResultList();
+        List<LoHang> results = entityManager.createQuery("""
+                        SELECT l FROM LoHang l
+                        JOIN FETCH l.sanPham s
+                        JOIN FETCH l.phieuNhap pn
+                        JOIN FETCH pn.nhaCungCap ncc
+                        WHERE l.soLuongTon > 0
+                          AND l.ngayHetHan > :today
+                          AND l.ngayHetHan <= :limitDate
+                        ORDER BY l.ngayHetHan ASC
+                        """, LoHang.class)
+                .setParameter("today", today)
+                .setParameter("limitDate", limitDate)
+                .getResultList();
+
         List<CanhBaoHetHanDTO> list = new ArrayList<>();
-        for (Object[] row : results) {
+        for (LoHang loHang : results) {
+            long soNgayConLai = ChronoUnit.DAYS.between(today, loHang.getNgayHetHan());
             list.add(CanhBaoHetHanDTO.builder()
-                    .maLo((String) row[0])
-                    .maSp((String) row[1])
-                    .tenSp((String) row[2])
-                    .donViTinh((String) row[3])
-                    .ngayHetHan(row[4] != null ? ((java.sql.Date) row[4]).toLocalDate() : null)
-                    .soNgayConLai(row[5] != null ? ((Number) row[5]).longValue() : null)
-                    .tonKho(row[6] != null ? ((Number) row[6]).intValue() : null)
-                    .mucDo((String) row[7])
-                    .nhaCungCap((String) row[8])
+                    .maLo(loHang.getMaLo())
+                    .maSp(loHang.getSanPham().getMaSp())
+                    .tenSp(loHang.getSanPham().getTenSp())
+                    .donViTinh(loHang.getSanPham().getDonViTinh())
+                    .ngayHetHan(loHang.getNgayHetHan())
+                    .soNgayConLai(soNgayConLai)
+                    .tonKho(loHang.getSoLuongTon())
+                    .mucDo(resolveMucDo(soNgayConLai))
+                    .nhaCungCap(loHang.getPhieuNhap().getNhaCungCap().getTenNcc())
                     .build());
         }
         return list;
@@ -91,5 +104,15 @@ public class ReportRepositoryCustomImpl implements ReportRepositoryCustom {
             result.add(dto);
         }
         return result;
+    }
+
+    private String resolveMucDo(long soNgayConLai) {
+        if (soNgayConLai <= 7) {
+            return "Nguy hiem";
+        }
+        if (soNgayConLai <= 30) {
+            return "Canh bao";
+        }
+        return "Chu y";
     }
 }

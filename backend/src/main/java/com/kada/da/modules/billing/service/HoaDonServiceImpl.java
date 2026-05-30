@@ -104,7 +104,7 @@ public class HoaDonServiceImpl implements HoaDonService {
     @Override
     @Transactional
     public void huyHoaDon(String maHd) {
-        log.info("Gọi SP_HUY_HOA_DON: {}", maHd);
+        log.info("Huy hoa don: {}", maHd);
         hoaDonRepository.huyHoaDon(maHd);
         log.info("Hủy hóa đơn thành công: {}", maHd);
     }
