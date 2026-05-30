@@ -127,7 +127,7 @@ export const staffApi = {
       const params: any = {};
       if (ngay) params.ngay = ngay;
       if (maNs) params.maNs = maNs;
-      const response = await axiosClient.get<SlotTrongDTO[]>("/lich-lam-viec/nhan-su-ranh", { params });
+      const response = await axiosClient.get<SlotTrongDTO[]>("/lich-lam-viec/slot-trong", { params });
       return response.data;
   },
 
