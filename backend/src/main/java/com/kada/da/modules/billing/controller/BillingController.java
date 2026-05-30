@@ -86,12 +86,14 @@ public class BillingController {
         String maDon = request.getMaDon();
         String loaiKeDon = "CA_HAI";
         
-        if (request.getMaDonThuoc() != null && !request.getMaDonThuoc().isEmpty()) {
-            maDon = request.getMaDonThuoc();
-            loaiKeDon = "THUOC";
-        } else if (request.getMaDonKinh() != null && !request.getMaDonKinh().isEmpty()) {
-            maDon = request.getMaDonKinh();
-            loaiKeDon = "KINH";
+        if (maDon == null || maDon.isEmpty()) {
+            if (request.getMaDonThuoc() != null && !request.getMaDonThuoc().isEmpty()) {
+                maDon = request.getMaDonThuoc();
+                loaiKeDon = "THUOC";
+            } else if (request.getMaDonKinh() != null && !request.getMaDonKinh().isEmpty()) {
+                maDon = request.getMaDonKinh();
+                loaiKeDon = "KINH";
+            }
         }
 
         Map<String, String> result = hoaDonService.taoHoaDonTuJson(

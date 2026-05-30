@@ -744,56 +744,142 @@ function ExaminationContent() {
                     {/* Mắt Phải (OD) */}
                     <div>
                       <h3 className="font-bold flex items-center text-slate-800 uppercase text-xs tracking-wider mb-3">
-                        <Eye className="w-4 h-4 mr-2 text-blue-600" /> Mắt Phải (OD)
+                        <Eye className="w-4 h-4 mr-2 text-blue-600 animate-pulse" /> Mắt Phải (Oculus Dexter - OD)
                       </h3>
                       <div className="grid grid-cols-3 gap-4 bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
                         <FormField control={form.control} name="matPhaiSph" render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-xs text-slate-500 font-semibold">Cầu độ (SPH)</FormLabel>
-                            <FormControl>
-                              <Input 
-                                type="number" 
-                                step="0.25" 
-                                className="bg-white h-9" 
-                                placeholder="0.00" 
-                                {...field} 
-                                readOnly={isAdmin}
-                                onChange={(e) => field.onChange(e.target.value === "" ? "" : Number(e.target.value))}
-                              />
-                            </FormControl>
+                            <FormLabel className="text-xs text-slate-500 font-semibold">Độ cầu (SPH)</FormLabel>
+                            <div className="flex items-center gap-1 mt-1">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-9 w-9 shrink-0 border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-lg text-sm font-bold"
+                                disabled={isAdmin}
+                                onClick={() => {
+                                  const val = Number(form.getValues("matPhaiSph")) || 0;
+                                  form.setValue("matPhaiSph", Number((val - 0.25).toFixed(2)));
+                                }}
+                              >
+                                -
+                              </Button>
+                              <FormControl>
+                                <Input 
+                                  type="number" 
+                                  step="0.25" 
+                                  className="bg-white h-9 text-center font-mono font-bold text-slate-800" 
+                                  placeholder="0.00" 
+                                  {...field} 
+                                  readOnly={isAdmin}
+                                  onChange={(e) => field.onChange(e.target.value === "" ? "" : Number(e.target.value))}
+                                />
+                              </FormControl>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-9 w-9 shrink-0 border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-lg text-sm font-bold"
+                                disabled={isAdmin}
+                                onClick={() => {
+                                  const val = Number(form.getValues("matPhaiSph")) || 0;
+                                  form.setValue("matPhaiSph", Number((val + 0.25).toFixed(2)));
+                                }}
+                              >
+                                +
+                              </Button>
+                            </div>
                             <FormMessage />
                           </FormItem>
                         )} />
                         <FormField control={form.control} name="matPhaiCyl" render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-xs text-slate-500 font-semibold">Loạn độ (CYL)</FormLabel>
-                            <FormControl>
-                              <Input 
-                                type="number" 
-                                step="0.25" 
-                                className="bg-white h-9" 
-                                placeholder="0.00" 
-                                {...field} 
-                                readOnly={isAdmin}
-                                onChange={(e) => field.onChange(e.target.value === "" ? "" : Number(e.target.value))}
-                              />
-                            </FormControl>
+                            <FormLabel className="text-xs text-slate-500 font-semibold">Độ loạn (CYL)</FormLabel>
+                            <div className="flex items-center gap-1 mt-1">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-9 w-9 shrink-0 border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-lg text-sm font-bold"
+                                disabled={isAdmin}
+                                onClick={() => {
+                                  const val = Number(form.getValues("matPhaiCyl")) || 0;
+                                  form.setValue("matPhaiCyl", Number((val - 0.25).toFixed(2)));
+                                }}
+                              >
+                                -
+                              </Button>
+                              <FormControl>
+                                <Input 
+                                  type="number" 
+                                  step="0.25" 
+                                  className="bg-white h-9 text-center font-mono font-bold text-slate-800" 
+                                  placeholder="0.00" 
+                                  {...field} 
+                                  readOnly={isAdmin}
+                                  onChange={(e) => field.onChange(e.target.value === "" ? "" : Number(e.target.value))}
+                                />
+                              </FormControl>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-9 w-9 shrink-0 border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-lg text-sm font-bold"
+                                disabled={isAdmin}
+                                onClick={() => {
+                                  const val = Number(form.getValues("matPhaiCyl")) || 0;
+                                  form.setValue("matPhaiCyl", Number((val + 0.25).toFixed(2)));
+                                }}
+                              >
+                                +
+                              </Button>
+                            </div>
                             <FormMessage />
                           </FormItem>
                         )} />
                         <FormField control={form.control} name="matPhaiAx" render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-xs text-slate-500 font-semibold">Trục (AXIS)</FormLabel>
-                            <FormControl>
-                              <Input 
-                                type="number" 
-                                className="bg-white h-9" 
-                                placeholder="0" 
-                                {...field} 
-                                readOnly={isAdmin}
-                                onChange={(e) => field.onChange(e.target.value === "" ? "" : Number(e.target.value))}
-                              />
-                            </FormControl>
+                            <FormLabel className="text-xs text-slate-500 font-semibold">Trục loạn (AXIS)</FormLabel>
+                            <div className="flex items-center gap-1 mt-1">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-9 w-9 shrink-0 border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-lg text-sm font-bold"
+                                disabled={isAdmin}
+                                onClick={() => {
+                                  const val = Number(form.getValues("matPhaiAx")) || 0;
+                                  const nextVal = val - 5 < 0 ? 180 : val - 5;
+                                  form.setValue("matPhaiAx", nextVal);
+                                }}
+                              >
+                                -
+                              </Button>
+                              <FormControl>
+                                <Input 
+                                  type="number" 
+                                  className="bg-white h-9 text-center font-mono font-bold text-slate-800" 
+                                  placeholder="0" 
+                                  {...field} 
+                                  readOnly={isAdmin}
+                                  onChange={(e) => field.onChange(e.target.value === "" ? "" : Number(e.target.value))}
+                                />
+                              </FormControl>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-9 w-9 shrink-0 border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-lg text-sm font-bold"
+                                disabled={isAdmin}
+                                onClick={() => {
+                                  const val = Number(form.getValues("matPhaiAx")) || 0;
+                                  const nextVal = val + 5 > 180 ? 0 : val + 5;
+                                  form.setValue("matPhaiAx", nextVal);
+                                }}
+                              >
+                                +
+                              </Button>
+                            </div>
                             <FormMessage />
                           </FormItem>
                         )} />
@@ -803,56 +889,142 @@ function ExaminationContent() {
                     {/* Mắt Trái (OS) */}
                     <div>
                       <h3 className="font-bold flex items-center text-slate-800 uppercase text-xs tracking-wider mb-3">
-                        <Eye className="w-4 h-4 mr-2 text-indigo-600" /> Mắt Trái (OS)
+                        <Eye className="w-4 h-4 mr-2 text-indigo-600 animate-pulse" /> Mắt Trái (Oculus Sinister - OS)
                       </h3>
                       <div className="grid grid-cols-3 gap-4 bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
                         <FormField control={form.control} name="matTraiSph" render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-xs text-slate-500 font-semibold">Cầu độ (SPH)</FormLabel>
-                            <FormControl>
-                              <Input 
-                                type="number" 
-                                step="0.25" 
-                                className="bg-white h-9" 
-                                placeholder="0.00" 
-                                {...field} 
-                                readOnly={isAdmin}
-                                onChange={(e) => field.onChange(e.target.value === "" ? "" : Number(e.target.value))}
-                              />
-                            </FormControl>
+                            <FormLabel className="text-xs text-slate-500 font-semibold">Độ cầu (SPH)</FormLabel>
+                            <div className="flex items-center gap-1 mt-1">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-9 w-9 shrink-0 border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-lg text-sm font-bold"
+                                disabled={isAdmin}
+                                onClick={() => {
+                                  const val = Number(form.getValues("matTraiSph")) || 0;
+                                  form.setValue("matTraiSph", Number((val - 0.25).toFixed(2)));
+                                }}
+                              >
+                                -
+                              </Button>
+                              <FormControl>
+                                <Input 
+                                  type="number" 
+                                  step="0.25" 
+                                  className="bg-white h-9 text-center font-mono font-bold text-slate-800" 
+                                  placeholder="0.00" 
+                                  {...field} 
+                                  readOnly={isAdmin}
+                                  onChange={(e) => field.onChange(e.target.value === "" ? "" : Number(e.target.value))}
+                                />
+                              </FormControl>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-9 w-9 shrink-0 border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-lg text-sm font-bold"
+                                disabled={isAdmin}
+                                onClick={() => {
+                                  const val = Number(form.getValues("matTraiSph")) || 0;
+                                  form.setValue("matTraiSph", Number((val + 0.25).toFixed(2)));
+                                }}
+                              >
+                                +
+                              </Button>
+                            </div>
                             <FormMessage />
                           </FormItem>
                         )} />
                         <FormField control={form.control} name="matTraiCyl" render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-xs text-slate-500 font-semibold">Loạn độ (CYL)</FormLabel>
-                            <FormControl>
-                              <Input 
-                                type="number" 
-                                step="0.25" 
-                                className="bg-white h-9" 
-                                placeholder="0.00" 
-                                {...field} 
-                                readOnly={isAdmin}
-                                onChange={(e) => field.onChange(e.target.value === "" ? "" : Number(e.target.value))}
-                              />
-                            </FormControl>
+                            <FormLabel className="text-xs text-slate-500 font-semibold">Độ loạn (CYL)</FormLabel>
+                            <div className="flex items-center gap-1 mt-1">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-9 w-9 shrink-0 border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-lg text-sm font-bold"
+                                disabled={isAdmin}
+                                onClick={() => {
+                                  const val = Number(form.getValues("matTraiCyl")) || 0;
+                                  form.setValue("matTraiCyl", Number((val - 0.25).toFixed(2)));
+                                }}
+                              >
+                                -
+                              </Button>
+                              <FormControl>
+                                <Input 
+                                  type="number" 
+                                  step="0.25" 
+                                  className="bg-white h-9 text-center font-mono font-bold text-slate-800" 
+                                  placeholder="0.00" 
+                                  {...field} 
+                                  readOnly={isAdmin}
+                                  onChange={(e) => field.onChange(e.target.value === "" ? "" : Number(e.target.value))}
+                                />
+                              </FormControl>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-9 w-9 shrink-0 border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-lg text-sm font-bold"
+                                disabled={isAdmin}
+                                onClick={() => {
+                                  const val = Number(form.getValues("matTraiCyl")) || 0;
+                                  form.setValue("matTraiCyl", Number((val + 0.25).toFixed(2)));
+                                }}
+                              >
+                                +
+                              </Button>
+                            </div>
                             <FormMessage />
                           </FormItem>
                         )} />
                         <FormField control={form.control} name="matTraiAx" render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-xs text-slate-500 font-semibold">Trục (AXIS)</FormLabel>
-                            <FormControl>
-                              <Input 
-                                type="number" 
-                                className="bg-white h-9" 
-                                placeholder="0" 
-                                {...field} 
-                                readOnly={isAdmin}
-                                onChange={(e) => field.onChange(e.target.value === "" ? "" : Number(e.target.value))}
-                              />
-                            </FormControl>
+                            <FormLabel className="text-xs text-slate-500 font-semibold">Trục loạn (AXIS)</FormLabel>
+                            <div className="flex items-center gap-1 mt-1">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-9 w-9 shrink-0 border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-lg text-sm font-bold"
+                                disabled={isAdmin}
+                                onClick={() => {
+                                  const val = Number(form.getValues("matTraiAx")) || 0;
+                                  const nextVal = val - 5 < 0 ? 180 : val - 5;
+                                  form.setValue("matTraiAx", nextVal);
+                                }}
+                              >
+                                -
+                              </Button>
+                              <FormControl>
+                                <Input 
+                                  type="number" 
+                                  className="bg-white h-9 text-center font-mono font-bold text-slate-800" 
+                                  placeholder="0" 
+                                  {...field} 
+                                  readOnly={isAdmin}
+                                  onChange={(e) => field.onChange(e.target.value === "" ? "" : Number(e.target.value))}
+                                />
+                              </FormControl>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-9 w-9 shrink-0 border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-lg text-sm font-bold"
+                                disabled={isAdmin}
+                                onClick={() => {
+                                  const val = Number(form.getValues("matTraiAx")) || 0;
+                                  const nextVal = val + 5 > 180 ? 0 : val + 5;
+                                  form.setValue("matTraiAx", nextVal);
+                                }}
+                              >
+                                +
+                              </Button>
+                            </div>
                             <FormMessage />
                           </FormItem>
                         )} />
@@ -868,7 +1040,7 @@ function ExaminationContent() {
                             <FormControl>
                               <Input 
                                 type="number" 
-                                className="bg-white font-mono h-10" 
+                                className="bg-white font-mono h-10 text-center font-bold text-slate-800" 
                                 placeholder="60" 
                                 {...field} 
                                 readOnly={isAdmin}
@@ -885,7 +1057,7 @@ function ExaminationContent() {
                             <FormLabel className="font-semibold text-xs text-slate-700">Kết luận khám bệnh</FormLabel>
                             <FormControl>
                               <Input 
-                                className="bg-white h-10 font-medium" 
+                                className="bg-white h-10 font-bold text-slate-800" 
                                 placeholder="Nhập kết luận của bác sĩ..." 
                                 {...field} 
                                 readOnly={isAdmin}
@@ -897,6 +1069,72 @@ function ExaminationContent() {
                       </div>
                     </div>
 
+                    {/* Chẩn đoán nhanh chuẩn y học */}
+                    <div className="space-y-2 border-t pt-3">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Kết luận mẫu (Mẫu y khoa)</span>
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={isAdmin}
+                          className="h-7 text-[11px] rounded-lg bg-sky-50 text-sky-700 border-sky-100 hover:bg-sky-100 font-semibold"
+                          onClick={() => {
+                            form.setValue("ketluan", "Cận thị khúc xạ, khuyên đeo kính khi nhìn xa");
+                            if (Number(form.getValues("matPhaiSph")) >= 0) form.setValue("matPhaiSph", -1.50);
+                            if (Number(form.getValues("matTraiSph")) >= 0) form.setValue("matTraiSph", -1.50);
+                          }}
+                        >
+                          👓 Cận thị khúc xạ
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={isAdmin}
+                          className="h-7 text-[11px] rounded-lg bg-amber-50 text-amber-700 border-amber-100 hover:bg-amber-100 font-semibold"
+                          onClick={() => {
+                            form.setValue("ketluan", "Lão thị tuổi già, đeo kính khi đọc sách hoặc làm việc gần");
+                            if (Number(form.getValues("matPhaiSph")) <= 0) form.setValue("matPhaiSph", 1.50);
+                            if (Number(form.getValues("matTraiSph")) <= 0) form.setValue("matTraiSph", 1.50);
+                          }}
+                        >
+                          👵 Lão thị viễn thị
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={isAdmin}
+                          className="h-7 text-[11px] rounded-lg bg-purple-50 text-purple-700 border-purple-100 hover:bg-purple-100 font-semibold"
+                          onClick={() => {
+                            form.setValue("ketluan", "Loạn thị giác mạc, cần cắt kính đúng trục loạn");
+                            if (Number(form.getValues("matPhaiCyl")) === 0) form.setValue("matPhaiCyl", -0.75);
+                            if (Number(form.getValues("matTraiCyl")) === 0) form.setValue("matTraiCyl", -0.75);
+                          }}
+                        >
+                          👁️ Loạn thị trục
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={isAdmin}
+                          className="h-7 text-[11px] rounded-lg bg-emerald-50 text-emerald-700 border-emerald-100 hover:bg-emerald-100 font-semibold"
+                          onClick={() => {
+                            form.setValue("ketluan", "Thị lực ổn định, khúc xạ bình thường");
+                            form.setValue("matPhaiSph", 0.00);
+                            form.setValue("matPhaiCyl", 0.00);
+                            form.setValue("matPhaiAx", 0);
+                            form.setValue("matTraiSph", 0.00);
+                            form.setValue("matTraiCyl", 0.00);
+                            form.setValue("matTraiAx", 0);
+                          }}
+                        >
+                          ✅ Khúc xạ bình thường
+                        </Button>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Kê đơn kính (Gọng & Tròng) */}

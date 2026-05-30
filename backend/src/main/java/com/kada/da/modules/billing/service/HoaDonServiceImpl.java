@@ -229,26 +229,14 @@ public class HoaDonServiceImpl implements HoaDonService {
 
         // Build sets of billed keys
         java.util.Set<String> billedHoSoExams = new java.util.HashSet<>();
-        java.util.Map<String, java.util.Set<String>> billedPrescriptionParts = new java.util.HashMap<>();
+        java.util.Set<String> billedPrescriptions = new java.util.HashSet<>();
 
         for (HoaDon hd : activeInvoices) {
             if (hd.getHoSoThiLuc() != null) {
                 billedHoSoExams.add(hd.getHoSoThiLuc().getMaHoSo());
             }
             if (hd.getPhieuKeDon() != null) {
-                String maDon = hd.getPhieuKeDon().getMaDon();
-                var parts = billedPrescriptionParts.computeIfAbsent(maDon, k -> new java.util.HashSet<>());
-                if (hd.getCtHoaDons() != null) {
-                    for (CtHoaDon ct : hd.getCtHoaDons()) {
-                        if (ct.getLoHang() != null && ct.getLoHang().getSanPham() != null) {
-                            Integer laThuoc = ct.getLoHang().getSanPham().getLaThuoc();
-                            if (laThuoc != null) {
-                                if (laThuoc == 1) parts.add("THUOC");
-                                if (laThuoc == 0) parts.add("KINH");
-                            }
-                        }
-                    }
-                }
+                billedPrescriptions.add(hd.getPhieuKeDon().getMaDon());
             }
         }
 
@@ -269,8 +257,7 @@ public class HoaDonServiceImpl implements HoaDonService {
         }
 
         List<PendingInvoiceResponseDTO> list = new ArrayList<>();
-        java.util.Set<String> addedPrescriptionThuoc = new java.util.HashSet<>();
-        java.util.Set<String> addedPrescriptionKinh = new java.util.HashSet<>();
+        java.util.Set<String> addedPrescriptions = new java.util.HashSet<>();
 
         // Loop HoSoThiLuc
         for (HoSoThiLuc hoSo : allHoSos) {
@@ -279,45 +266,35 @@ public class HoaDonServiceImpl implements HoaDonService {
 
             if (prescriptions != null && !prescriptions.isEmpty()) {
                 for (PhieuKeDon p : prescriptions) {
-                    // Check if prescription contains medicine (laThuoc = 1)
-                    boolean hasMedicine = p.getChiTietKeDons() != null && p.getChiTietKeDons().stream().anyMatch(ct -> 
-                        ct.getSanPham() != null && Integer.valueOf(1).equals(ct.getSanPham().getLaThuoc()));
-                    
-                    // Check if prescription contains glasses (laThuoc = 0)
-                    boolean hasGlasses = p.getChiTietKeDons() != null && p.getChiTietKeDons().stream().anyMatch(ct -> 
-                        ct.getSanPham() != null && Integer.valueOf(0).equals(ct.getSanPham().getLaThuoc()));
+                    String maDon = p.getMaDon();
+                    if (!billedPrescriptions.contains(maDon)) {
+                        // Check if prescription contains medicine (laThuoc = 1) and/or glasses (laThuoc = 0)
+                        boolean hasMedicine = p.getChiTietKeDons() != null && p.getChiTietKeDons().stream().anyMatch(ct -> 
+                            ct.getSanPham() != null && Integer.valueOf(1).equals(ct.getSanPham().getLaThuoc()));
+                        
+                        boolean hasGlasses = p.getChiTietKeDons() != null && p.getChiTietKeDons().stream().anyMatch(ct -> 
+                            ct.getSanPham() != null && Integer.valueOf(0).equals(ct.getSanPham().getLaThuoc()));
 
-                    boolean isMedicineBilled = billedPrescriptionParts.getOrDefault(p.getMaDon(), java.util.Collections.emptySet()).contains("THUOC");
-                    boolean isGlassesBilled = billedPrescriptionParts.getOrDefault(p.getMaDon(), java.util.Collections.emptySet()).contains("KINH");
+                        String loaiKham = "Khám mắt";
+                        if (hasMedicine && hasGlasses) {
+                            loaiKham = "Khám & Thuốc & Kính";
+                        } else if (hasMedicine) {
+                            loaiKham = "Khám & Đơn thuốc";
+                        } else if (hasGlasses) {
+                            loaiKham = "Khám & Đơn kính";
+                        }
 
-                    if (hasMedicine && !isMedicineBilled) {
                         list.add(PendingInvoiceResponseDTO.builder()
                                 .maKh(hoSo.getKhachHang() != null ? hoSo.getKhachHang().getMaKh() : null)
                                 .tenKhachHang(hoSo.getKhachHang() != null ? hoSo.getKhachHang().getHoTen() : "Khách lẻ")
                                 .sdtKhachHang(hoSo.getKhachHang() != null ? hoSo.getKhachHang().getSdt() : null)
                                 .maHoSo(maHoSo)
                                 .ngayKham(hoSo.getNgayKham() != null ? hoSo.getNgayKham().atStartOfDay() : null)
-                                .maDon(p.getMaDon())
-                                .maDonThuoc(p.getMaDon())
+                                .maDon(maDon)
                                 .ngayKeDon(p.getNgayKeDon())
-                                .loaiKham("Khám & Đơn thuốc")
+                                .loaiKham(loaiKham)
                                 .build());
-                        addedPrescriptionThuoc.add(p.getMaDon());
-                    }
-
-                    if (hasGlasses && !isGlassesBilled) {
-                        list.add(PendingInvoiceResponseDTO.builder()
-                                .maKh(hoSo.getKhachHang() != null ? hoSo.getKhachHang().getMaKh() : null)
-                                .tenKhachHang(hoSo.getKhachHang() != null ? hoSo.getKhachHang().getHoTen() : "Khách lẻ")
-                                .sdtKhachHang(hoSo.getKhachHang() != null ? hoSo.getKhachHang().getSdt() : null)
-                                .maHoSo(maHoSo)
-                                .ngayKham(hoSo.getNgayKham() != null ? hoSo.getNgayKham().atStartOfDay() : null)
-                                .maDon(p.getMaDon())
-                                .maDonKinh(p.getMaDon())
-                                .ngayKeDon(p.getNgayKeDon())
-                                .loaiKham("Khám & Đơn kính")
-                                .build());
-                        addedPrescriptionKinh.add(p.getMaDon());
+                        addedPrescriptions.add(maDon);
                     }
                 }
             } else {
@@ -338,31 +315,37 @@ public class HoaDonServiceImpl implements HoaDonService {
         // Loop remaining prescriptions that were not processed/added above
         for (PhieuKeDon p : allPrescriptions) {
             String maDon = p.getMaDon();
-            boolean hasMedicine = p.getChiTietKeDons() != null && p.getChiTietKeDons().stream().anyMatch(ct -> 
-                ct.getSanPham() != null && Integer.valueOf(1).equals(ct.getSanPham().getLaThuoc()));
-            boolean hasGlasses = p.getChiTietKeDons() != null && p.getChiTietKeDons().stream().anyMatch(ct -> 
-                ct.getSanPham() != null && Integer.valueOf(0).equals(ct.getSanPham().getLaThuoc()));
+            if (!billedPrescriptions.contains(maDon) && !addedPrescriptions.contains(maDon)) {
+                boolean hasMedicine = p.getChiTietKeDons() != null && p.getChiTietKeDons().stream().anyMatch(ct -> 
+                    ct.getSanPham() != null && Integer.valueOf(1).equals(ct.getSanPham().getLaThuoc()));
+                boolean hasGlasses = p.getChiTietKeDons() != null && p.getChiTietKeDons().stream().anyMatch(ct -> 
+                    ct.getSanPham() != null && Integer.valueOf(0).equals(ct.getSanPham().getLaThuoc()));
 
-            boolean isMedicineBilled = billedPrescriptionParts.getOrDefault(maDon, java.util.Collections.emptySet()).contains("THUOC");
-            boolean isGlassesBilled = billedPrescriptionParts.getOrDefault(maDon, java.util.Collections.emptySet()).contains("KINH");
-
-            String maKh = null;
-            String tenKh = "Khách lẻ";
-            String sdt = null;
-            String maHoSo = null;
-            LocalDateTime ngayKham = null;
-
-            if (p.getHoSoThiLuc() != null) {
-                maHoSo = p.getHoSoThiLuc().getMaHoSo();
-                ngayKham = p.getHoSoThiLuc().getNgayKham() != null ? p.getHoSoThiLuc().getNgayKham().atStartOfDay() : null;
-                if (p.getHoSoThiLuc().getKhachHang() != null) {
-                    maKh = p.getHoSoThiLuc().getKhachHang().getMaKh();
-                    tenKh = p.getHoSoThiLuc().getKhachHang().getHoTen();
-                    sdt = p.getHoSoThiLuc().getKhachHang().getSdt();
+                String loaiKham = "Đơn kính/thuốc";
+                if (hasMedicine && hasGlasses) {
+                    loaiKham = "Đơn thuốc & Đơn kính";
+                } else if (hasMedicine) {
+                    loaiKham = "Đơn thuốc";
+                } else if (hasGlasses) {
+                    loaiKham = "Đơn kính";
                 }
-            }
 
-            if (hasMedicine && !isMedicineBilled && !addedPrescriptionThuoc.contains(maDon)) {
+                String maKh = null;
+                String tenKh = "Khách lẻ";
+                String sdt = null;
+                String maHoSo = null;
+                LocalDateTime ngayKham = null;
+
+                if (p.getHoSoThiLuc() != null) {
+                    maHoSo = p.getHoSoThiLuc().getMaHoSo();
+                    ngayKham = p.getHoSoThiLuc().getNgayKham() != null ? p.getHoSoThiLuc().getNgayKham().atStartOfDay() : null;
+                    if (p.getHoSoThiLuc().getKhachHang() != null) {
+                        maKh = p.getHoSoThiLuc().getKhachHang().getMaKh();
+                        tenKh = p.getHoSoThiLuc().getKhachHang().getHoTen();
+                        sdt = p.getHoSoThiLuc().getKhachHang().getSdt();
+                    }
+                }
+
                 list.add(PendingInvoiceResponseDTO.builder()
                         .maKh(maKh)
                         .tenKhachHang(tenKh)
@@ -370,23 +353,8 @@ public class HoaDonServiceImpl implements HoaDonService {
                         .maHoSo(maHoSo)
                         .ngayKham(ngayKham)
                         .maDon(maDon)
-                        .maDonThuoc(maDon)
                         .ngayKeDon(p.getNgayKeDon())
-                        .loaiKham("Đơn thuốc")
-                        .build());
-            }
-
-            if (hasGlasses && !isGlassesBilled && !addedPrescriptionKinh.contains(maDon)) {
-                list.add(PendingInvoiceResponseDTO.builder()
-                        .maKh(maKh)
-                        .tenKhachHang(tenKh)
-                        .sdtKhachHang(sdt)
-                        .maHoSo(maHoSo)
-                        .ngayKham(ngayKham)
-                        .maDon(maDon)
-                        .maDonKinh(maDon)
-                        .ngayKeDon(p.getNgayKeDon())
-                        .loaiKham("Đơn kính")
+                        .loaiKham(loaiKham)
                         .build());
             }
         }

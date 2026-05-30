@@ -394,19 +394,8 @@ public class ClinicServiceImpl implements ClinicService {
         boolean hasMedicine = items.stream().anyMatch(row -> Integer.valueOf(1).equals(row.get("LATHUOC")));
 
         try {
-            if (hasGlass && hasMedicine) {
-                // 1. Tạo hóa đơn kính
-                callSpTaoHoaDon(maKh, maNsThuNgan, maHoso, maDon, "KINH");
-
-                // 2. Tạo hóa đơn thuốc
-                callSpTaoHoaDon(maKh, maNsThuNgan, maHoso, maDon, "THUOC");
-            } else if (hasGlass) {
-                // Chỉ có kính
-                callSpTaoHoaDon(maKh, maNsThuNgan, maHoso, maDon, "KINH");
-            } else if (hasMedicine) {
-                // Chỉ có thuốc
-                callSpTaoHoaDon(maKh, maNsThuNgan, maHoso, maDon, "THUOC");
-            }
+            // Lập 1 hóa đơn tổng hợp duy nhất gộp chung cả khám bệnh, thuốc và kính
+            callSpTaoHoaDon(maKh, maNsThuNgan, maHoso, maDon, "CA_HAI");
         } catch (Exception e) {
             log.error("Lỗi tự động tạo hóa đơn từ đơn thuốc {}: {}", maDon, e.getMessage());
         }
