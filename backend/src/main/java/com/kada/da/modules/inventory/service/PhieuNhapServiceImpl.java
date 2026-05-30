@@ -130,12 +130,13 @@ public class PhieuNhapServiceImpl implements PhieuNhapService {
     }
 
     private void validateLoHang(LoHangRequestDTO lo) {
-        if (lo.getNgaySanXuat() == null || lo.getNgayHetHan() == null
-                || !lo.getNgayHetHan().isAfter(lo.getNgaySanXuat())) {
-            throw new BusinessRuleException("HSD phai sau NSX!");
-        }
-        if (!lo.getNgayHetHan().isAfter(LocalDate.now())) {
-            throw new BusinessRuleException("Khong nhap hang het han!");
+        if (lo.getNgayHetHan() != null) {
+            if (lo.getNgaySanXuat() != null && !lo.getNgayHetHan().isAfter(lo.getNgaySanXuat())) {
+                throw new BusinessRuleException("HSD phai sau NSX!");
+            }
+            if (!lo.getNgayHetHan().isAfter(LocalDate.now())) {
+                throw new BusinessRuleException("Khong nhap hang het han!");
+            }
         }
         if (lo.getSoLuongNhap() == null || lo.getSoLuongNhap() <= 0) {
             throw new BusinessRuleException("So luong nhap phai lon hon 0!");

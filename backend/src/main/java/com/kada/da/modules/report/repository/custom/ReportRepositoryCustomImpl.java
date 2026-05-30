@@ -108,7 +108,7 @@ public class ReportRepositoryCustomImpl implements ReportRepositoryCustom {
 
     private String resolveMucDo(long soNgayConLai) {
         if (soNgayConLai <= 7) {
-            return "Nguy hiem";
+            return "Nguy cap";
         }
         if (soNgayConLai <= 30) {
             return "Canh bao";

@@ -59,7 +59,7 @@ public class LichLamViecServiceImpl implements LichLamViecService {
         }
 
         Integer isNghi = request.getIsNghi() != null ? request.getIsNghi() : 0;
-        if (isNghi == 0 && !lichLamViecRepository.findOverlappingWorkingSlots(
+        if (!lichLamViecRepository.findOverlappingWorkingSlots(
                 request.getMaNs(),
                 request.getNgayLam(),
                 request.getGioBatDau(),
