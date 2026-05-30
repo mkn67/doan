@@ -41,7 +41,7 @@ public class LichLamViecController {
             @Valid @RequestBody LichLamViecRequestDTO request) {
         log.info("API: Tạo lịch làm việc cho nhân sự: {}", request.getMaNs());
 
-        lichLamViecService.taoLichLamViec(request); // Gọi SP
+        lichLamViecService.taoLichLamViec(request);
 
         return ResponseEntity.status(HttpStatus.CREATED).body("Tạo lịch làm việc thành công!");
     }
@@ -53,7 +53,7 @@ public class LichLamViecController {
             @Valid @RequestBody List<LichLamViecRequestDTO> requests) {
         log.info("API: Tạo lịch làm việc hàng loạt - số lượng: {}", requests.size());
 
-        lichLamViecService.createLichLamViecBatch(requests); // Gọi SP hàng loạt
+        lichLamViecService.createLichLamViecBatch(requests);
 
         return ResponseEntity.status(HttpStatus.CREATED).body("Tạo " + requests.size() + " lịch làm việc thành công!");
     }

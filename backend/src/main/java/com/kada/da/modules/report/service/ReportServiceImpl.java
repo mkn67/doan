@@ -31,7 +31,7 @@ public class ReportServiceImpl implements ReportService {
     @Override
     @Transactional(readOnly = true)
     public List<CanhBaoHetHanDTO> canhBaoHangHetHan(int soNgay) {
-        log.info("Gọi SP_CANH_BAO_HANG_HET_HAN với số ngày: {}", soNgay);
+        log.info("Lay canh bao hang het han voi so ngay: {}", soNgay);
         List<CanhBaoHetHanDTO> result = reportRepository.getCanhBaoHetHan(soNgay);
         log.info("Tìm thấy {} lô hàng sắp hết hạn trong {} ngày tới", result.size(), soNgay);
         return result;

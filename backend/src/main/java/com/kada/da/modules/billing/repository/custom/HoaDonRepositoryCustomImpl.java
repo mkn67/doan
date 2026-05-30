@@ -6,6 +6,10 @@ import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.StoredProcedureQuery;
 import org.springframework.stereotype.Repository;
 
+import com.kada.da.Exception.BusinessRuleException;
+import com.kada.da.modules.billing.Enum.TrangThaiHoaDon;
+import com.kada.da.modules.billing.domain.HoaDon;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -45,9 +49,14 @@ public class HoaDonRepositoryCustomImpl implements HoaDonRepositoryCustom {
 
     @Override
     public void huyHoaDon(String maHd) {
-        StoredProcedureQuery query = entityManager.createStoredProcedureQuery("SP_HUY_HOA_DON");
-        query.registerStoredProcedureParameter(1, String.class, ParameterMode.IN);
-        query.setParameter(1, maHd);
-        query.execute();
+        HoaDon hoaDon = entityManager.find(HoaDon.class, maHd);
+        if (hoaDon == null) {
+            throw new BusinessRuleException("Ma hoa don khong ton tai");
+        }
+        if (TrangThaiHoaDon.DA_HUY.equals(hoaDon.getTrangThai())) {
+            throw new BusinessRuleException("Hoa don nay da duoc huy truoc do");
+        }
+        hoaDon.setTrangThai(TrangThaiHoaDon.DA_HUY);
+        entityManager.merge(hoaDon);
     }
 }

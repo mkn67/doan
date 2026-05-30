@@ -1,29 +1,36 @@
 package com.kada.da.modules.inventory.service;
 
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import com.kada.da.modules.inventory.dto.LoHangRequestDTO;
-import com.kada.da.modules.inventory.dto.PhieuNhapRequestDTO;
-import com.kada.da.modules.inventory.dto.LoHangResponseDTO;
-import com.kada.da.modules.staff.dto.PageResponseDTO;
-import com.kada.da.modules.inventory.dto.PhieuNhapResponseDTO;
-import com.kada.da.modules.inventory.domain.PhieuNhap;
+import com.kada.da.Exception.BusinessRuleException;
+import com.kada.da.Exception.ResourceNotFoundException;
+import com.kada.da.modules.inventory.domain.LoHang;
 import com.kada.da.modules.inventory.domain.NhaCungCap;
+import com.kada.da.modules.inventory.domain.PhieuNhap;
+import com.kada.da.modules.inventory.domain.SanPham;
+import com.kada.da.modules.inventory.dto.LoHangRequestDTO;
+import com.kada.da.modules.inventory.dto.LoHangResponseDTO;
+import com.kada.da.modules.inventory.dto.PhieuNhapRequestDTO;
+import com.kada.da.modules.inventory.dto.PhieuNhapResponseDTO;
+import com.kada.da.modules.inventory.repository.LoHangRepository;
+import com.kada.da.modules.inventory.repository.NhaCungCapRepository;
 import com.kada.da.modules.inventory.repository.PhieuNhapRepository;
-
+import com.kada.da.modules.inventory.repository.SanPhamRepository;
+import com.kada.da.modules.staff.domain.NhanSu;
+import com.kada.da.modules.staff.dto.PageResponseDTO;
+import com.kada.da.modules.staff.repository.NhanSuRepository;
+import jakarta.persistence.EntityManager;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -32,47 +39,65 @@ import lombok.extern.slf4j.Slf4j;
 public class PhieuNhapServiceImpl implements PhieuNhapService {
 
     private final PhieuNhapRepository phieuNhapRepository;
+    private final LoHangRepository loHangRepository;
+    private final NhaCungCapRepository nhaCungCapRepository;
+    private final NhanSuRepository nhanSuRepository;
+    private final SanPhamRepository sanPhamRepository;
+    private final EntityManager entityManager;
 
     @Override
     @Transactional
     public PhieuNhapResponseDTO nhapKhoHoanChinh(PhieuNhapRequestDTO request) {
         if (request.getLoHangList() == null || request.getLoHangList().isEmpty()) {
-            throw new IllegalArgumentException("Danh sách sản phẩm nhập không được để trống!");
+            throw new BusinessRuleException("Danh sach san pham nhap kho khong duoc de trong!");
         }
 
-        String currentMaPn = null; // Khởi tạo null để SP tạo Phiếu Nhập mới ở lô đầu tiên
+        NhaCungCap nhaCungCap = nhaCungCapRepository.findById(request.getMaNcc())
+                .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay nha cung cap: " + request.getMaNcc()));
+        NhanSu nhanSu = findNhanSuByMaOrUsername(request.getMaNs());
 
-        log.info("Bắt đầu nhập kho: NCC={}, Nhân viên={}", request.getMaNcc(), request.getMaNs());
+        PhieuNhap phieuNhap = PhieuNhap.builder()
+                .maPn(nextCode("SEQ_PHIEU_NHAP", "PN"))
+                .nhaCungCap(nhaCungCap)
+                .nhanSu(nhanSu)
+                .ngayNhap(LocalDateTime.now())
+                .tongTien(BigDecimal.ZERO)
+                .build();
+        phieuNhapRepository.save(phieuNhap);
 
+        BigDecimal tongTien = BigDecimal.ZERO;
         for (LoHangRequestDTO lo : request.getLoHangList()) {
-            log.info("Đang xử lý lô hàng cho SP: {}, SL: {}", lo.getMaSp(), lo.getSoLuongNhap());
+            validateLoHang(lo);
 
-            // Gọi SP (Lần đầu currentMaPn = null, các lần sau sẽ mang mã phiếu vừa tạo)
-            Map<String, Object> result = phieuNhapRepository.nhapKhoLoHang(
-                    currentMaPn,
-                    request.getMaNcc(),
-                    request.getMaNs(),
-                    null, // Để null cho Trigger Oracle tự sinh mã Lô
-                    lo.getMaSp(),
-                    lo.getNgaySanXuat(),
-                    lo.getNgayHetHan(),
-                    lo.getSoLuongNhap(),
-                    // 👇 THẦN CHÚ CHỮA LỖI Ở ĐÂY: Ép BigDecimal về Double
-                    lo.getGiaNhap() != null ? lo.getGiaNhap().doubleValue() : 0.0);
-            // Cập nhật lại currentMaPn từ kết quả trả về của DB
-            currentMaPn = (String) result.get("maPn");
+            SanPham sanPham = sanPhamRepository.findById(lo.getMaSp())
+                    .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay san pham: " + lo.getMaSp()));
+            BigDecimal giaNhap = lo.getGiaNhap() != null ? lo.getGiaNhap() : BigDecimal.ZERO;
+
+            LoHang loHang = LoHang.builder()
+                    .maLo(nextCode("SEQ_LO_HANG", "LO"))
+                    .sanPham(sanPham)
+                    .phieuNhap(phieuNhap)
+                    .ngaySanXuat(lo.getNgaySanXuat())
+                    .ngayHetHan(lo.getNgayHetHan())
+                    .soLuongNhap(lo.getSoLuongNhap())
+                    .soLuongTon(lo.getSoLuongNhap())
+                    .giaNhap(giaNhap)
+                    .build();
+            loHangRepository.save(loHang);
+
+            tongTien = tongTien.add(giaNhap.multiply(BigDecimal.valueOf(lo.getSoLuongNhap())));
         }
 
-        log.info("Đã hoàn tất nạp các lô hàng vào Phiếu Nhập: {}", currentMaPn);
-
-        // Trả về full thông tin phiếu nhập vừa tạo
-        return getPhieuNhapById(currentMaPn);
+        phieuNhap.setTongTien(tongTien);
+        phieuNhapRepository.save(phieuNhap);
+        log.info("Nhap kho thanh cong: {}", phieuNhap.getMaPn());
+        return getPhieuNhapById(phieuNhap.getMaPn());
     }
 
     @Override
     public PhieuNhapResponseDTO getPhieuNhapById(String maPn) {
         PhieuNhap entity = phieuNhapRepository.findById(maPn)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy phiếu nhập với mã: " + maPn));
+                .orElseThrow(() -> new RuntimeException("Khong tim thay phieu nhap voi ma: " + maPn));
         return toDTO(entity);
     }
 
@@ -104,19 +129,41 @@ public class PhieuNhapServiceImpl implements PhieuNhapService {
                 .collect(Collectors.toList());
     }
 
-    // ==================== PRIVATE METHOD ====================
+    private void validateLoHang(LoHangRequestDTO lo) {
+        if (lo.getNgaySanXuat() == null || lo.getNgayHetHan() == null
+                || !lo.getNgayHetHan().isAfter(lo.getNgaySanXuat())) {
+            throw new BusinessRuleException("HSD phai sau NSX!");
+        }
+        if (!lo.getNgayHetHan().isAfter(LocalDate.now())) {
+            throw new BusinessRuleException("Khong nhap hang het han!");
+        }
+        if (lo.getSoLuongNhap() == null || lo.getSoLuongNhap() <= 0) {
+            throw new BusinessRuleException("So luong nhap phai lon hon 0!");
+        }
+    }
+
+    private NhanSu findNhanSuByMaOrUsername(String maNsOrUsername) {
+        return nhanSuRepository.findById(maNsOrUsername)
+                .or(() -> nhanSuRepository.findByTaiKhoanUsername(maNsOrUsername))
+                .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay nhan su: " + maNsOrUsername));
+    }
+
     private PhieuNhapResponseDTO toDTO(PhieuNhap entity) {
-        List<LoHangResponseDTO> loHangDTOs = entity.getDanhSachLoHang().stream()
+        List<LoHang> loHangs = entity.getDanhSachLoHang() != null
+                ? entity.getDanhSachLoHang()
+                : loHangRepository.findByPhieuNhap_MaPn(entity.getMaPn());
+
+        List<LoHangResponseDTO> loHangDTOs = loHangs.stream()
                 .map(lo -> LoHangResponseDTO.builder()
-                .maLo(lo.getMaLo())
-                .maSp(lo.getSanPham() != null ? lo.getSanPham().getMaSp() : null)
-                .tenSanPham(lo.getSanPham() != null ? lo.getSanPham().getTenSp() : null)
-                .ngaySanXuat(lo.getNgaySanXuat())
-                .ngayHetHan(lo.getNgayHetHan())
-                .soLuongNhap(lo.getSoLuongNhap())
-                .soLuongTon(lo.getSoLuongTon())
-                .giaNhap(lo.getGiaNhap())
-                .build())
+                        .maLo(lo.getMaLo())
+                        .maSp(lo.getSanPham() != null ? lo.getSanPham().getMaSp() : null)
+                        .tenSanPham(lo.getSanPham() != null ? lo.getSanPham().getTenSp() : null)
+                        .ngaySanXuat(lo.getNgaySanXuat())
+                        .ngayHetHan(lo.getNgayHetHan())
+                        .soLuongNhap(lo.getSoLuongNhap())
+                        .soLuongTon(lo.getSoLuongTon())
+                        .giaNhap(lo.getGiaNhap())
+                        .build())
                 .collect(Collectors.toList());
 
         return PhieuNhapResponseDTO.builder()
@@ -129,5 +176,12 @@ public class PhieuNhapServiceImpl implements PhieuNhapService {
                 .tongTien(entity.getTongTien() != null ? entity.getTongTien() : BigDecimal.ZERO)
                 .loHangList(loHangDTOs)
                 .build();
+    }
+
+    private String nextCode(String sequenceName, String prefix) {
+        Number nextVal = (Number) entityManager
+                .createNativeQuery("SELECT " + sequenceName + ".NEXTVAL FROM dual")
+                .getSingleResult();
+        return prefix + String.format("%06d", nextVal.longValue());
     }
 }

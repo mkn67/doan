@@ -25,6 +25,7 @@ import com.kada.da.modules.staff.domain.NhanSu;
 import com.kada.da.modules.staff.dto.PageResponseDTO;
 import com.kada.da.modules.staff.repository.NhanSuRepository;
 
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -36,6 +37,7 @@ public class LichLamViecServiceImpl implements LichLamViecService {
     private final LichLamViecRepository lichLamViecRepository;
     private final NhanSuRepository nhanSuRepository;
     private final LichHenRepository lichHenRepository;
+    private final EntityManager entityManager;
 
     // =========================================================
     // 1. TẠO LỊCH BẰNG STORED PROCEDURE (MỚI)
@@ -43,16 +45,37 @@ public class LichLamViecServiceImpl implements LichLamViecService {
     @Override
     @Transactional
     public void taoLichLamViec(LichLamViecRequestDTO request) {
-        log.info("Gọi SP_TAO_LICH_LAM_VIEC cho nhân sự: {}, ngày: {}, giờ: {}",
+        log.info("Tao lich lam viec cho nhan su: {}, ngay: {}, gio: {}",
                 request.getMaNs(), request.getNgayLam(), request.getGioBatDau());
 
-        // Mọi logic validate trùng giờ, nghỉ việc... Oracle sẽ tự ném Exception ra!
-        lichLamViecRepository.taoLichLamViec(
+        NhanSu nhanSu = nhanSuRepository.findById(request.getMaNs())
+                .orElseThrow(() -> new BusinessRuleException("Nhan su khong ton tai hoac da nghi!"));
+        if (Integer.valueOf(1).equals(nhanSu.getIsDeleted())) {
+            throw new BusinessRuleException("Nhan su khong ton tai hoac da nghi!");
+        }
+        if (request.getGioBatDau() == null || request.getGioKetThuc() == null
+                || request.getGioBatDau() >= request.getGioKetThuc()) {
+            throw new BusinessRuleException("Gio ket thuc phai > gio bat dau!");
+        }
+
+        Integer isNghi = request.getIsNghi() != null ? request.getIsNghi() : 0;
+        if (isNghi == 0 && !lichLamViecRepository.findOverlappingWorkingSlots(
                 request.getMaNs(),
                 request.getNgayLam(),
                 request.getGioBatDau(),
-                request.getGioKetThuc(),
-                Boolean.TRUE.equals(request.getIsNghi()) ? 1 : 0);
+                request.getGioKetThuc()).isEmpty()) {
+            throw new BusinessRuleException("Khung gio bi trung lich!");
+        }
+
+        LichLamViec lichLamViec = LichLamViec.builder()
+                .maLlv(nextCode("SEQ_LICH_LAM_VIEC", "LV"))
+                .nhanSu(nhanSu)
+                .ngayLam(request.getNgayLam())
+                .gioBatDau(request.getGioBatDau())
+                .gioKetThuc(request.getGioKetThuc())
+                .isNghi(isNghi)
+                .build();
+        lichLamViecRepository.save(lichLamViec);
         log.info("Tạo lịch làm việc thành công!");
     }
 
@@ -269,5 +292,12 @@ public class LichLamViecServiceImpl implements LichLamViecService {
         }
 
         return result;
+    }
+
+    private String nextCode(String sequenceName, String prefix) {
+        Number nextVal = (Number) entityManager
+                .createNativeQuery("SELECT " + sequenceName + ".NEXTVAL FROM dual")
+                .getSingleResult();
+        return prefix + String.format("%06d", nextVal.longValue());
     }
 }
