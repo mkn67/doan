@@ -7,7 +7,8 @@ import {
   ThanhToanResponseDTO,
   DoanhThuResponseDTO,
   ThongKeDoanhThuTheoNgayDTO,
-  ThongKeTongQuanDTO
+  ThongKeTongQuanDTO,
+  PendingInvoiceResponseDTO
 } from '@/types/billing'; // DTO lấy từ file types/billing.ts
 
 export const billingApi = {
@@ -22,8 +23,8 @@ export const billingApi = {
   },
 
   // 2. Tạo hóa đơn từ JSON
-  createHoaDonJson: async (data: TaoHoaDonJsonRequest): Promise<HoaDonResponseDTO> => {
-    const response = await axiosClient.post<HoaDonResponseDTO>('/billing/tao-tu-json', data);
+  createHoaDonJson: async (data: TaoHoaDonJsonRequest): Promise<{ maHd: string }> => {
+    const response = await axiosClient.post<{ maHd: string }>('/billing/tao-tu-json', data);
     return response.data;
   },
 
@@ -31,6 +32,15 @@ export const billingApi = {
   getDanhSachHoaDon: async (): Promise<HoaDonResponseDTO[]> => {
     const response = await axiosClient.get<HoaDonResponseDTO[]>('/billing');
     return response.data;
+  },
+
+  getPendingInvoices: async (): Promise<PendingInvoiceResponseDTO[]> => {
+    const response = await axiosClient.get<PendingInvoiceResponseDTO[]>('/billing/pending');
+    return response.data;
+  },
+
+  deleteHoaDon: async (maHd: string): Promise<void> => {
+    await axiosClient.delete(`/billing/${maHd}`);
   },
 
   // 4. Thanh toán
@@ -45,14 +55,14 @@ export const billingApi = {
 
   // 5. Thống kê tổng quan (Các con số to đùng trên cùng Dashboard)
   getThongKeTongQuan: async (): Promise<ThongKeTongQuanDTO> => {
-    const response = await axiosClient.get<ThongKeTongQuanDTO>('/report/tong-quan');
+    const response = await axiosClient.get<ThongKeTongQuanDTO>('/reports/tong-quan');
     return response.data;
   },
 
   // 6. Thống kê doanh thu theo ngày (Dùng để vẽ Biểu đồ đường/cột)
   // Tớ thiết kế sẵn params tuNgay/denNgay để đệ tử ông truyền date picker vào
-  getThongKeDoanhThuTheoNgay: async (tuNgay?: string, denNgay?: string): Promise<ThongKeDoanhThuTheoNgayDTO[]> => {
-    const response = await axiosClient.get<ThongKeDoanhThuTheoNgayDTO[]>('/report/doanh-thu-theo-ngay', {
+  getThongKeDoanhThuTheoNgay: async (tuNgay?: string, denNgay?: string): Promise<DoanhThuResponseDTO[]> => {
+    const response = await axiosClient.get<DoanhThuResponseDTO[]>('/reports/doanh-thu-theo-ngay', {
       params: {
         tuNgay,
         denNgay
@@ -63,11 +73,19 @@ export const billingApi = {
 
   // 7. Chi tiết danh sách doanh thu (Dạng bảng)
   getChiTietDoanhThu: async (tuNgay?: string, denNgay?: string): Promise<DoanhThuResponseDTO[]> => {
-    const response = await axiosClient.get<DoanhThuResponseDTO[]>('/report/chi-tiet-doanh-thu', {
+    const response = await axiosClient.get<DoanhThuResponseDTO[]>('/reports/chi-tiet-doanh-thu', {
       params: {
         tuNgay,
         denNgay
       }
+    });
+    return response.data;
+  },
+
+  // 8. Tải file PDF hóa đơn từ backend
+  exportPdf: async (maHd: string): Promise<Blob> => {
+    const response = await axiosClient.get(`/billing/${maHd}/export-pdf`, {
+      responseType: 'blob',
     });
     return response.data;
   }

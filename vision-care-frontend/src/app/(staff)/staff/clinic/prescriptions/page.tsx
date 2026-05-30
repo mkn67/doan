@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import * as React from "react";
 import { useForm, useFieldArray } from "react-hook-form";
@@ -35,7 +35,7 @@ export default function PrescriptionPage() {
   // HỨNG DATA TỪ TRANG KHÁM BỆNH CHUYỂN SANG
   const searchParams = useSearchParams();
   const maHoSoUrl = searchParams.get("maHoSo") || "";
-  const maNsUrl = searchParams.get("mans") || "";
+  const maNsUrl = searchParams.get("maNs") || searchParams.get("mans") || "";
 
   const form = useForm<z.infer<typeof prescriptionSchema>>({
     resolver: zodResolver(prescriptionSchema),

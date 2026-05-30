@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 @Builder
 public class HangChoHomNayDto {
     private String maHc;
+    private String maKh;
     private Integer soThuTu;
     private String loaiKhach;
     private String tenKhach;

@@ -2,6 +2,7 @@ package com.kada.da.modules.auth.security;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -12,7 +13,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import com.kada.da.Util.JwtTokenUtil;
 import com.kada.da.modules.auth.repository.TokenBlacklistRepository;
 
-import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -46,24 +46,31 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             String token = authHeader.substring(7);
 
             try {
-                // KIỂM TRA BLACKLIST Ở ĐÂY
                 if (tokenBlacklistRepository.existsByToken(token)) {
-                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                    response.getWriter().write("Token da bi thu hoi (Logged out)");
-                    return; // Chặn đứng, không cho đi tiếp
+                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token has been revoked");
+                    return;
                 }
 
                 String username = jwtTokenUtil.getUsernameFromToken(token);
-                String maNhom = jwtTokenUtil.getClaimFromToken(token, claims -> claims.get("maNhom", String.class));
+                // Lấy thẳng cái mảng roles từ token ra
+                List<?> rawRoles = jwtTokenUtil.getClaimFromToken(token, claims -> claims.get("roles", List.class));
+                List<String> roles = rawRoles != null ? rawRoles.stream()
+                        .filter(String.class::isInstance)
+                        .map(String.class::cast)
+                        .collect(Collectors.toList()) : List.of();
 
                 if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                    SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + maNhom.toUpperCase());
-                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(username,
-                            null, List.of(authority));
+                    // Biến đổi mảng roles thành danh sách quyền (Authorities)
+                    List<SimpleGrantedAuthority> authorities = roles.stream()
+                            .map(role -> new SimpleGrantedAuthority(role.toUpperCase())) // Đảm bảo đúng định dạng ROLE_ADMIN
+                            .collect(Collectors.toList());
+
+                    UsernamePasswordAuthenticationToken authToken = 
+                        new UsernamePasswordAuthenticationToken(username, null, authorities);
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
-            } catch (JwtException | IllegalArgumentException e) {
-                System.out.println("Lỗi xác thực Token: " + e.getMessage());
+            } catch (Exception e) {
+                System.out.println("Lỗi xác thực: " + e.getMessage());
             }
         }
         filterChain.doFilter(request, response);

@@ -4,7 +4,8 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { 
   Stethoscope, Activity, FileText, 
-  ShieldAlert, ArrowRight, Users, ClipboardList 
+  ShieldAlert, ArrowRight, Users, ClipboardList,
+  History
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -12,8 +13,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 
 // 1. KHAI BÁO CÁC ROLE ĐƯỢC PHÉP TRUY CẬP PHÂN HỆ NÀY
-// NH01: Bác sĩ | NH04: Quản lý | NH06: Lễ tân
-const ALLOWED_ROLES = ["NH01", "NH04", "NH06"];
+// ROLE_BAC_SI (NH01), ROLE_ADMIN (NH04), ROLE_LE_TAN (NH06)
+const ALLOWED_ROLES = ["ROLE_BAC_SI", "ROLE_ADMIN", "ROLE_LE_TAN", "NH01", "NH04", "NH06"];
 
 export default function ClinicOverviewPage() {
   const router = useRouter();
@@ -80,7 +81,7 @@ export default function ClinicOverviewPage() {
       </div>
 
       {/* CÁC CHỨC NĂNG CHÍNH (SHORTCUT CARDS) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         
         {/* Card 1: Khám Bệnh Mới */}
         <Card className="hover:shadow-md transition-all border-l-4 border-l-blue-500 group cursor-pointer" onClick={() => router.push('/staff/clinic/examinations')}>
@@ -132,6 +133,24 @@ export default function ClinicOverviewPage() {
           <CardContent>
             <div className="flex items-center text-sm font-semibold text-amber-600">
               Xem danh sách chờ <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Card 4: Nhật ký thay đổi (Audit Log) */}
+        <Card className="hover:shadow-md transition-all border-l-4 border-l-purple-500 group cursor-pointer" onClick={() => router.push('/staff/clinic/audit')}>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg text-slate-800 group-hover:text-purple-600 transition-colors">Nhật ký thay đổi</CardTitle>
+              <div className="p-2 bg-purple-50 rounded-lg text-purple-500">
+                <History className="w-5 h-5" />
+              </div>
+            </div>
+            <CardDescription className="pt-2">Tra cứu lịch sử chỉnh sửa kết quả khám thị lực của bệnh nhân, người sửa đổi và lý do.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center text-sm font-semibold text-purple-600">
+              Xem nhật ký <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
             </div>
           </CardContent>
         </Card>

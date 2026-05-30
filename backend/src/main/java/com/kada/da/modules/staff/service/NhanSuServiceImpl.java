@@ -84,7 +84,7 @@ public class NhanSuServiceImpl implements NhanSuService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public NhanSuResponseDTO updateNhanSu(String maNs, NhanSuRequestDTO request) {
         NhanSu nhanSu = nhanSuRepository.findById(maNs)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy nhân sự: " + maNs));
@@ -98,7 +98,22 @@ public class NhanSuServiceImpl implements NhanSuService {
         nhanSu.setNgaySinh(request.getNgaySinh());
         nhanSu.setGioiTinh(request.getGioiTinh());
         nhanSu.setDiaChi(request.getDiaChi());
+        nhanSu.setCccd(request.getCccd());
         nhanSu.setChucVu(chucVu);
+
+        // Update role group of TaiKhoan if present
+        if (nhanSu.getTaiKhoan() != null && request.getMaNhom() != null) {
+            TaiKhoan taiKhoan = nhanSu.getTaiKhoan();
+            Nhom nhomQuyen = nhomRepository.findById(request.getMaNhom())
+                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy nhóm quyền: " + request.getMaNhom()));
+            if (taiKhoan.getDanhSachNhom() == null) {
+                taiKhoan.setDanhSachNhom(new java.util.ArrayList<>());
+            } else {
+                taiKhoan.getDanhSachNhom().clear();
+            }
+            taiKhoan.getDanhSachNhom().add(nhomQuyen);
+            taiKhoanRepository.save(taiKhoan);
+        }
 
         return mapToResponse(nhanSuRepository.save(nhanSu));
     }
@@ -130,15 +145,7 @@ public class NhanSuServiceImpl implements NhanSuService {
     }
 
     private NhanSuResponseDTO mapToResponse(NhanSu entity) {
-        return NhanSuResponseDTO.builder()
-                .maNs(entity.getMaNs())
-                .hoTen(entity.getHoTen())
-                .sdt(entity.getSdt())
-                .diaChi(entity.getDiaChi())
-                .ngaySinh(entity.getNgaySinh())
-                .gioiTinh(entity.getGioiTinh())
-                .tenChucVu(entity.getChucVu() != null ? entity.getChucVu().getTenCv() : null)
-                .build();
+        return com.kada.da.modules.staff.mapper.NhanSuMapper.toResponse(entity);
     }
 
     @Override
@@ -160,5 +167,20 @@ public class NhanSuServiceImpl implements NhanSuService {
         return nhanSuRepository.findByChucVu_MaCvAndIsDeleted(maCv, 0).stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public void deleteNhanSu(String maNs) {
+        NhanSu nhanSu = nhanSuRepository.findById(maNs)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy nhân sự: " + maNs));
+        nhanSu.setIsDeleted(1);
+        nhanSuRepository.save(nhanSu);
+
+        if (nhanSu.getTaiKhoan() != null) {
+            TaiKhoan taiKhoan = nhanSu.getTaiKhoan();
+            taiKhoan.setTrangThai(0);
+            taiKhoanRepository.save(taiKhoan);
+        }
     }
 }

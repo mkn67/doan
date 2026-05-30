@@ -9,17 +9,23 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional; // 1. NHỚ IMPORT ENUM
 
-import com.kada.da.modules.billing.dto.HoaDonRequestDTO;
-import com.kada.da.modules.billing.dto.HoaDonResponseDTO;
-import com.kada.da.modules.billing.domain.CtHoaDon;
-import com.kada.da.modules.billing.domain.CtHoaDonId;
-import com.kada.da.modules.billing.domain.HoaDon;
-import com.kada.da.modules.inventory.domain.LoHang;
-import com.kada.da.modules.billing.Enum.TrangThaiHoaDon;
 import com.kada.da.Exception.BusinessRuleException;
 import com.kada.da.Exception.ResourceNotFoundException;
+import com.kada.da.modules.billing.Enum.TrangThaiHoaDon;
+import com.kada.da.modules.billing.domain.CtHoaDon;
+import com.kada.da.modules.billing.domain.CtHoaDonDv;
+import com.kada.da.modules.billing.domain.CtHoaDonId;
+import com.kada.da.modules.billing.domain.HoaDon;
+import com.kada.da.modules.billing.dto.HoaDonRequestDTO;
+import com.kada.da.modules.billing.dto.HoaDonResponseDTO;
+import com.kada.da.modules.billing.dto.PendingInvoiceResponseDTO;
+import com.kada.da.modules.examination.domain.HoSoThiLuc;
+import com.kada.da.modules.prescription.domain.PhieuKeDon;
+import jakarta.persistence.EntityManager;
+import java.util.ArrayList;
 import com.kada.da.modules.billing.repository.CtHoaDonRepository;
 import com.kada.da.modules.billing.repository.HoaDonRepository;
+import com.kada.da.modules.inventory.domain.LoHang;
 import com.kada.da.modules.inventory.repository.LoHangRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -34,6 +40,7 @@ public class HoaDonServiceImpl implements HoaDonService {
     private final HoaDonRepository hoaDonRepository;
     private final LoHangRepository loHangRepository;
     private final CtHoaDonRepository ctHoaDonRepository;
+    private final EntityManager em;
 
     @Override
     @Transactional
@@ -158,7 +165,131 @@ public class HoaDonServiceImpl implements HoaDonService {
     }
 
     @Override
-    public List<HoaDon> getAllHoaDon() {
-        return hoaDonRepository.findAll();
+    @Transactional(readOnly = true)
+    public List<HoaDonResponseDTO> getAllHoaDon() {
+        List<HoaDon> hoaDons = hoaDonRepository.findAll();
+
+        return hoaDons.stream().map(hd -> {
+            HoaDonResponseDTO dto = new HoaDonResponseDTO();
+            dto.setMaHd(hd.getMaHd());
+            dto.setNgayLap(hd.getNgayLap());
+
+            // Đảm bảo hd.getTongTien() không bị null hoặc bằng 0 trong DB
+            dto.setTongTien(hd.getTongTien() != null ? hd.getTongTien() : BigDecimal.ZERO);
+
+            dto.setTrangThai(hd.getTrangThai() != null ? hd.getTrangThai().getValue() : null);
+
+            if (hd.getKhachHang() != null) {
+                dto.setTenKhachHang(hd.getKhachHang().getHoTen());
+                dto.setSdtKhachHang(hd.getKhachHang().getSdt());
+            }
+            if (hd.getNhanSu() != null) {
+                dto.setTenNhanVienLap(hd.getNhanSu().getHoTen());
+            }
+
+            if (hd.getCtHoaDons() != null) {
+                List<HoaDonResponseDTO.ChiTietSanPhamResponse> listSp = hd.getCtHoaDons().stream().map(ct -> {
+                    HoaDonResponseDTO.ChiTietSanPhamResponse sp = new HoaDonResponseDTO.ChiTietSanPhamResponse();
+                    if (ct.getLoHang() != null && ct.getLoHang().getSanPham() != null) {
+                        sp.setTenSanPham(ct.getLoHang().getSanPham().getTenSp());
+                        sp.setMaLo(ct.getLoHang().getMaLo());
+                    }
+                    sp.setSoLuong(ct.getSoLuong());
+                    sp.setDonGia(ct.getDonGia());
+                    sp.setThanhTien(ct.getDonGia().multiply(BigDecimal.valueOf(ct.getSoLuong())));
+                    return sp;
+                }).toList();
+                dto.setDanhSachSanPham(listSp);
+            }
+
+            if (hd.getCtHoaDonDvs() != null) {
+                List<HoaDonResponseDTO.ChiTietDichVuResponse> listDv = hd.getCtHoaDonDvs().stream().map(ct -> {
+                    HoaDonResponseDTO.ChiTietDichVuResponse dv = new HoaDonResponseDTO.ChiTietDichVuResponse();
+                    if (ct.getDichVuKham() != null) {
+                        dv.setTenDichVu(ct.getDichVuKham().getTenDv());
+                    }
+                    dv.setSoLuong(ct.getSoLuong());
+                    dv.setDonGia(ct.getDonGia());
+                    dv.setThanhTien(ct.getDonGia().multiply(BigDecimal.valueOf(ct.getSoLuong())));
+                    return dv;
+                }).toList();
+                dto.setDanhSachDichVu(listDv);
+            }
+            return dto;
+        }).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PendingInvoiceResponseDTO> getPendingInvoices() {
+        String jpqlHoSo = "SELECT h FROM HoSoThiLuc h WHERE h.maHoSo NOT IN (" +
+                          "  SELECT hd.hoSoThiLuc.maHoSo FROM HoaDon hd " +
+                          "  WHERE hd.hoSoThiLuc IS NOT NULL AND (hd.isDeleted IS NULL OR hd.isDeleted = 0)" +
+                          ") ORDER BY h.maHoSo DESC";
+        List<HoSoThiLuc> pendingHoSos = em.createQuery(jpqlHoSo, HoSoThiLuc.class).getResultList();
+
+        String jpqlDon = "SELECT p FROM PhieuKeDon p WHERE p.maDon NOT IN (" +
+                         "  SELECT hd.phieuKeDon.maDon FROM HoaDon hd " +
+                         "  WHERE hd.phieuKeDon IS NOT NULL AND (hd.isDeleted IS NULL OR hd.isDeleted = 0)" +
+                         ") ORDER BY p.maDon DESC";
+        List<PhieuKeDon> pendingDons = em.createQuery(jpqlDon, PhieuKeDon.class).getResultList();
+
+        List<PendingInvoiceResponseDTO> list = new ArrayList<>();
+
+        java.util.Map<String, PhieuKeDon> pendingDonsMap = new java.util.HashMap<>();
+        for (PhieuKeDon don : pendingDons) {
+            if (don.getHoSoThiLuc() != null) {
+                pendingDonsMap.put(don.getHoSoThiLuc().getMaHoSo(), don);
+            }
+        }
+
+        java.util.Set<String> mergedDonIds = new java.util.HashSet<>();
+
+        for (HoSoThiLuc hoSo : pendingHoSos) {
+            PendingInvoiceResponseDTO.PendingInvoiceResponseDTOBuilder builder = PendingInvoiceResponseDTO.builder()
+                    .maKh(hoSo.getKhachHang() != null ? hoSo.getKhachHang().getMaKh() : null)
+                    .tenKhachHang(hoSo.getKhachHang() != null ? hoSo.getKhachHang().getHoTen() : "Khách lẻ")
+                    .sdtKhachHang(hoSo.getKhachHang() != null ? hoSo.getKhachHang().getSdt() : null)
+                    .maHoSo(hoSo.getMaHoSo())
+                    .ngayKham(hoSo.getNgayKham() != null ? hoSo.getNgayKham().atStartOfDay() : null);
+
+            PhieuKeDon matchingDon = pendingDonsMap.get(hoSo.getMaHoSo());
+            if (matchingDon != null) {
+                builder.maDon(matchingDon.getMaDon())
+                       .ngayKeDon(matchingDon.getNgayKeDon())
+                       .loaiKham("Khám & Đơn kính/thuốc");
+                mergedDonIds.add(matchingDon.getMaDon());
+            } else {
+                builder.loaiKham("Khám mắt");
+            }
+
+            list.add(builder.build());
+        }
+
+        for (PhieuKeDon don : pendingDons) {
+            if (!mergedDonIds.contains(don.getMaDon())) {
+                String maKh = null;
+                String tenKh = "Khách lẻ";
+                String sdt = null;
+                if (don.getHoSoThiLuc() != null && don.getHoSoThiLuc().getKhachHang() != null) {
+                    maKh = don.getHoSoThiLuc().getKhachHang().getMaKh();
+                    tenKh = don.getHoSoThiLuc().getKhachHang().getHoTen();
+                    sdt = don.getHoSoThiLuc().getKhachHang().getSdt();
+                }
+
+                list.add(PendingInvoiceResponseDTO.builder()
+                        .maKh(maKh)
+                        .tenKhachHang(tenKh)
+                        .sdtKhachHang(sdt)
+                        .maHoSo(don.getHoSoThiLuc() != null ? don.getHoSoThiLuc().getMaHoSo() : null)
+                        .ngayKham(don.getHoSoThiLuc() != null && don.getHoSoThiLuc().getNgayKham() != null ? don.getHoSoThiLuc().getNgayKham().atStartOfDay() : null)
+                        .maDon(don.getMaDon())
+                        .ngayKeDon(don.getNgayKeDon())
+                        .loaiKham("Đơn kính/thuốc")
+                        .build());
+            }
+        }
+
+        return list;
     }
 }

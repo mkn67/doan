@@ -11,11 +11,17 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kada.da.Exception.BusinessRuleException;
+import com.kada.da.modules.inventory.domain.LoHang;
+import com.kada.da.modules.inventory.domain.SanPham;
+import com.kada.da.modules.inventory.repository.LoHangRepository;
+import com.kada.da.modules.prescription.domain.CtKeDon;
 import com.kada.da.modules.prescription.domain.XuLyKinh;
 import com.kada.da.modules.prescription.dto.XuLyKinhRequestDTO;
 import com.kada.da.modules.prescription.dto.XuLyKinhResponseDTO;
 import com.kada.da.modules.prescription.repository.XuLyKinhRepository;
 import com.kada.da.modules.staff.dto.PageResponseDTO;
+import com.kada.da.modules.billing.repository.HoaDonRepository;
+import com.kada.da.modules.billing.domain.HoaDon;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +33,8 @@ import lombok.extern.slf4j.Slf4j;
 public class XuLyKinhServiceImpl implements XuLyKinhService {
 
     private final XuLyKinhRepository xuLyKinhRepository;
+    private final LoHangRepository loHangRepository;
+    private final HoaDonRepository hoaDonRepository;
     private final ObjectMapper objectMapper; // Dùng để ép cục JSON thông số kính thành String
 
     @Override
@@ -75,7 +83,8 @@ public class XuLyKinhServiceImpl implements XuLyKinhService {
 
     @Override
     public List<XuLyKinhResponseDTO> getXuLyKinhCanXuLy() {
-        return getXuLyKinhByTrangThai("Chờ xử lý");
+        return xuLyKinhRepository.findByTrangThaiIn(List.of("Chờ xử lý", "Đang xử lý", "Lỗi gia công", "Hoàn thành")).stream()
+                .map(this::toDTO).collect(Collectors.toList());
     }
 
     @Override
@@ -137,13 +146,94 @@ public class XuLyKinhServiceImpl implements XuLyKinhService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy phiếu: " + maXl));
         existing.setTrangThai("Đã hủy");
         existing.setGhiChu(lyDo);
+
+        // Check if the cancellation reason is a manufacturing error (lỗi mài/lắp)
+        boolean isMfgError = lyDo != null && (
+            lyDo.toLowerCase().contains("lỗi") ||
+            lyDo.toLowerCase().contains("hỏng") ||
+            lyDo.toLowerCase().contains("vỡ") ||
+            lyDo.toLowerCase().contains("mài") ||
+            lyDo.toLowerCase().contains("lắp") ||
+            lyDo.toLowerCase().contains("damage") ||
+            lyDo.toLowerCase().contains("error") ||
+            lyDo.toLowerCase().contains("breakage")
+        );
+
+        if (isMfgError && existing.getPhieuKeDon() != null) {
+            List<CtKeDon> details = existing.getPhieuKeDon().getChiTietKeDons();
+            if (details != null) {
+                for (CtKeDon detail : details) {
+                    SanPham sp = detail.getSanPham();
+                    // If it is a glass/lens product (laThuoc == 0 or null)
+                    if (sp != null && (sp.getLaThuoc() == null || sp.getLaThuoc() == 0)) {
+                        // Find active batches for this product and perform FIFO deduction
+                        List<LoHang> activeBatches = loHangRepository.findBySanPham(sp).stream()
+                                .filter(l -> l.getSoLuongTon() != null && l.getSoLuongTon() > 0)
+                                .sorted((l1, l2) -> {
+                                    if (l1.getNgaySanXuat() != null && l2.getNgaySanXuat() != null) {
+                                        return l1.getNgaySanXuat().compareTo(l2.getNgaySanXuat());
+                                    }
+                                    return l1.getMaLo().compareTo(l2.getMaLo());
+                                })
+                                .collect(Collectors.toList());
+
+                        if (!activeBatches.isEmpty()) {
+                            LoHang lo = activeBatches.get(0);
+                            lo.setSoLuongTon(lo.getSoLuongTon() - 1);
+                            loHangRepository.save(lo);
+
+                            log.info("[AUDIT_LOG] KTV báo hỏng kính. Đã khấu hao 1 sản phẩm {} từ lô {} theo cơ chế FIFO.", sp.getMaSp(), lo.getMaLo());
+
+                            // Write to a dedicated waste report log file
+                            try {
+                                java.nio.file.Files.writeString(
+                                    java.nio.file.Paths.get("waste_report.log"),
+                                    String.format("[%s] [WASTE_REPORT_LOG] Kính lỗi mài lắp - Phiếu XL: %s, Mã SP: %s, Tên SP: %s, Lô khấu hao: %s, Số lượng: 1, Lý do: %s\n",
+                                        LocalDateTime.now(), maXl, sp.getMaSp(), sp.getTenSp(), lo.getMaLo(), lyDo),
+                                    java.nio.file.StandardOpenOption.CREATE,
+                                    java.nio.file.StandardOpenOption.APPEND
+                                );
+                            } catch (Exception ex) {
+                                log.error("Lỗi ghi file waste_report.log: ", ex);
+                            }
+                        } else {
+                            log.warn("[AUDIT_LOG] KTV báo hỏng sản phẩm {} nhưng không còn lô hàng nào có tồn kho để khấu hao.", sp.getMaSp());
+                        }
+                    }
+                }
+            }
+        }
+
         return toDTO(xuLyKinhRepository.save(existing));
     }
 
     // ==================== PRIVATE METHODS ====================
     @Override
+    @Transactional
     public XuLyKinhResponseDTO createXuLyKinh(XuLyKinhRequestDTO request) {
-        throw new UnsupportedOperationException("Dùng taoPhieuGiaoKinh(SP) thay thế cho nghiệp vụ này");
+        String thongSoKinhStr = "";
+        try {
+            if (request.getThongSoKinh() != null) {
+                thongSoKinhStr = objectMapper.writeValueAsString(request.getThongSoKinh());
+            }
+        } catch (Exception e) {
+            log.error("Lỗi parse JSON thongSoKinh: ", e);
+        }
+        String maXl = taoPhieuGiaoKinh(request.getMaDon(), request.getMaNsKyThuat(), thongSoKinhStr);
+        
+        // Cập nhật thêm trạng thái và ghi chú nếu được truyền từ form
+        if (request.getTrangThai() != null && !request.getTrangThai().isEmpty()) {
+            updateTrangThai(maXl, request.getTrangThai());
+        }
+        if (request.getGhiChu() != null && !request.getGhiChu().isEmpty()) {
+            XuLyKinh existing = xuLyKinhRepository.findById(maXl).orElse(null);
+            if (existing != null) {
+                existing.setGhiChu(request.getGhiChu());
+                xuLyKinhRepository.save(existing);
+            }
+        }
+        
+        return getXuLyKinhById(maXl);
     }
 
     private XuLyKinhResponseDTO toDTO(XuLyKinh entity) {
@@ -167,12 +257,30 @@ public class XuLyKinhServiceImpl implements XuLyKinhService {
             thongSoObj = entity.getThongSoKinh(); // Lỡ lỗi thì trả nguyên chuỗi
         }
 
+        String maHd = null;
+        String trangThaiThanhToan = "Chưa lập hóa đơn";
+        if (entity.getPhieuKeDon() != null) {
+            String maDon = entity.getPhieuKeDon().getMaDon();
+            List<HoaDon> hoaDons = hoaDonRepository.findByPhieuKeDon_MaDon(maDon);
+            if (hoaDons != null && !hoaDons.isEmpty()) {
+                HoaDon activeHd = hoaDons.stream()
+                        .filter(hd -> hd.getIsDeleted() == null || hd.getIsDeleted() == 0)
+                        .findFirst().orElse(null);
+                if (activeHd != null) {
+                    maHd = activeHd.getMaHd();
+                    trangThaiThanhToan = activeHd.getTrangThai() != null ? activeHd.getTrangThai().getValue() : "Chưa thanh toán";
+                }
+            }
+        }
+
         return XuLyKinhResponseDTO.builder()
                 .maXl(entity.getMaXl())
                 .maDon(entity.getPhieuKeDon() != null ? entity.getPhieuKeDon().getMaDon() : null)
                 .tenKhachHang(tenKhachHang) // Lấy từ Hồ Sơ (thay vì Hóa Đơn vì xử lý kính nối với Đơn Thuốc)
                 .tenKyThuatVien(entity.getNhanSuKyThuat() != null ? entity.getNhanSuKyThuat().getHoTen() : null)
                 .trangThai(entity.getTrangThai())
+                .maHd(maHd)
+                .trangThaiThanhToan(trangThaiThanhToan)
                 .ngayBatDau(entity.getNgayBatDau())
                 .ngayHoanThanh(entity.getNgayHoanThanh())
                 .ghiChu(entity.getGhiChu())

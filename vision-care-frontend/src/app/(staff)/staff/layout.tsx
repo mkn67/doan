@@ -5,54 +5,96 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { 
   LayoutDashboard, Package, CalendarDays, 
-  Stethoscope, LogOut, Settings, ShieldAlert,
-  Hammer, Wallet
+  Stethoscope, LogOut, ShieldAlert,
+  Hammer, Wallet, Users, Activity, History, FileText, ClipboardList, Truck
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth"; 
+import Cookies from 'js-cookie';
 
 // 1. ĐỊNH NGHĨA MENU VÀ GẮN QUYỀN TRUY CẬP CHO TỪNG MỤC
 const staffMenuItems = [
+  // --- ADMIN ---
   { 
     name: "Tổng quan (Dashboard)", 
     href: "/staff/dashboard", 
     icon: LayoutDashboard, 
-    roles: ["NH04"] // Chỉ Quản lý
-  },
-  { 
-    name: "Lễ tân & Khách hàng", 
-    href: "/staff/reception", 
-    icon: CalendarDays, 
-    roles: ["NH06", "NH04"] // Lễ tân, Quản lý
-  },
-  { 
-    name: "Khám bệnh & Kê đơn", 
-    href: "/staff/clinic", 
-    icon: Stethoscope, 
-    roles: ["NH01", "NH04"] // Bác sĩ, Quản lý
-  },
-  { 
-    name: "Quầy Thu Ngân", 
-    href: "/staff/cashier", 
-    icon: Wallet, 
-    roles: ["NH02", "NH04"] // Thu ngân, Quản lý
-  },
-  { 
-    name: "Kho hàng & Vật tư", 
-    href: "/staff/inventory", 
-    icon: Package, 
-    roles: ["NH03", "NH04"] // Thủ kho, Quản lý
-  },
-  { 
-    name: "Xưởng mài lắp kính", 
-    href: "/staff/workshop/glasses", 
-    icon: Hammer, 
-    roles: ["NH05", "NH03", "NH04"] // Kỹ thuật viên, Thủ kho, Quản lý
+    roles: ["ROLE_ADMIN"] 
   },
   { 
     name: "Quản trị hệ thống", 
     href: "/staff/admin", 
-    icon: Settings, 
-    roles: ["NH04"] // Chỉ Quản lý
+    icon: Users, 
+    roles: ["ROLE_ADMIN"] 
+  },
+
+  // --- LỄ TÂN (RECEPTIONIST) ---
+  { 
+    name: "Duyệt Lịch Hẹn", 
+    href: "/staff/reception/appointments", 
+    icon: CalendarDays, 
+    roles: ["ROLE_LE_TAN"] 
+  },
+  { 
+    name: "Hồ Sơ Khách Hàng", 
+    href: "/staff/reception/customers", 
+    icon: Users, 
+    roles: ["ROLE_LE_TAN"] 
+  },
+
+  // --- BÁC SĨ (DOCTOR) ---
+  { 
+    name: "Đo Khúc Xạ & Khám", 
+    href: "/staff/clinic/examinations", 
+    icon: Stethoscope, 
+    roles: ["ROLE_BAC_SI"] 
+  },
+  { 
+    name: "Hàng Chờ Hôm Nay", 
+    href: "/staff/clinic/queue", 
+    icon: Activity, 
+    roles: ["ROLE_BAC_SI"] 
+  },
+  { 
+    name: "Nhật Ký Thay Đổi", 
+    href: "/staff/clinic/audit", 
+    icon: History, 
+    roles: ["ROLE_BAC_SI"] 
+  },
+
+  // --- THU NGÂN (CASHIER) ---
+  { 
+    name: "Thanh Toán Hóa Đơn", 
+    href: "/staff/cashier/payments", 
+    icon: Wallet, 
+    roles: ["ROLE_THU_NGAN"] 
+  },
+  { 
+    name: "Tạo Hóa Đơn Bán", 
+    href: "/staff/cashier/billing", 
+    icon: FileText, 
+    roles: ["ROLE_THU_NGAN"] 
+  },
+
+  // --- THỦ KHO (WAREHOUSE KEEPER) ---
+  { 
+    name: "Sản phẩm & Vật tư", 
+    href: "/staff/inventory/products", 
+    icon: Package, 
+    roles: ["ROLE_THU_KHO"] 
+  },
+  { 
+    name: "Nhập kho lô hàng", 
+    href: "/staff/inventory/imports", 
+    icon: ClipboardList, 
+    roles: ["ROLE_THU_KHO"] 
+  },
+
+  // --- KỸ THUẬT VIÊN (TECHNICIAN) ---
+  { 
+    name: "Xưởng mài lắp kính", 
+    href: "/staff/workshop/glasses", 
+    icon: Hammer, 
+    roles: ["ROLE_KY_THUAT"] 
   },
 ];
 
@@ -71,6 +113,7 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
   const handleLogout = () => {
     localStorage.removeItem("user");
     localStorage.removeItem("token");
+    Cookies.remove("token");
     router.push("/auth/login");
   };
 
@@ -78,11 +121,10 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
   const hasAccess = (allowedRoles: string[]) => {
     if (!user) return false;
 
-    // Kiểm tra theo roles (mảng) hoặc maNhom (chuỗi đơn lẻ) từ LoginResponseDTO
+    // Kiểm tra theo roles (mảng) từ LoginResponseDTO
     const userRoles = user?.roles || [];
-    const userGroup = user?.maNhom ? user.maNhom : null;
 
-    return allowedRoles.some(role => userRoles.includes(role) || role === userGroup);
+    return allowedRoles.some(role => userRoles.includes(role));
   };
 
   // Lọc menu: Chỉ giữ lại những mục mà User hiện tại có quyền xem
@@ -111,6 +153,17 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
     );
   }
 
+  const getRoleLabel = (roles?: string[]) => {
+    if (!roles || roles.length === 0) return "Nhân viên";
+    if (roles.includes("ROLE_ADMIN")) return "Quản trị viên";
+    if (roles.includes("ROLE_BAC_SI")) return "Bác sĩ";
+    if (roles.includes("ROLE_LE_TAN")) return "Lễ tân";
+    if (roles.includes("ROLE_THU_NGAN")) return "Thu ngân";
+    if (roles.includes("ROLE_THU_KHO")) return "Thủ kho";
+    if (roles.includes("ROLE_KY_THUAT")) return "Kỹ thuật viên";
+    return "Nhân viên";
+  };
+
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">
       
@@ -118,12 +171,26 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
       <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col shadow-2xl z-20 flex-shrink-0">
         
         {/* Header Sidebar */}
-        <div className="p-6 bg-slate-950/50">
-          <h1 className="text-2xl font-black text-white tracking-tight">VISION <span className="text-blue-500">CARE</span></h1>
-          <div className="mt-4 p-3 bg-slate-800/50 rounded-xl border border-slate-700/50">
-            <p className="text-xs uppercase text-slate-400 font-semibold">Tài khoản</p>
-            <p className="text-sm font-bold text-white truncate mt-0.5">{user?.hoTen || "Nhân viên"}</p>
-          </div>
+        <div className="p-6 bg-slate-950/55 border-b border-slate-800/60">
+          <h1 className="text-2xl font-black text-white tracking-tight flex items-center gap-2">
+            VISION <span className="text-blue-500">CARE</span>
+          </h1>
+          
+          <Link href="/staff/profile" className="mt-5 flex items-center gap-3 p-3 bg-slate-800/40 hover:bg-slate-800/60 transition-colors border border-slate-700/40 rounded-2xl cursor-pointer block">
+            {/* User Avatar */}
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center font-black text-white shadow-md text-sm flex-shrink-0">
+              {user?.hoTen ? user.hoTen.charAt(0).toUpperCase() : "U"}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">CÁ NHÂN</p>
+              <p className="text-sm font-bold text-white truncate" title={user?.hoTen}>
+                {user?.hoTen || "Nhân viên"}
+              </p>
+              <p className="text-xs text-slate-400 mt-0.5 truncate">
+                Nhân sự: <span className="text-blue-400 font-semibold">{getRoleLabel(user?.roles)}</span>
+              </p>
+            </div>
+          </Link>
         </div>
         
         {/* Menu Navigation */}
@@ -160,9 +227,54 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
       </aside>
 
       {/* KHU VỰC HIỂN THỊ NỘI DUNG (MAIN CONTENT) */}
-      <main className="flex-1 overflow-y-auto relative bg-slate-50/50">
-        <div className="p-8 min-h-full">
-          {children}
+      <main className="flex-1 overflow-y-auto relative bg-slate-50/50 flex flex-col">
+        {user?.roles?.includes("ROLE_ADMIN") && 
+         !pathname.startsWith("/staff/admin") && 
+         !pathname.startsWith("/staff/dashboard") && 
+         pathname !== "/staff" && (
+          <div className="bg-amber-500/15 border-b border-amber-500/30 px-6 py-3.5 flex items-center gap-2 text-amber-700 font-bold text-xs shadow-sm">
+            <ShieldAlert className="w-4.5 h-4.5 animate-pulse text-amber-500 shrink-0" />
+            <span>Chế độ Xem & Đọc dành cho Quản trị viên (Admin Read-Only). Bạn đang ở màn hình nghiệp vụ - Các thao tác ghi, xóa hoặc cập nhật đã bị khóa.</span>
+          </div>
+        )}
+        <div className="p-8 min-h-full flex-1">
+          {(() => {
+            let allowedRoles: string[] | null = null;
+            if (pathname.startsWith("/staff/admin") || pathname.startsWith("/staff/dashboard")) {
+              allowedRoles = ["ROLE_ADMIN"];
+            } else if (pathname.startsWith("/staff/reception")) {
+              allowedRoles = ["ROLE_LE_TAN"];
+            } else if (pathname.startsWith("/staff/clinic")) {
+              allowedRoles = ["ROLE_BAC_SI"];
+            } else if (pathname.startsWith("/staff/cashier")) {
+              allowedRoles = ["ROLE_THU_NGAN"];
+            } else if (pathname.startsWith("/staff/inventory")) {
+              allowedRoles = ["ROLE_THU_KHO"];
+            } else if (pathname.startsWith("/staff/workshop")) {
+              allowedRoles = ["ROLE_KY_THUAT"];
+            }
+
+            const isAdmin = user?.roles?.includes("ROLE_ADMIN");
+            const isAuthorized = allowedRoles === null || isAdmin || hasAccess(allowedRoles);
+            if (!isAuthorized) {
+              return (
+                <div className="flex flex-col items-center justify-center min-h-[50vh] bg-white rounded-3xl border border-slate-100 shadow-xl p-8 text-center max-w-xl mx-auto mt-10">
+                  <ShieldAlert className="w-16 h-16 text-rose-500 mb-4 animate-bounce" />
+                  <h2 className="text-2xl font-bold text-slate-800">Truy Cập Bị Từ Chối</h2>
+                  <p className="text-slate-505 mt-2 max-w-md mx-auto text-sm text-slate-500">
+                    Tài khoản của bạn không được phân quyền truy cập chức năng này. Vui lòng quay lại khu vực được phân công!
+                  </p>
+                  <button 
+                    onClick={() => router.push(user?.roles?.includes("ROLE_ADMIN") ? "/staff/dashboard" : "/staff")} 
+                    className="mt-6 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md transition-all active:scale-[0.98] text-sm"
+                  >
+                    Quay lại trang chính
+                  </button>
+                </div>
+              );
+            }
+            return children;
+          })()}
         </div>
       </main>
       

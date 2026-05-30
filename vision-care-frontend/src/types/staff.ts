@@ -107,6 +107,7 @@ export interface LichHenResponseDTO {
   loaiLich: string
   trangThai: string
   trieuChung?: string
+  tenGoiKham?: string
 }
 
 export interface HangChoResponseDTO {
@@ -125,6 +126,8 @@ export interface XuLyKinhResponseDTO {
   tenKhachHang: string
   tenKyThuatVien?: string
   trangThai: string
+  maHd?: string
+  trangThaiThanhToan?: string
   ngayBatDau: string
   ngayHoanThanh: string
   ghiChu?: string
@@ -132,6 +135,7 @@ export interface XuLyKinhResponseDTO {
 }
 export interface HangChoHomNayDTO {
   maHc: string;
+  maKh: string;
   soThuTu: number;
   loaiKhach: string; // "Walk-in" or "Hen truoc"
   tenKhach: string;

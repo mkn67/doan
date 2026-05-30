@@ -3,7 +3,7 @@ package com.kada.da.modules.inventory.controller;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -18,7 +18,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/v1/inventory")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*") // Giữ nguyên CORS cho Frontend dễ gọi
+@PreAuthorize("hasAnyRole('ADMIN', 'THU_KHO')")
 public class InventoryController {
 
     private final LoHangService loHangService;

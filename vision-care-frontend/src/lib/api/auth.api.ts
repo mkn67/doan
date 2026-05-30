@@ -10,7 +10,9 @@ import {
   PhanQuyenRequestDTO,
   VaiTroRequestDTO,
   VaiTroResponseDTO,
-  XacNhanEmailDTO
+  XacNhanEmailDTO,
+  ProfileResponseDTO,
+  ProfileUpdateRequestDTO
 } from '@/types/auth'; // Giả sử ông lưu DTO ở src/types/auth.ts
 
 export const authApi = {
@@ -35,6 +37,18 @@ export const authApi = {
   // 4. Đổi mật khẩu (Cần có Token đã đăng nhập)
   changePassword: async (data: ChangePasswordRequestDTO): Promise<ChangePasswordResponseDTO> => {
     const response = await axiosClient.post<ChangePasswordResponseDTO>('/auth/change-password', data);
+    return response.data;
+  },
+
+  // 4.1 Lấy profile cá nhân
+  getProfile: async (): Promise<ProfileResponseDTO> => {
+    const response = await axiosClient.get<ProfileResponseDTO>('/auth/me');
+    return response.data;
+  },
+
+  // 4.2 Cập nhật profile cá nhân
+  updateProfile: async (data: ProfileUpdateRequestDTO): Promise<ProfileResponseDTO> => {
+    const response = await axiosClient.put<ProfileResponseDTO>('/auth/me', data);
     return response.data;
   },
 

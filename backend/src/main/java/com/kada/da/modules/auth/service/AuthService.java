@@ -13,5 +13,11 @@ public interface AuthService {
 
     void changePassword(String username, ChangePasswordRequestDTO request);
 
+    void forgotPassword(com.kada.da.modules.auth.dto.ForgotPasswordRequestDTO request);
+
+    com.kada.da.modules.auth.dto.ProfileResponseDTO getProfile(String username);
+
+    com.kada.da.modules.auth.dto.ProfileResponseDTO updateProfile(String username, com.kada.da.modules.auth.dto.ProfileUpdateRequestDTO request);
+
     void logout(String token);
 }

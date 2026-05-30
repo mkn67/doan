@@ -65,28 +65,30 @@ public class SecurityConfig {
                         "/swagger-ui/**",
                         "/swagger-ui.html",
                         "/webjars/**",
-                        "/api/v1/auth/**",
-                        // 🔥 2 DÒNG NÀY LÀ CHÌA KHÓA MỞ DROPDOWN CHO KHÁCH ĐẶT LỊCH NÀY 🔥
+                        "/api/v1/auth/login",
+                        "/api/v1/auth/register",
+                        "/api/v1/auth/forgot-password",
                         "/api/v1/nhan-su/chuc-vu/**",
-                        "/api/v1/goi-kham/active"
+                        "/api/v1/goi-kham/active",
+                        // Public slot lookup for booking pages
+                        "/api/v1/lich-lam-viec/slot-trong"
                 ).permitAll()
                 // --- BẮT ĐẦU PHÂN QUYỀN CHUẨN THEO DB ---
 
-                // Kho hàng & Sản phẩm: Dành cho Thủ kho (NH03) và Quản lý (NH04)
+                // Kho hàng & Sản phẩm: Dành cho Thủ kho, Quản lý và Bác sĩ (để kê đơn thuốc/kính)
                 .requestMatchers("/api/v1/san-pham/**", "/api/v1/kho-hang/**")
-                .hasAnyAuthority("ROLE_NH03", "ROLE_NH04")
-                // Lịch hẹn: Khách hàng (NH07) xem lịch của họ, Lễ tân (NH06) xếp lịch, Bác sĩ (NH01) và Quản lý (NH04)
+                .hasAnyRole("THU_KHO", "ADMIN", "BAC_SI")
+                // Lịch hẹn: Khách hàng xem lịch của họ, Lễ tân xếp lịch, Bác sĩ và Quản lý
                 .requestMatchers("/api/v1/lich-hen/**")
-                .hasAnyAuthority("ROLE_NH01", "ROLE_NH06", "ROLE_NH04", "ROLE_NH07")
-                // Khách hàng: Lễ tân (NH06) tiếp nhận và Quản lý (NH04)
+                .hasAnyRole("BAC_SI", "LE_TAN", "ADMIN", "CUSTOMER")
                 .requestMatchers("/api/v1/khach-hang/**")
-                .hasAnyAuthority("ROLE_NH06", "ROLE_NH04")
-                // Khám bệnh: Bác sĩ (NH01) trực tiếp khám và Quản lý (NH04) theo dõi
+                .hasAnyRole("LE_TAN", "ADMIN", "CUSTOMER", "BAC_SI")
+                // Khám bệnh: Bác sĩ trực tiếp khám và Quản lý theo dõi
                 .requestMatchers("/api/v1/kham-benh/**")
-                .hasAnyAuthority("ROLE_NH01", "ROLE_NH04")
-                // Các tính năng tối cao (Dashboard thống kê, Admin tổng): Chỉ Quản lý (NH04)
+                .hasAnyRole("BAC_SI", "ADMIN")
+                // Các tính năng tối cao (Dashboard thống kê, Admin tổng): Chỉ Quản lý
                 .requestMatchers("/api/v1/dashboard/**", "/api/v1/admin/**")
-                .hasAuthority("ROLE_NH04")
+                .hasRole("ADMIN")
                 // Các đường dẫn khác phải có Token mới được vào
                 .anyRequest().authenticated()
                 )

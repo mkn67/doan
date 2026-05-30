@@ -37,7 +37,7 @@ public class DanhGiaController {
      * Tạo đánh giá mới (khách hàng đánh giá sau khi khám)
      */
     @PostMapping
-    @PreAuthorize("hasAnyRole('KHACH_HANG', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('LE_TAN', 'ADMIN', 'CUSTOMER')")
     public ResponseEntity<DanhGiaResponseDTO> createDanhGia(
             @Valid @RequestBody DanhGiaRequestDTO request) {
         log.info("API: Tạo đánh giá mới cho hồ sơ: {}", request.getMaHoSo());
@@ -137,7 +137,7 @@ public class DanhGiaController {
      * Cập nhật đánh giá
      */
     @PutMapping("/{maDg}")
-    @PreAuthorize("hasAnyRole('KHACH_HANG', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('LE_TAN', 'ADMIN')")
     public ResponseEntity<DanhGiaResponseDTO> updateDanhGia(
             @PathVariable String maDg,
             @Valid @RequestBody DanhGiaRequestDTO request) {

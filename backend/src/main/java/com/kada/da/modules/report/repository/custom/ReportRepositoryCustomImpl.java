@@ -1,16 +1,18 @@
 package com.kada.da.modules.report.repository.custom;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.springframework.stereotype.Repository;
+
 import com.kada.da.modules.inventory.dto.CanhBaoHetHanDTO;
 import com.kada.da.modules.report.dto.DoanhThuResponseDTO;
+
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.ParameterMode;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.StoredProcedureQuery;
-import org.springframework.stereotype.Repository;
-
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
 
 @Repository
 public class ReportRepositoryCustomImpl implements ReportRepositoryCustom {
@@ -63,6 +65,29 @@ public class ReportRepositoryCustomImpl implements ReportRepositoryCustom {
             dto.setNgay(row[0] != null ? row[0].toString() : "");
             dto.setSoLuongDon(row[1] != null ? ((Number) row[1]).longValue() : 0L);
             dto.setDoanhThuNgay(row[2] != null ? new BigDecimal(row[2].toString()) : BigDecimal.ZERO);
+            result.add(dto);
+        }
+        return result;
+    }
+
+    @Override
+    public List<DoanhThuResponseDTO> getThongKeDoanhThuNgay(java.time.LocalDate tuNgay, java.time.LocalDate denNgay) {
+        StoredProcedureQuery query = entityManager.createStoredProcedureQuery("SP_THONG_KE_DOANH_THU_THEO_NGAY");
+        query.registerStoredProcedureParameter("p_tu_ngay", java.sql.Date.class, ParameterMode.IN);
+        query.registerStoredProcedureParameter("p_den_ngay", java.sql.Date.class, ParameterMode.IN);
+        query.registerStoredProcedureParameter("c_result", void.class, ParameterMode.REF_CURSOR);
+        query.setParameter("p_tu_ngay", java.sql.Date.valueOf(tuNgay));
+        query.setParameter("p_den_ngay", java.sql.Date.valueOf(denNgay));
+        query.execute();
+
+        @SuppressWarnings("unchecked")
+        List<Object[]> rows = query.getResultList();
+        List<DoanhThuResponseDTO> result = new ArrayList<>();
+        for (Object[] row : rows) {
+            DoanhThuResponseDTO dto = new DoanhThuResponseDTO();
+            dto.setNgay(row[0] != null ? row[0].toString() : "");
+            dto.setDoanhThuNgay(row[1] != null ? new java.math.BigDecimal(row[1].toString()) : java.math.BigDecimal.ZERO);
+            dto.setSoLuongDon(row[2] != null ? ((Number) row[2]).longValue() : 0L);
             result.add(dto);
         }
         return result;

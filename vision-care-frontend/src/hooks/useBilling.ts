@@ -15,6 +15,14 @@ export const useDanhSachHoaDon = () => {
   });
 };
 
+export const usePendingInvoices = () => {
+  return useQuery({
+    queryKey: ["pending-invoices"],
+    queryFn: () => billingApi.getPendingInvoices(),
+    staleTime: 10 * 1000, // Refresh every 10 seconds or when invalidated
+  });
+};
+
 export const useCreateHoaDon = () => {
   const queryClient = useQueryClient();
   return useMutation({
@@ -35,6 +43,7 @@ export const useCreateHoaDonJson = () => {
       billingApi.createHoaDonJson(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["hoa-don"] });
+      queryClient.invalidateQueries({ queryKey: ["pending-invoices"] });
     },
     onError: (error: AxiosError) => {
       console.error("Create JSON invoice error:", error.response?.data || error.message);
@@ -53,5 +62,18 @@ export const useThanhToan = () => {
     onError: (error: AxiosError) => {
       console.error("Payment error:", error.response?.data || error.message);
     },
+  });
+};
+
+export const useDeleteHoaDon = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (maHd: string) => billingApi.deleteHoaDon(maHd),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["hoa-don"] });
+    },
+    onError: (error: AxiosError) => {
+      console.error("Delete invoice error:", error.response?.data || error.message);
+    }
   });
 };

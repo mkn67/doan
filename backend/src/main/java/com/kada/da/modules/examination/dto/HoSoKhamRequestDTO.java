@@ -20,4 +20,8 @@ public class HoSoKhamRequestDTO {
     private BigDecimal doCongPhai;
     // Khoảng cách đồng tử
     private BigDecimal pd;
+    // Hồ sơ (nếu cập nhật)
+    private String maHoSo;
+    // Đơn kính gia công (tự động liên kết xưởng)
+    private String donKinh;
 }

@@ -46,14 +46,22 @@ public class DanhGiaServiceImpl implements DanhGiaService {
     public DanhGiaResponseDTO createDanhGia(DanhGiaRequestDTO request) {
         log.info("Tạo đánh giá mới từ KH: {}", request.getMaKh());
 
+        HoSoThiLuc hoSoThiLuc = hoSoThiLucRepository.findById(request.getMaHoSo())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hồ sơ thị lực"));
+
         KhachHang khachHang = khachHangRepository.findById(request.getMaKh())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy khách hàng"));
 
-        NhanSu nhanSu = nhanSuRepository.findById(request.getMaNs())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bác sĩ/nhân sự"));
-
-        HoSoThiLuc hoSoThiLuc = hoSoThiLucRepository.findById(request.getMaHoSo())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hồ sơ thị lực"));
+        NhanSu nhanSu = null;
+        if (request.getMaNs() != null && !request.getMaNs().trim().isEmpty()) {
+            nhanSu = nhanSuRepository.findById(request.getMaNs()).orElse(null);
+        }
+        if (nhanSu == null && hoSoThiLuc.getNhanSu() != null) {
+            nhanSu = hoSoThiLuc.getNhanSu();
+        }
+        if (nhanSu == null) {
+            throw new ResourceNotFoundException("Không tìm thấy bác sĩ/nhân sự liên quan để đánh giá");
+        }
 
         if (request.getSoSao() < 1 || request.getSoSao() > 5) {
             throw new BusinessRuleException("Số sao đánh giá phải từ 1 đến 5");
@@ -186,6 +194,7 @@ public class DanhGiaServiceImpl implements DanhGiaService {
     private DanhGiaResponseDTO convertToResponse(DanhGia entity) {
         return DanhGiaResponseDTO.builder()
                 .maDg(entity.getMaDg())
+                .maHoSo(entity.getHoSoThiLuc() != null ? entity.getHoSoThiLuc().getMaHoSo() : null)
                 .tenKhachHang(entity.getKhachHang() != null ? entity.getKhachHang().getHoTen() : "Khách ẩn danh")
                 .sdtKhachHang(entity.getKhachHang() != null ? entity.getKhachHang().getSdt() : "Không có SĐT")
                 .tenBacSi(entity.getNhanSu() != null ? entity.getNhanSu().getHoTen() : "Chưa phân công")

@@ -13,8 +13,8 @@ import { useThongKeTongQuan } from "@/hooks/useReport"; // Đảm bảo đúng �
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
-// NH02 là Thu ngân, NH04 là Quản lý (Dựa theo DB m gửi)
-const ALLOWED_ROLES = ["NH02", "NH04"]; 
+// ROLE_THU_NGAN (NH02), ROLE_ADMIN (NH04)
+const ALLOWED_ROLES = ["ROLE_THU_NGAN", "ROLE_ADMIN", "NH02", "NH04"]; 
 
 export default function CashierOverviewPage() {
   const router = useRouter();

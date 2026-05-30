@@ -1,10 +1,11 @@
 package com.kada.da.modules.prescription.service;
 
-import com.kada.da.modules.prescription.domain.PhieuKeDon;
+import com.kada.da.modules.prescription.dto.PhieuKeDonRequestDTO;
+import com.kada.da.modules.prescription.dto.PhieuKeDonResponseDTO;
 import java.util.List;
 
 public interface PhieuKeDonService {
-    PhieuKeDon taoDonThuoc(PhieuKeDon phieuKeDon);
+    PhieuKeDonResponseDTO taoDonThuoc(PhieuKeDonRequestDTO dto);
 
-    List<PhieuKeDon> layDonThuocTheoHoSo(String maHoSo);
+    List<PhieuKeDonResponseDTO> layDonThuocTheoHoSo(String maHoSo);
 }

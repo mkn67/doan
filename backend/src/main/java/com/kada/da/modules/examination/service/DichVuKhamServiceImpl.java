@@ -86,4 +86,13 @@ public class DichVuKhamServiceImpl implements DichVuKhamService {
                 // .isActive(entity.getIsActive()) // Bật lên nếu DTO của ông có trường này
                 .build();
     }
+
+    @Override
+    @Transactional
+    public void deleteDichVu(String maDv) {
+        DichVuKham dichVu = dichVuKhamRepository.findById(maDv)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy dịch vụ: " + maDv));
+        dichVu.setIsActive(0); // Soft delete
+        dichVuKhamRepository.save(dichVu);
+    }
 }

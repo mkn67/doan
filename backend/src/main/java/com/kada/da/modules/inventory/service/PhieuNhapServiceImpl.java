@@ -14,7 +14,13 @@ import com.kada.da.modules.inventory.dto.LoHangResponseDTO;
 import com.kada.da.modules.staff.dto.PageResponseDTO;
 import com.kada.da.modules.inventory.dto.PhieuNhapResponseDTO;
 import com.kada.da.modules.inventory.domain.PhieuNhap;
+import com.kada.da.modules.inventory.domain.NhaCungCap;
 import com.kada.da.modules.inventory.repository.PhieuNhapRepository;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -70,16 +76,32 @@ public class PhieuNhapServiceImpl implements PhieuNhapService {
         return toDTO(entity);
     }
 
-    // Tớ tạo sẵn mấy cái vỏ này để ông khỏi bị lỗi đỏ ở interface, ông có thể tự
-    // code ruột sau nhé
     @Override
     public PageResponseDTO<PhieuNhapResponseDTO> getAllPhieuNhap(int page, int size) {
-        return null;
+        Pageable pageable = PageRequest.of(page, size, Sort.by("ngayNhap").descending());
+        Page<PhieuNhap> pageResult = phieuNhapRepository.findAll(pageable);
+
+        List<PhieuNhapResponseDTO> dtos = pageResult.getContent().stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
+
+        return PageResponseDTO.<PhieuNhapResponseDTO>builder()
+                .content(dtos)
+                .pageNo(pageResult.getNumber())
+                .pageSize(pageResult.getSize())
+                .totalElements(pageResult.getTotalElements())
+                .totalPages(pageResult.getTotalPages())
+                .last(pageResult.isLast())
+                .build();
     }
 
     @Override
     public List<PhieuNhapResponseDTO> getPhieuNhapByNhaCungCap(String maNcc) {
-        return null;
+        NhaCungCap ncc = new NhaCungCap();
+        ncc.setMaNcc(maNcc);
+        return phieuNhapRepository.findByNhaCungCapOrderByNgayNhapDesc(ncc).stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
     }
 
     // ==================== PRIVATE METHOD ====================

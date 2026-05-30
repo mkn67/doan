@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 @Builder
 public class DanhGiaResponseDTO {
     private String maDg;
+    private String maHoSo;
     private String tenKhachHang;
     private String sdtKhachHang; // Có SĐT để quản lý gọi điện xin lỗi nếu khách đánh giá 1 sao
     private String tenBacSi;

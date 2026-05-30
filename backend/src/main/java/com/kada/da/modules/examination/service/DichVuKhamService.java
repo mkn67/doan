@@ -10,4 +10,6 @@ public interface DichVuKhamService {
     DichVuKhamResponseDTO updateDichVu(String maDv, DichVuKhamRequestDTO request);
 
     PageResponseDTO<DichVuKhamResponseDTO> getAllDichVu(int page, int size);
+
+    void deleteDichVu(String maDv);
 }

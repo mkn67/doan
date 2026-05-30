@@ -31,6 +31,9 @@ public class SanPhamMapper {
                 .tenLoai(tenLoai)
                 .giaBan(entity.getGiaBan())
                 .laThuoc(entity.getLaThuoc() == 1)
+                .donViTinh(entity.getDonViTinh())
+                .donViTinhKho(entity.getDonViTinhKho())
+                .tonKhoToiThieu(entity.getTonKhoToiThieu())
                 .build();
     }
 }

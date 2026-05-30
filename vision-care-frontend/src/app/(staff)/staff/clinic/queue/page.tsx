@@ -1,149 +1,535 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Users, Clock, PlayCircle, UserCheck, Loader2 } from "lucide-react";
+import { 
+  Users, 
+  Clock, 
+  PlayCircle, 
+  UserCheck, 
+  Loader2, 
+  CheckCircle, 
+  XCircle, 
+  RefreshCw, 
+  UserMinus,
+  Calendar,
+  AlertCircle,
+  HelpCircle,
+  TrendingUp,
+  Printer
+} from "lucide-react";
+import { useReactToPrint } from "react-to-print";
+import { QRCodeSVG } from "qrcode.react";
 
-// Nhớ import đúng chỗ m đang để mấy cái hook này nhé (Khuyên thật là nên vứt hết về useClinic)
-import { useHangChoHomNay, useGoiVaoKham } from "@/hooks/useClinic"; 
+import { useHangChoHomNay, useGoiVaoKham, useKetThucKham } from "@/hooks/useClinic"; 
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-
-interface HangChoItem {
-  mahc: string;
-  maKh: string;
-  tenKhach: string;
-  loaiKhach?: string;
-  gioDangKy?: string;
-  trangThai?: string;
-}
+import { toast } from "sonner";
+import { HangChoHomNayDTO } from "@/types/staff";
+import { ShieldAlert } from "lucide-react";
 
 export default function QueuePage() {
   const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
+  const [isMounted, setIsMounted] = useState(false);
+  const [ticketToPrint, setTicketToPrint] = useState<HangChoHomNayDTO | null>(null);
+  const ticketPrintRef = React.useRef<HTMLDivElement>(null);
+
+  // Unconditional React hooks (placed before early returns)
+  const handlePrintTicket = useReactToPrint({
+    contentRef: ticketPrintRef,
+    documentTitle: `PhieuSTT_VisionCare_${ticketToPrint?.maHc || "New"}`,
+    onAfterPrint: () => setTicketToPrint(null),
+  });
+
+  // Fetch patient queue data
+  const { data, isLoading, refetch, isRefetching } = useHangChoHomNay();
   
-  // Lấy danh sách hàng chờ
-  const { data, isLoading } = useHangChoHomNay();
-  // Khai báo hook Gọi Khám
+  // Mutation hooks
   const goiKhamMutation = useGoiVaoKham();
+  const ketThucMutation = useKetThucKham();
 
-  // Bắt lỗi phân trang của Backend (nếu có)
-  const queueList: HangChoItem[] = data?.content || data || [];
+  // State to track current dragging item and hovered column target
+  const [draggingItem, setDraggingItem] = useState<HangChoHomNayDTO | null>(null);
+  const [activeOverColumn, setActiveOverColumn] = useState<string | null>(null); // "waiting" | "examining" | "completed" | "skipped"
 
-  // 🔥 HÀM XỬ LÝ KHI BÁC SĨ BẤM NÚT "GỌI KHÁM"
+  React.useEffect(() => {
+    setTimeout(() => {
+      setIsMounted(true);
+    }, 0);
+  }, []);
+
+  const ALLOWED_ROLES = ["ROLE_BAC_SI", "NH01", "ROLE_ADMIN", "NH04"];
+  const hasAccess = () => {
+    if (!user) return false;
+    const userRoles = user?.roles || [];
+    const userGroup = user?.maNhom ? user.maNhom : null;
+    return ALLOWED_ROLES.some(role => userRoles.includes(role) || role === userGroup);
+  };
+
+  const isAccessAllowed = hasAccess();
+
+  // Early returns (placed after all hook declarations)
+  if (!isMounted || authLoading) {
+    return (
+      <div className="flex h-[calc(100vh-4rem)] items-center justify-center text-blue-600 font-medium">
+        Đang kiểm tra quyền truy cập...
+      </div>
+    );
+  }
+
+  if (!isAccessAllowed) {
+    return (
+      <div className="flex h-[calc(100vh-4rem)] flex-col items-center justify-center bg-slate-50/50 rounded-2xl border-2 border-dashed border-slate-200 m-6">
+        <ShieldAlert className="w-16 h-16 text-rose-500 mb-4 animate-bounce" />
+        <h2 className="text-2xl font-bold text-slate-800">Truy Cập Bị Từ Chối</h2>
+        <p className="text-slate-500 mt-2 max-w-md text-center">
+          Tài khoản của bạn không có nghiệp vụ Bác sĩ. Vui lòng quay lại!
+        </p>
+        <Button onClick={() => router.back()} className="mt-6 bg-slate-800 hover:bg-slate-900">
+          Quay lại trang trước
+        </Button>
+      </div>
+    );
+  }
+
+  const triggerPrintTicket = (item: HangChoHomNayDTO) => {
+    setTicketToPrint(item);
+    setTimeout(() => {
+      handlePrintTicket();
+    }, 100);
+  };
+
+  // Handle API wrappers/pagination variations
+  const queueList: HangChoHomNayDTO[] = data?.content || data || [];
+
+  // Categorize patients based on backend statuses
+  const waitingList = queueList.filter(
+    (item) => item.trangThai === "DANG_CHO" || item.trangThai === "Đang chờ"
+  );
+  const examiningList = queueList.filter(
+    (item) => item.trangThai === "DANG_KHAM" || item.trangThai === "Đang khám"
+  );
+
+  // Call actions
   const handleGoiKham = (maKh: string, maHc: string) => {
-    // 1. Gọi API để đổi trạng thái dưới DB thành "Đang khám"
-    goiKhamMutation.mutate(maHc, {
-      onSuccess: () => {
-        // 2. Nếu BE update thành công, chuyển hướng sang trang Khám bệnh
-        // Mang theo cả makh và mahc lên URL để form bên kia biết mà làm việc
-        router.push(`/staff/clinic/examinations?makh=${maKh}&mahc=${maHc}`);
-      }
+    const promise = new Promise((resolve, reject) => {
+      goiKhamMutation.mutate(maHc, {
+        onSuccess: () => {
+          resolve("Gọi khám thành công!");
+          router.push(`/staff/clinic/examinations?makh=${maKh}&mahc=${maHc}`);
+        },
+        onError: (err: unknown) => {
+          const errorResponse = err as { response?: { data?: { message?: string } }; message?: string };
+          reject(errorResponse?.response?.data?.message || "Không thể gọi khám.");
+        }
+      });
+    });
+
+    toast.promise(promise, {
+      loading: "Đang gọi khám & chuyển hướng...",
+      success: (data: unknown) => `${data}`,
+      error: (err) => `Lỗi: ${err}`
     });
   };
 
+  const handleKetThucKham = (maHc: string, trangThai: "Hoàn thành" | "Bỏ về") => {
+    const actionName = trangThai === "Hoàn thành" ? "Hoàn thành khám" : "Cho bỏ về / Hủy";
+    const promise = new Promise((resolve, reject) => {
+      ketThucMutation.mutate({ maHc, trangThai }, {
+        onSuccess: () => {
+          resolve(`${actionName} thành công!`);
+        },
+        onError: (err: unknown) => {
+          const errorResponse = err as { response?: { data?: { message?: string } }; message?: string };
+          reject(errorResponse?.response?.data?.message || "Thao tác thất bại.");
+        }
+      });
+    });
+
+    toast.promise(promise, {
+      loading: `Đang cập nhật trạng thái...`,
+      success: (data: unknown) => `${data}`,
+      error: (err) => `Lỗi: ${err}`
+    });
+  };
+
+  // Drag & Drop handlers
+  const handleDragStart = (e: React.DragEvent, item: HangChoHomNayDTO) => {
+    setDraggingItem(item);
+    e.dataTransfer.setData("maHc", item.maHc);
+    // Optional glow effect / styling during drag
+    e.currentTarget.classList.add("opacity-50");
+  };
+
+  const handleDragEnd = (e: React.DragEvent) => {
+    setDraggingItem(null);
+    setActiveOverColumn(null);
+    e.currentTarget.classList.remove("opacity-50");
+  };
+
+  const handleDragOver = (e: React.DragEvent, column: string) => {
+    e.preventDefault();
+    if (activeOverColumn !== column) {
+      setActiveOverColumn(column);
+    }
+  };
+
+  const handleDragLeave = () => {
+    setActiveOverColumn(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, targetColumn: string) => {
+    e.preventDefault();
+    setActiveOverColumn(null);
+    if (!draggingItem) return;
+
+    const sourceStatus = draggingItem.trangThai;
+    const isSourceWaiting = sourceStatus === "DANG_CHO" || sourceStatus === "Đang chờ";
+    const isSourceExamining = sourceStatus === "DANG_KHAM" || sourceStatus === "Đang khám";
+
+    if (targetColumn === "examining" && isSourceWaiting) {
+      handleGoiKham(draggingItem.maKh, draggingItem.maHc);
+    } else if (targetColumn === "completed" && isSourceExamining) {
+      handleKetThucKham(draggingItem.maHc, "Hoàn thành");
+    } else if (targetColumn === "skipped" && (isSourceExamining || isSourceWaiting)) {
+      handleKetThucKham(draggingItem.maHc, "Bỏ về");
+    } else {
+      toast.warning("Quy trình chuyển đổi không hợp lệ! Hãy kéo đúng luồng quy trình.");
+    }
+  };
+
+  const isMutating = goiKhamMutation.isPending || ketThucMutation.isPending;
+
   return (
-    <div className="p-6 md:p-8 space-y-6 bg-slate-50 min-h-[calc(100vh-4rem)]">
+    <div className="p-6 md:p-8 space-y-6 bg-slate-50 min-h-[calc(100vh-4rem)] text-slate-800 relative overflow-hidden">
+      {/* Decorative Blur Backgrounds */}
+      <div className="absolute top-0 right-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-10 left-10 w-80 h-80 bg-emerald-500/2 rounded-full blur-3xl pointer-events-none" />
+
       {/* HEADER SECTION */}
-      <div className="flex items-center gap-4 mb-6">
-        <div className="p-3 bg-amber-100 text-amber-600 rounded-xl shadow-sm">
-          <Users className="w-8 h-8" />
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-6 relative z-10">
+        <div className="flex items-center gap-4">
+          <div className="p-3.5 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-2xl shadow-lg shadow-blue-500/20">
+            <Users className="w-8 h-8" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+              Bảng Điều Phối Hàng Chờ
+            </h1>
+            <p className="text-slate-500 text-sm mt-1">
+              Bác sĩ kéo thả bệnh nhân giữa các phân vùng để thực hiện khám mắt và hoàn tất quy trình.
+            </p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Danh Sách Hàng Chờ</h1>
-          <p className="text-slate-500 mt-1">
-            Bệnh nhân đang chờ tới lượt khám tại phòng khám.
-          </p>
+
+        {/* STATS & ACTIONS */}
+        <div className="flex items-center gap-3">
+          <div className="hidden sm:flex items-center gap-2 bg-white px-4 py-2 rounded-xl border border-slate-200 text-xs text-slate-700 shadow-sm">
+            <TrendingUp className="w-4 h-4 text-emerald-500" />
+            <span>Tổng cộng: <strong className="text-blue-600 font-bold">{queueList.length}</strong> ca hôm nay</span>
+          </div>
+
+          <Button
+            onClick={() => refetch()}
+            disabled={isLoading || isRefetching}
+            variant="outline"
+            className="bg-white hover:bg-slate-50 text-slate-700 border-slate-200 h-10 px-4 rounded-xl flex items-center gap-2 transition-all duration-300 shadow-sm"
+          >
+            <RefreshCw className={`w-4 h-4 ${(isLoading || isRefetching) ? "animate-spin text-blue-500" : ""}`} />
+            <span>Làm mới</span>
+          </Button>
         </div>
       </div>
 
-      {/* BẢNG HIỂN THỊ */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 text-sm">
-                <th className="py-4 px-6 font-semibold w-16 text-center">STT</th>
-                <th className="py-4 px-6 font-semibold">Tên bệnh nhân</th>
-                <th className="py-4 px-6 font-semibold text-center">Nguồn</th>
-                <th className="py-4 px-6 font-semibold"><div className="flex items-center gap-2"><Clock className="w-4 h-4"/> Giờ đăng ký</div></th>
-                <th className="py-4 px-6 font-semibold text-center">Trạng thái</th>
-                <th className="py-4 px-6 font-semibold text-center">Hành động</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {isLoading ? (
-                <tr>
-                  <td colSpan={6} className="py-16 text-center text-slate-500">
-                    <Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-500 mb-2" />
-                    Đang tải danh sách hàng chờ...
-                  </td>
-                </tr>
-              ) : queueList.length > 0 ? (
-                queueList.map((item: HangChoItem, index: number) => (
-                  <tr key={item.mahc || index} className="hover:bg-slate-50/80 transition-colors group">
-                    <td className="py-4 px-6 text-center font-semibold text-slate-400">{index + 1}</td>
-                    
-                    <td className="py-4 px-6 font-bold text-slate-800">
-                      {item.tenKhach}
-                      <div className="text-xs font-normal text-slate-500 mt-0.5">Mã KH: {item.maKh}</div>
-                    </td>
-                    
-                    <td className="py-4 px-6 text-center">
-                      <span className={`px-2.5 py-1 rounded-md text-xs font-semibold ${
-                        item.loaiKhach === 'ONLINE' 
-                          ? 'bg-blue-50 text-blue-600 border border-blue-100' 
-                          : 'bg-slate-100 text-slate-600 border border-slate-200'
-                      }`}>
-                        {item.loaiKhach || "TẠI CHỖ"}
-                      </span>
-                    </td>
-                    
-                    <td className="py-4 px-6 text-slate-600 font-medium">
-                      {item.gioDangKy ? new Date(item.gioDangKy).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : "---"}
-                    </td>
-                    
-                    <td className="py-4 px-6 text-center">
-                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${
-                        item.trangThai === 'Đang khám' 
-                          ? 'bg-blue-50 text-blue-700 border-blue-200'
-                          : 'bg-amber-50 text-amber-700 border-amber-200'
-                      }`}>
-                        {item.trangThai === 'Đang chờ' && <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>}
-                        {item.trangThai || "Đang chờ"}
-                      </span>
-                    </td>
-                    
-                    <td className="py-4 px-6 text-center">
-                      <Button 
-                        onClick={() => handleGoiKham(item.maKh, item.mahc)}
-                        disabled={goiKhamMutation.isPending || item.trangThai === 'Đang khám'}
-                        className={`h-9 px-4 text-xs font-semibold shadow-sm w-32 ${
-                          item.trangThai === 'Đang khám' 
-                            ? "bg-slate-100 text-slate-400 hover:bg-slate-100" 
-                            : "bg-emerald-600 hover:bg-emerald-700 text-white"
-                        }`}
+      {/* KANBAN BOARD CONTAINER */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 relative z-10">
+        {/* COLUMN 1: WAITING LIST */}
+        <div 
+          className={`flex flex-col min-h-[550px] bg-white/80 backdrop-blur-xl rounded-2xl border transition-all duration-300 ${
+            activeOverColumn === "waiting" 
+              ? "border-amber-400 bg-amber-50/20 shadow-md shadow-amber-500/5" 
+              : "border-slate-200/85 shadow-sm"
+          }`}
+          onDragOver={(e) => handleDragOver(e, "waiting")}
+          onDragLeave={handleDragLeave}
+          onDrop={(e) => handleDrop(e, "waiting")}
+        >
+          <div className="p-4 border-b border-slate-200/80 flex justify-between items-center bg-slate-50/40 rounded-t-2xl">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-lg shadow-amber-500/50 animate-pulse"></span>
+              <h2 className="font-semibold text-slate-700">Đang Chờ Khám</h2>
+            </div>
+            <span className="px-2.5 py-0.5 bg-amber-50 text-amber-600 border border-amber-200 text-xs font-bold rounded-full">
+              {waitingList.length}
+            </span>
+          </div>
+
+          <div className="p-4 flex-1 space-y-3 overflow-y-auto max-h-[600px] scrollbar-thin scrollbar-thumb-slate-200">
+            {isLoading ? (
+              <div className="flex flex-col items-center justify-center py-20 text-slate-500">
+                <Loader2 className="w-8 h-8 animate-spin text-amber-600 mb-2" />
+                <span className="text-sm">Đang tải hàng chờ...</span>
+              </div>
+            ) : waitingList.length > 0 ? (
+              waitingList.map((item) => (
+                <div
+                  key={item.maHc}
+                  draggable={!isMutating}
+                  onDragStart={(e) => handleDragStart(e, item)}
+                  onDragEnd={handleDragEnd}
+                  className="group bg-white hover:bg-slate-50/80 border border-slate-200 hover:border-blue-300 rounded-xl p-4 transition-all duration-300 cursor-grab active:cursor-grabbing shadow-[0_2px_8px_rgba(0,0,0,0.01)] hover:shadow-md relative overflow-hidden"
+                >
+                  {/* Decorative indicator */}
+                  <div className="absolute top-0 left-0 w-1 h-full bg-amber-500" />
+                  
+                  <div className="flex justify-between items-start gap-2 mb-2">
+                    <div>
+                      <span className="text-xs font-semibold text-slate-500">STT #{item.soThuTu}</span>
+                      <h3 className="font-bold text-slate-800 group-hover:text-blue-600 transition-colors text-base mt-0.5">
+                        {item.tenKhach}
+                      </h3>
+                    </div>
+                    <span className={`px-2 py-0.5 text-[10px] font-bold rounded border ${
+                      item.loaiKhach === "ONLINE" || item.loaiKhach === "Hen truoc"
+                        ? "bg-indigo-500/10 text-indigo-400 border-indigo-500/20"
+                        : "bg-slate-500/10 text-slate-400 border-slate-500/20"
+                    }`}>
+                      {item.loaiKhach || "WALK-IN"}
+                    </span>
+                  </div>
+
+                  <div className="space-y-1.5 text-xs text-slate-500 mb-4">
+                    {item.sdt && <p>SĐT: <span className="text-slate-650 font-medium">{item.sdt}</span></p>}
+                    {item.tenBacSi && <p>BS phân công: <span className="text-slate-650 font-medium">{item.tenBacSi}</span></p>}
+                    {item.goiKham && <p>Gói khám: <span className="text-blue-600 font-medium">{item.goiKham}</span></p>}
+                  </div>
+
+                  <div className="flex items-center justify-between border-t border-slate-100 pt-3">
+                    <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
+                      <Clock className="w-3.5 h-3.5 text-amber-500/80" />
+                      <span>Chờ {item.phutCho || 0} phút</span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        onClick={() => triggerPrintTicket(item)}
+                        className="h-7 w-7 rounded-lg border-slate-200 hover:bg-slate-50 text-slate-400 hover:text-slate-700 bg-white"
+                        title="In phiếu STT"
                       >
-                        {goiKhamMutation.isPending ? (
-                          <><Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> Đang gọi...</>
-                        ) : item.trangThai === 'Đang khám' ? (
-                          "Đang khám"
-                        ) : (
-                          <><PlayCircle className="w-4 h-4 mr-1.5" /> Gọi Khám</>
-                        )}
+                        <Printer className="w-3.5 h-3.5" />
                       </Button>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={6} className="py-16 text-center text-slate-500">
-                    <UserCheck className="w-16 h-16 text-slate-200 mx-auto mb-4" />
-                    <p className="text-base font-medium text-slate-600">Hiện không có bệnh nhân nào chờ</p>
-                    <p className="text-sm text-slate-400 mt-1">Bác sĩ có thể nghỉ ngơi hoặc xem lại hồ sơ cũ.</p>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                      <Button
+                        onClick={() => handleGoiKham(item.maKh, item.maHc)}
+                        disabled={isMutating}
+                        size="sm"
+                        className="bg-amber-600 hover:bg-amber-500 text-white font-semibold text-[11px] h-7 px-3 rounded-lg flex items-center gap-1 shadow-sm transition-all"
+                      >
+                        <PlayCircle className="w-3.5 h-3.5" />
+                        <span>Gọi Khám</span>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="flex flex-col items-center justify-center py-20 text-slate-400 border border-dashed border-slate-200 rounded-xl bg-slate-50/50">
+                <UserCheck className="w-10 h-10 text-slate-400 mb-2" />
+                <p className="text-xs font-semibold text-slate-500">Không có ai trong hàng chờ</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* COLUMN 2: EXAMINING LIST */}
+        <div 
+          className={`flex flex-col min-h-[550px] bg-white/80 backdrop-blur-xl rounded-2xl border transition-all duration-300 ${
+            activeOverColumn === "examining" 
+              ? "border-blue-400 bg-blue-50/20 shadow-md shadow-blue-500/5" 
+              : "border-slate-200/85 shadow-sm"
+          }`}
+          onDragOver={(e) => handleDragOver(e, "examining")}
+          onDragLeave={handleDragLeave}
+          onDrop={(e) => handleDrop(e, "examining")}
+        >
+          <div className="p-4 border-b border-slate-200/80 flex justify-between items-center bg-slate-50/40 rounded-t-2xl">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-lg shadow-blue-500/50 animate-pulse"></span>
+              <h2 className="font-semibold text-slate-700">Đang Khám</h2>
+            </div>
+            <span className="px-2.5 py-0.5 bg-blue-50 text-blue-600 border border-blue-200 text-xs font-bold rounded-full">
+              {examiningList.length}
+            </span>
+          </div>
+
+          <div className="p-4 flex-1 space-y-3 overflow-y-auto max-h-[600px] scrollbar-thin scrollbar-thumb-slate-200">
+            {examiningList.length > 0 ? (
+              examiningList.map((item) => (
+                <div
+                  key={item.maHc}
+                  draggable={!isMutating}
+                  onDragStart={(e) => handleDragStart(e, item)}
+                  onDragEnd={handleDragEnd}
+                  className="group bg-white hover:bg-slate-50/80 border border-slate-200 hover:border-blue-300 rounded-xl p-4 transition-all duration-300 cursor-grab active:cursor-grabbing shadow-[0_2px_8px_rgba(0,0,0,0.01)] hover:shadow-md relative overflow-hidden"
+                >
+                  {/* Decorative indicator */}
+                  <div className="absolute top-0 left-0 w-1 h-full bg-blue-500" />
+                  
+                  <div className="flex justify-between items-start gap-2 mb-2">
+                    <div>
+                      <span className="text-xs font-semibold text-slate-500">STT #{item.soThuTu}</span>
+                      <h3 className="font-bold text-slate-800 group-hover:text-blue-600 transition-colors text-base mt-0.5">
+                        {item.tenKhach}
+                      </h3>
+                    </div>
+                    <span className={`px-2 py-0.5 text-[10px] font-bold rounded border bg-blue-50 text-blue-600 border-blue-100`}>
+                      ĐANG KHÁM
+                    </span>
+                  </div>
+
+                  <div className="space-y-1.5 text-xs text-slate-500 mb-4">
+                    {item.sdt && <p>SĐT: <span className="text-slate-650 font-medium">{item.sdt}</span></p>}
+                    {item.tenBacSi && <p>BS đảm nhận: <span className="text-slate-650 font-medium">{item.tenBacSi}</span></p>}
+                    {item.goiKham && <p>Gói khám: <span className="text-blue-600 font-medium">{item.goiKham}</span></p>}
+                  </div>
+
+                  <div className="flex items-center justify-between border-t border-slate-100 pt-3">
+                    <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
+                      <Clock className="w-3.5 h-3.5 text-blue-500/80" />
+                      <span>Bắt đầu từ: {item.gioDangKy ? new Date(item.gioDangKy).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : "---"}</span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        onClick={() => triggerPrintTicket(item)}
+                        className="h-7 w-7 rounded-lg border-slate-200 hover:bg-slate-50 text-slate-400 hover:text-slate-700 bg-white"
+                        title="In phiếu STT"
+                      >
+                        <Printer className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button
+                        onClick={() => handleKetThucKham(item.maHc, "Hoàn thành")}
+                        disabled={isMutating}
+                        size="sm"
+                        className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-[10px] h-7 px-2 rounded-lg flex items-center gap-0.5 shadow-sm transition-all"
+                      >
+                        <CheckCircle className="w-3 h-3" />
+                        <span>Xong</span>
+                      </Button>
+                      <Button
+                        onClick={() => handleKetThucKham(item.maHc, "Bỏ về")}
+                        disabled={isMutating}
+                        variant="destructive"
+                        size="sm"
+                        className="font-semibold text-[10px] h-7 px-2 rounded-lg flex items-center gap-0.5 shadow-sm transition-all"
+                      >
+                        <XCircle className="w-3 h-3" />
+                        <span>Hủy</span>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="flex flex-col items-center justify-center py-20 text-slate-400 border border-dashed border-slate-200 rounded-xl bg-slate-50/50">
+                <HelpCircle className="w-10 h-10 text-slate-400 mb-2" />
+                <p className="text-xs font-semibold text-slate-500">Không có bệnh nhân đang khám</p>
+                <p className="text-[11px] text-slate-450 mt-1 max-w-[200px] text-center">Kéo bệnh nhân từ cột Đang chờ sang để bắt đầu khám</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* COLUMN 3: TERMINAL DROP ZONE */}
+        <div className="flex flex-col min-h-[550px] bg-white/80 backdrop-blur-xl rounded-2xl border border-slate-200/80 p-4 space-y-6 shadow-sm">
+          <div className="border-b border-slate-200/80 pb-4 flex items-center justify-between">
+            <h2 className="font-semibold text-slate-500 text-sm flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-slate-500" />
+              <span>Phân Khu Hoàn Tất Ca Khám</span>
+            </h2>
+          </div>
+
+          <div className="flex-1 flex flex-col gap-4">
+            {/* SUB-ZONE 1: COMPLETE PATIENT */}
+            <div
+              className={`flex-1 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center p-6 text-center transition-all duration-300 ${
+                activeOverColumn === "completed"
+                  ? "border-emerald-500 bg-emerald-500/5 text-emerald-500 scale-[1.02]"
+                  : "border-slate-800 text-slate-500 hover:border-slate-700 hover:text-slate-400"
+              }`}
+              onDragOver={(e) => handleDragOver(e, "completed")}
+              onDragLeave={handleDragLeave}
+              onDrop={(e) => handleDrop(e, "completed")}
+            >
+              <CheckCircle className={`w-12 h-12 mb-3 transition-transform ${activeOverColumn === "completed" ? "scale-110 text-emerald-500 animate-bounce" : "text-slate-700"}`} />
+              <h3 className="font-bold text-sm text-slate-700">HOÀN THÀNH KHÁM</h3>
+              <p className="text-xs text-slate-450 mt-1 max-w-[200px]">
+                Kéo thả bệnh nhân từ cột <b>Đang Khám</b> vào đây để hoàn tất kiểm tra thị lực.
+              </p>
+            </div>
+
+            {/* SUB-ZONE 2: SKIP/CANCEL PATIENT */}
+            <div
+              className={`flex-1 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center p-6 text-center transition-all duration-300 ${
+                activeOverColumn === "skipped"
+                  ? "border-rose-500 bg-rose-50 text-rose-600 scale-[1.02] shadow-sm shadow-rose-500/10"
+                  : "border-slate-200 text-slate-400 hover:border-slate-300 hover:text-slate-500 bg-slate-50/30"
+              }`}
+              onDragOver={(e) => handleDragOver(e, "skipped")}
+              onDragLeave={handleDragLeave}
+              onDrop={(e) => handleDrop(e, "skipped")}
+            >
+              <UserMinus className={`w-12 h-12 mb-3 transition-transform ${activeOverColumn === "skipped" ? "scale-110 text-rose-400 animate-pulse" : "text-slate-700"}`} />
+              <h3 className="font-bold text-sm text-slate-700">BỎ KHÁM / HỦY CA</h3>
+              <p className="text-xs text-slate-450 mt-1 max-w-[200px]">
+                Kéo thả bệnh nhân từ cột bất kỳ vào đây để hủy lượt hoặc báo cáo bỏ về.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Hidden Ticket Container for Printing */}
+      <div className="hidden">
+        <div ref={ticketPrintRef} className="p-8 w-[80mm] text-black font-mono text-center flex flex-col items-center justify-center bg-white">
+          <h2 className="text-xl font-bold tracking-wider">VISION CARE</h2>
+          <p className="text-[10px] mt-0.5">He thong cham soc mat toan dien</p>
+          <p className="text-[10px]">DC: 123 Ton Duc Thang, Q.1, TP.HCM</p>
+          <div className="border-b border-dashed border-black w-full my-3" />
+          
+          <h1 className="text-3xl font-extrabold my-2">SO THU TU: {ticketToPrint?.soThuTu}</h1>
+          <p className="text-sm font-semibold">Ma hang cho: {ticketToPrint?.maHc}</p>
+          
+          <div className="border-b border-dashed border-black w-full my-3" />
+          
+          <div className="text-left w-full text-xs space-y-1">
+            <p><strong>Khach hang:</strong> {ticketToPrint?.tenKhach}</p>
+            {ticketToPrint?.sdt && <p><strong>SDT:</strong> {ticketToPrint?.sdt}</p>}
+            {ticketToPrint?.tenBacSi && <p><strong>Bac si:</strong> {ticketToPrint?.tenBacSi}</p>}
+            {ticketToPrint?.goiKham && <p><strong>Goi kham:</strong> {ticketToPrint?.goiKham}</p>}
+            <p><strong>Ngay gio:</strong> {new Date().toLocaleString("vi-VN")}</p>
+          </div>
+          
+          <div className="border-b border-dashed border-black w-full my-3" />
+          
+          {ticketToPrint && (
+            <div className="p-2 border border-black rounded-lg bg-white inline-block">
+              <QRCodeSVG
+                value={`http://localhost:3000/staff/clinic/examinations?makh=${ticketToPrint.maKh}&mahc=${ticketToPrint.maHc}`}
+                size={120}
+                level={"H"}
+              />
+            </div>
+          )}
+          <p className="text-[9px] mt-2 text-slate-500 font-sans">
+            Quet ma QR de mo ho so nhanh tai phong kham
+          </p>
+          
+          <p className="text-[11px] mt-4 font-bold uppercase tracking-wider">Vui long doi goi so!</p>
         </div>
       </div>
     </div>

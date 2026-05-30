@@ -2,7 +2,13 @@ package com.kada.da.modules.booking.controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*; // Dùng .* để import hết các annotation web
+import org.springframework.web.bind.annotation.GetMapping; // Dùng .* để import hết các annotation web
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.kada.da.modules.booking.dto.DatLichRequestDTO;
 import com.kada.da.modules.booking.dto.DatLichResponseDTO;
@@ -50,11 +56,6 @@ public class BookingController {
 
     @GetMapping
     public ResponseEntity<PageResponseDTO<LichHenResponseDTO>> getAllLichHen(LichHenFilterDTO filter) {
-        /* 
-           LƯU Ý CỦA ÔNG GIÁO: 
-           1. Đã đổi PageResponseDTO<LichHenFilterDTO> thành <LichHenResponseDTO> (Sửa lỗi logic)
-           2. Bỏ @RequestParam rời rạc vì Spring sẽ tự map ?page=...&size=... vào object filter (Gọn code)
-         */
         return ResponseEntity.ok(lichHenService.getAllLichHen(filter));
     }
 

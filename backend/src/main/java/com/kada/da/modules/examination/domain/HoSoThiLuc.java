@@ -1,12 +1,13 @@
 package com.kada.da.modules.examination.domain;
 
-import com.kada.da.modules.staff.domain.NhanSu;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.kada.da.modules.customer.domain.KhachHang;
+import com.kada.da.modules.staff.domain.NhanSu;
 import jakarta.persistence.*;
-import lombok.*;
 import java.time.LocalDate;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
+import lombok.*;
 
 @Entity
 @Table(name = "HO_SO_THI_LUC")
@@ -15,6 +16,7 @@ import java.util.ArrayList;
 @AllArgsConstructor
 @Builder
 public class HoSoThiLuc {
+
     @Id
     @Column(name = "MAHOSO", length = 10)
     private String maHoSo;
@@ -34,6 +36,11 @@ public class HoSoThiLuc {
     private String ketLuan;
 
     @Builder.Default
-    @OneToMany(mappedBy = "hoSoThiLuc", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
+    @OneToMany(
+        mappedBy = "hoSoThiLuc",
+        cascade = CascadeType.ALL,
+        orphanRemoval = true
+    )
     private List<ChiTietThiLuc> chiTietThiLucs = new ArrayList<>();
 }

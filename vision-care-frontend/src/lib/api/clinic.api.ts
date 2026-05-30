@@ -6,26 +6,35 @@ import {
   GoiKhamRequest, GoiKhamResponse,
   DanhGiaRequest, DanhGiaResponse,
   ChiTietKyThuatRequest, ChiTietKyThuatResponse,
-  DatLichRequest, DatLichResponse
+  DatLichRequest, DatLichResponse,
+  AuditHosoThiluc
 } from '@/types/clinic';
-
-const BASE_URL = '/clinic';
 
 export const clinicApi = {
   // --- HỒ SƠ KHÁM ---
   createHoSoKham: async (data: HoSoKhamRequest): Promise<HoSoKhamResponse> => {
-    const response = await axiosClient.post(`${BASE_URL}/hoso`, data);
+    const response = await axiosClient.post('/examinations/save', data);
     return response.data;
   },
 
   getHoSoKham: async (maHoSo: string): Promise<HoSoKhamResponse> => {
-    const response = await axiosClient.get(`${BASE_URL}/hoso/${maHoSo}`);
+    const response = await axiosClient.get(`/examinations/${maHoSo}`);
+    return response.data;
+  },
+
+  getAuditHoSo: async (maHoSo: string): Promise<AuditHosoThiluc[]> => {
+    const response = await axiosClient.get(`/audit/hoso/${maHoSo}`);
+    return response.data;
+  },
+
+  getLichSuKham: async (maKh: string): Promise<{ message: string; data: HoSoKhamResponse[] }> => {
+    const response = await axiosClient.get(`/examinations/khach-hang/${maKh}`);
     return response.data;
   },
 
   // --- KÊ ĐƠN ---
   createPhieuKeDon: async (data: PhieuKeDonRequest): Promise<PhieuKeDonResponse> => {
-    const response = await axiosClient.post(`${BASE_URL}/kedon`, data);
+    const response = await axiosClient.post('/phieu-ke-don', data);
     return response.data;
   },
 
@@ -41,18 +50,23 @@ export const clinicApi = {
   },
 
   createGoiKham: async (data: GoiKhamRequest): Promise<GoiKhamResponse> => {
-    const response = await axiosClient.post(`${BASE_URL}/goikham`, data);
+    const response = await axiosClient.post(`/goi-kham`, data);
     return response.data;
   },
 
   // --- ĐÁNH GIÁ ---
   createDanhGia: async (data: DanhGiaRequest): Promise<DanhGiaResponse> => {
-    const response = await axiosClient.post(`${BASE_URL}/danhgia`, data);
+    const response = await axiosClient.post('/danh-gia', data);
+    return response.data;
+  },
+
+  getDanhGiaByKh: async (maKh: string): Promise<DanhGiaResponse[]> => {
+    const response = await axiosClient.get(`/danh-gia/khach-hang/${maKh}`);
     return response.data;
   },
 
   createChiTietKyThuat: async (data: ChiTietKyThuatRequest): Promise<ChiTietKyThuatResponse> => {
-    const response = await axiosClient.post(`${BASE_URL}/kythuat`, data);
+    const response = await axiosClient.post(`/ky-thuat`, data);
     return response.data;
   },
 
@@ -75,10 +89,15 @@ export const clinicApi = {
     const response = await axiosClient.put(`/hang-cho/${maHc}/ket-thuc`, null, { params: { trangThai } });
     return response.data;
   },
-  getHangChoHomNay: async (maNs?: string) => {
+    getHangChoHomNay: async (maNs?: string) => {
     const response = await axiosClient.get(`/hang-cho/hom-nay`, {
       params: { maNs } // Truyền mã bác sĩ lên để lọc (nếu có)
     });
+    return response.data;
+  },
+
+  getHoSoKhamByBacSi: async (maNs: string): Promise<{ message: string; data: HoSoKhamResponse[] }> => {
+    const response = await axiosClient.get(`/examinations/bac-si/${maNs}`);
     return response.data;
   },
 };

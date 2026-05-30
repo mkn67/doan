@@ -3,6 +3,7 @@ package com.kada.da.modules.booking.controller;
 import java.time.LocalDateTime;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -28,8 +29,7 @@ public class HangChoController {
 
     // 1. Bác sĩ gọi bệnh nhân vào khám
     @PutMapping("/{maHc}/goi-kham")
-    // @PreAuthorize("hasAnyRole('BAC_SI', 'ADMIN')") // Mở comment nếu ông có phân
-    // quyền
+    @PreAuthorize("hasAnyRole('BAC_SI', 'ADMIN')")
     public ResponseEntity<String> goiVaoKham(@PathVariable String maHc) {
         // Truyền trạng thái "Đang khám" và giờ hiện tại
         hangChoService.capNhatTrangThaiHangCho(maHc, "Đang khám", LocalDateTime.now());
@@ -38,8 +38,7 @@ public class HangChoController {
 
     // 2. Khám xong hoặc bệnh nhân bỏ về
     @PutMapping("/{maHc}/ket-thuc")
-    // @PreAuthorize("hasAnyRole('BAC_SI', 'ADMIN')") // Mở comment nếu ông có phân
-    // quyền
+    @PreAuthorize("hasAnyRole('BAC_SI', 'ADMIN')")
     public ResponseEntity<String> ketThucKham(
             @PathVariable String maHc,
             @RequestParam String trangThai) { // Frontend sẽ truyền lên: "Hoàn thành" hoặc "Bỏ về"

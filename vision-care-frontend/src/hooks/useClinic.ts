@@ -1,12 +1,16 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { AxiosError } from "axios";
 import { clinicApi } from "@/lib/api/clinic.api";
+import axiosClient from "@/lib/axios";
 import {
-  HoSoKhamRequest,
+  HoSoKhamRequest, HoSoKhamResponse,
   DichVuKhamRequest,
   GoiKhamRequest,
   DatLichRequest, 
   DatLichResponse,
+  AuditHosoThiluc,
+  DanhGiaRequest,
+  DanhGiaResponse
 } from "@/types/clinic";
 
 export const useDanhSachDichVu = () => {
@@ -22,10 +26,8 @@ export const useBacSi = () => {
   return useQuery({
     queryKey: ["bacSiList"],
     queryFn: async () => {
-      // Gọi đúng cái API chuc-vu/CV06 (Bác sĩ) mà m vừa code lúc nãy
-      const res = await fetch("http://localhost:8080/api/v1/nhan-su/chuc-vu/CV06");
-      if (!res.ok) throw new Error("Lỗi fetch bác sĩ");
-      return res.json();
+      const response = await axiosClient.get("/nhan-su/chuc-vu/CV06");
+      return response.data;
     },
   });
 };
@@ -34,10 +36,8 @@ export const useGoiKham = () => {
   return useQuery({
     queryKey: ["goiKhamList"],
     queryFn: async () => {
-      // Giả định API m tạo bên Backend
-      const res = await fetch("http://localhost:8080/api/v1/goi-kham/active");
-      if (!res.ok) throw new Error("Lỗi fetch gói khám");
-      return res.json();
+      const response = await axiosClient.get("/goi-kham/active");
+      return response.data;
     },
   });
 };
@@ -72,6 +72,24 @@ export const useHoSoKham = (maHoSo: string) => {
     queryKey: ["ho-so-kham", maHoSo],
     queryFn: () => clinicApi.getHoSoKham(maHoSo),
     enabled: !!maHoSo,
+    staleTime: 2 * 60 * 1000,
+  });
+};
+
+export const useAuditHoSo = (maHoSo: string) => {
+  return useQuery<AuditHosoThiluc[]>({
+    queryKey: ["audit-ho-so", maHoSo],
+    queryFn: () => clinicApi.getAuditHoSo(maHoSo),
+    enabled: !!maHoSo,
+    staleTime: 2 * 60 * 1000,
+  });
+};
+
+export const useLichSuKham = (maKh: string) => {
+  return useQuery({
+    queryKey: ["lich-su-kham", maKh],
+    queryFn: () => clinicApi.getLichSuKham(maKh),
+    enabled: !!maKh,
     staleTime: 2 * 60 * 1000,
   });
 };
@@ -138,5 +156,33 @@ export const useHangChoHomNay = (maNs?: string) => {
     queryKey: ["hang-cho-hom-nay", maNs],
     queryFn: () => clinicApi.getHangChoHomNay(maNs),
     refetchInterval: 30000, // Tự động load lại sau 30s
+  });
+};
+
+export const useDanhGiaByKh = (maKh: string) => {
+  return useQuery({
+    queryKey: ["danh-gia-kh", maKh],
+    queryFn: () => clinicApi.getDanhGiaByKh(maKh),
+    enabled: !!maKh,
+    staleTime: 2 * 60 * 1000,
+  });
+};
+
+export const useCreateDanhGia = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: DanhGiaRequest) => clinicApi.createDanhGia(data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["danh-gia-kh", variables.maKh] });
+    },
+  });
+};
+
+export const useHoSoKhamByBacSi = (maNs: string) => {
+  return useQuery({
+    queryKey: ["ho-so-kham-bac-si", maNs],
+    queryFn: () => clinicApi.getHoSoKhamByBacSi(maNs),
+    enabled: !!maNs,
+    staleTime: 2 * 60 * 1000,
   });
 };

@@ -48,11 +48,29 @@ public class KhachHangServiceImpl implements KhachHangService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy khách hàng với SĐT: " + sdt));
     }
 
+    private String generateMaKh() {
+        List<KhachHang> all = khachHangRepository.findAll();
+        int maxSeq = 0;
+        for (KhachHang kh : all) {
+            String code = kh.getMaKh();
+            if (code != null && code.startsWith("KH") && code.length() > 2) {
+                try {
+                    int num = Integer.parseInt(code.substring(2));
+                    if (num > maxSeq) {
+                        maxSeq = num;
+                    }
+                } catch (NumberFormatException ignored) {}
+            }
+        }
+        int nextNumber = maxSeq + 1;
+        return "KH" + String.format("%03d", nextNumber);
+    }
+
     @Override
     @Transactional
     public KhachHang taoMoiKhachHang(KhachHang khachHang) {
-        // Sinh mã Khách hàng tự động (Tối đa 10 ký tự theo Entity)
-        String generatedMaKh = "KH" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        // Sinh mã Khách hàng tự động sequential
+        String generatedMaKh = generateMaKh();
         khachHang.setMaKh(generatedMaKh);
 
         // Mặc định khách mới: Điểm tích lũy = 0, Chưa bị xóa = 0

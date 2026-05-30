@@ -17,6 +17,14 @@ export const useDanhSachSanPham = () => {
   });
 };
 
+export const useDanhSachLoaiSanPham = () => {
+  return useQuery({
+    queryKey: ["loai-san-pham"],
+    queryFn: () => inventoryApi.getCategories(),
+    staleTime: 30 * 60 * 1000,
+  });
+};
+
 export const useCreateSanPham = () => {
   const queryClient = useQueryClient();
   return useMutation({
@@ -63,6 +71,14 @@ export const useDanhSachPhieuNhap = () => {
     queryKey: ['phieu-nhap'],
     queryFn: () => inventoryApi.getPhieuNhap(),
     staleTime: 5 * 60 * 1000,
+  });
+};
+
+export const usePhieuNhapChiTiet = (maPn: string) => {
+  return useQuery({
+    queryKey: ["phieu-nhap", maPn],
+    queryFn: () => inventoryApi.getPhieuNhapById(maPn),
+    enabled: !!maPn,
   });
 };
 

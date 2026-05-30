@@ -36,7 +36,7 @@ public class LichLamViecController {
 
     // ĐÃ SỬA: Đổi kiểu trả về thành String, gọi hàm taoLichLamViec (void)
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'QUAN_LY')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LE_TAN')")
     public ResponseEntity<String> createLichLamViec(
             @Valid @RequestBody LichLamViecRequestDTO request) {
         log.info("API: Tạo lịch làm việc cho nhân sự: {}", request.getMaNs());
@@ -48,7 +48,7 @@ public class LichLamViecController {
 
     // ĐÃ SỬA: Đổi kiểu trả về thành String, gọi hàm batch (void)
     @PostMapping("/batch")
-    @PreAuthorize("hasAnyRole('ADMIN', 'QUAN_LY')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LE_TAN')")
     public ResponseEntity<String> createLichLamViecBatch(
             @Valid @RequestBody List<LichLamViecRequestDTO> requests) {
         log.info("API: Tạo lịch làm việc hàng loạt - số lượng: {}", requests.size());
@@ -131,7 +131,7 @@ public class LichLamViecController {
     }
 
     @PutMapping("/{maLlv}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'QUAN_LY')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LE_TAN')")
     public ResponseEntity<LichLamViecResponseDTO> updateLichLamViec(
             @PathVariable String maLlv,
             @Valid @RequestBody LichLamViecRequestDTO request) {
@@ -141,10 +141,18 @@ public class LichLamViecController {
     }
 
     @DeleteMapping("/{maLlv}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'QUAN_LY')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LE_TAN')")
     public ResponseEntity<Void> deleteLichLamViec(@PathVariable String maLlv) {
         log.info("API: Xóa lịch làm việc: {}", maLlv);
         lichLamViecService.deleteLichLamViec(maLlv);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/slot-trong")
+    public ResponseEntity<List<com.kada.da.modules.booking.dto.SlotTrongDto>> getDanhSachSlotTrong(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate ngay,
+            @RequestParam(required = false) String maNs) {
+        log.info("API: Lấy danh sách slot trống. Ngày: {}, Bác sĩ: {}", ngay, maNs);
+        return ResponseEntity.ok(lichLamViecService.getDanhSachSlotTrong(ngay, maNs));
     }
 }

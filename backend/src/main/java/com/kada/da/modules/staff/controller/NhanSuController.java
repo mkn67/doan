@@ -4,7 +4,8 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping; // Tự tạo file Service tương ứng nhé
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -13,10 +14,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.kada.da.modules.report.dto.TopBacSiDTO;
 import com.kada.da.modules.staff.dto.NhanSuRequestDTO;
 import com.kada.da.modules.staff.dto.NhanSuResponseDTO;
 import com.kada.da.modules.staff.dto.PageResponseDTO;
-import com.kada.da.modules.report.dto.TopBacSiDTO;
 import com.kada.da.modules.staff.service.NhanSuService;
 
 import jakarta.validation.Valid;
@@ -62,5 +63,11 @@ public class NhanSuController {
     @GetMapping("/chuc-vu/{macv}")
     public ResponseEntity<List<NhanSuResponseDTO>> getByChucVu(@PathVariable String macv) {
         return ResponseEntity.ok(nhanSuService.getNhanSuByChucVuActive(macv));
+    }
+
+    @DeleteMapping("/{maNs}")
+    public ResponseEntity<Void> deleteNhanSu(@PathVariable String maNs) {
+        nhanSuService.deleteNhanSu(maNs);
+        return ResponseEntity.noContent().build();
     }
 }

@@ -88,19 +88,18 @@ public class LichHenServiceImpl implements LichHenService {
             throw new BusinessRuleException("Khách hàng chưa được xác nhận lịch hẹn, không thể check-in!");
         }
 
-        LocalDate today = LocalDate.now();
-        if (lichHen.getNgayHen() == null || !lichHen.getNgayHen().toLocalDate().isEqual(today)) {
-            throw new BusinessRuleException("Lịch hẹn không phải hôm nay, không thể check-in");
-        }
+        java.time.ZoneId zoneId = java.time.ZoneId.of("Asia/Ho_Chi_Minh");
 
         // Cập nhật trạng thái lịch hẹn
         lichHen.setTrangThai(TrangThaiLichHen.DA_CHECK_IN);
         lichHenRepository.save(lichHen);
 
-        // Tạo Hàng Chờ mới (KHÔNG set MAHC và SO_THU_TU, để Trigger Oracle tự lo)
+        // Tạo Hàng Chờ mới (Sinh MAHC bằng Java, SO_THU_TU để Trigger tự lo)
+        String generatedMaHc = "HC" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase();
         HangCho hangCho = HangCho.builder()
+                .maHc(generatedMaHc)
                 .trangThai(TrangThaiHangCho.DANG_CHO)
-                .gioDangKy(LocalDateTime.now())
+                .gioDangKy(LocalDateTime.now(zoneId))
                 .khachHang(lichHen.getKhachHang())
                 .lichHen(lichHen)
                 .nhanSuPhanCong(lichHen.getNhanSu())
@@ -144,6 +143,7 @@ public class LichHenServiceImpl implements LichHenService {
         return LichHenResponseDTO.builder()
                 .maLh(entity.getMaLh())
                 .tenKhachHang(entity.getKhachHang() != null ? entity.getKhachHang().getHoTen() : null)
+                .sdtKhachHang(entity.getKhachHang() != null ? entity.getKhachHang().getSdt() : null)
                 .tenBacSi(entity.getNhanSu() != null ? entity.getNhanSu().getHoTen() : null)
                 .ngayHen(entity.getNgayHen() != null ? entity.getNgayHen().toLocalDate() : null) // Giữ nguyên kiểu trả
                 // về của DTO nếu DTO
@@ -154,6 +154,7 @@ public class LichHenServiceImpl implements LichHenService {
                 .trieuChung(trieuChungStr)
                 .loaiLich(entity.getLoaiLich())
                 .trangThai(entity.getTrangThai() != null ? entity.getTrangThai().name() : null)
+                .tenGoiKham(entity.getGoiKham() != null ? entity.getGoiKham().getTenGoi() : null)
                 .build();
     }
 
