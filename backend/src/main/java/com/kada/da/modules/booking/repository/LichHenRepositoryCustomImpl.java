@@ -107,6 +107,16 @@ public class LichHenRepositoryCustomImpl implements LichHenRepositoryCustom {
             predicates.add(cb.equal(root.get("trangThai"), TrangThaiLichHen.safeValueOf(filter.getTrangThai())));
         }
 
+        // 5. Bỏ lịch hẹn đã quá giờ/ngày cũ mà chưa được duyệt (trạng thái là "Chờ xác nhận")
+        // Chỉ trả về các lịch hẹn thỏa mãn: NOT (trangThai = CHO_XAC_NHAN AND gioHen < now)
+        // Tương đương với: trangThai != CHO_XAC_NHAN OR gioHen IS NULL OR gioHen >= now
+        LocalDateTime now = LocalDateTime.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"));
+        predicates.add(cb.or(
+                cb.notEqual(root.get("trangThai"), TrangThaiLichHen.CHO_XAC_NHAN),
+                cb.isNull(root.get("gioHen")),
+                cb.greaterThanOrEqualTo(root.get("gioHen"), now)
+        ));
+
         return predicates;
     }
 

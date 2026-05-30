@@ -175,8 +175,24 @@ export default function AppointmentsPage() {
     (listLichHen as PageResponseDTO<UI_LichHen>)?.data || 
     (Array.isArray(listLichHen) ? listLichHen : []);
 
+  // Bỏ những lịch hẹn đã hết thời gian (quá giờ/ngày cũ) mà chưa được duyệt (trạng thái là "Chờ xác nhận")
+  const filteredRawLichHen = rawLichHen.filter(item => {
+    if (!item.ngayHen || !item.gioHen) return true;
+    try {
+      const apptTime = new Date(`${item.ngayHen}T${item.gioHen}`);
+      const isPast = apptTime < now;
+      const isUnapproved = item.trangThai === "CHO_XAC_NHAN" || item.trangThai === "Chờ xác nhận";
+      if (isPast && isUnapproved) {
+        return false; // Bỏ đi khỏi list
+      }
+      return true;
+    } catch (e) {
+      return true;
+    }
+  });
+
   const arrLichHen = hidePast 
-    ? rawLichHen.filter(item => {
+    ? filteredRawLichHen.filter(item => {
         if (!item.ngayHen || !item.gioHen) return true;
         try {
           const apptTime = new Date(`${item.ngayHen}T${item.gioHen}`);
@@ -185,7 +201,7 @@ export default function AppointmentsPage() {
           return true;
         }
       })
-    : rawLichHen;
+    : filteredRawLichHen;
 
   const doctorsList = Array.isArray(doctorsData) ? doctorsData : [];
 
