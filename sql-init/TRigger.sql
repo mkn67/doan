@@ -1,8 +1,8 @@
 -- ============================================================
--- PHẦN IV: TRIGGERS (NAVICAT-READY – KHÔNG LỖI)
+-- PHẦN IV: TRIGGERS (NAVICAT-READY – TỐI ƯU TOÀN VẸN DỮ LIỆU)
 -- ============================================================
 
--- 1. Nhân Sự
+-- 1. Nhân Sự: Kiểm tra điều kiện độ tuổi lao động
 CREATE OR REPLACE TRIGGER TRG_VALIDATE_NHAN_SU
 BEFORE INSERT OR UPDATE ON NHAN_SU
 FOR EACH ROW
@@ -18,7 +18,7 @@ BEGIN
 END;
 /
 
--- 2. Khách Hàng
+-- 2. Khách Hàng: Kiểm tra định dạng liên lạc và chặn xóa cứng nếu đang có hàng chờ
 CREATE OR REPLACE TRIGGER TRG_VALIDATE_KHACH_HANG
 BEFORE INSERT OR UPDATE OR DELETE ON KHACH_HANG
 FOR EACH ROW
@@ -44,7 +44,7 @@ BEGIN
 END;
 /
 
--- 3. Lịch Hẹn
+-- 3. Lịch Hẹn: Kiểm tra điều kiện lịch làm việc và tránh trùng lặp slot khám của bác sĩ
 CREATE OR REPLACE TRIGGER TRG_VALIDATE_LICH_HEN
 FOR INSERT OR UPDATE ON LICH_HEN
 COMPOUND TRIGGER
@@ -73,7 +73,6 @@ COMPOUND TRIGGER
         SELECT COUNT(*) INTO v_ton_ns FROM NHAN_SU WHERE MANS = :NEW.MANS AND IS_DELETED = 0;
         IF v_ton_ns = 0 THEN RAISE_APPLICATION_ERROR(-20033, 'LOI: Bac si khong ton tai hoac da nghi!'); END IF;
 
-        -- Chỉ chặn nếu bác sĩ có đăng ký nghỉ (IS_NGHI = 1) và lịch hẹn không phải là Hủy
         IF :NEW.TRANGTHAI != N'Đã hủy' THEN
             SELECT COUNT(*) INTO v_ca_lam FROM LICH_LAM_VIEC
             WHERE MANS = :NEW.MANS AND TRUNC(NGAY_LAM) = TRUNC(:NEW.NGAYHEN) AND IS_NGHI = 1;
@@ -98,16 +97,12 @@ COMPOUND TRIGGER
               AND GIO_HEN   = v_lich_arr(i).gio_hen
               AND TRANGTHAI != N'Đã hủy'
               AND (v_lich_arr(i).malh IS NULL OR MALH != v_lich_arr(i).malh);
-              
-            -- IF v_trung > 0 THEN
-            --     RAISE_APPLICATION_ERROR(-20031, 'LOI: Bac si da co lich slot nay!');
-            -- END IF;
         END LOOP;
     END AFTER STATEMENT;
 END TRG_VALIDATE_LICH_HEN;
 /
 
--- 4. Hồ Sơ Thị Lực
+-- 4. Hồ Sơ Thị Lực: Phân quyền chỉ cho phép khối chuyên môn lập bệnh án
 CREATE OR REPLACE TRIGGER TRG_VALIDATE_HO_SO
 BEFORE INSERT OR UPDATE ON HO_SO_THI_LUC
 FOR EACH ROW
@@ -128,7 +123,7 @@ BEGIN
 END;
 /
 
--- 5. Hóa Đơn
+-- 5. Hóa Đơn: Kiểm tra quyền hạn lập phiếu thu ngân và bảo vệ hóa đơn đã chốt
 CREATE OR REPLACE TRIGGER TRG_VALIDATE_HOA_DON
 BEFORE INSERT OR UPDATE OR DELETE ON HOA_DON
 FOR EACH ROW
@@ -136,6 +131,11 @@ DECLARE
     v_tencv NVARCHAR2(100);
     v_macv  VARCHAR2(10);
 BEGIN
+    -- Thiết lập mã tự động nếu chưa có
+    IF INSERTING AND :NEW.MAHD IS NULL THEN
+        :NEW.MAHD := 'HD' || LPAD(SEQ_HOA_DON.NEXTVAL, 6, '0');
+    END IF;
+
     IF INSERTING OR UPDATING THEN
         BEGIN
             SELECT ns.MACV, cv.TENCV INTO v_macv, v_tencv
@@ -171,7 +171,6 @@ BEGIN
 
     IF (UPDATING OR DELETING) AND :OLD.TRANGTHAI = N'Đã thanh toán' THEN
         IF UPDATING AND :NEW.TRANGTHAI = N'Đã hủy' THEN
-            -- Cho phép hủy hóa đơn đã thanh toán, nhưng không cho thay đổi thông tin khác
             IF NVL(:OLD.MAKH, ' ') != NVL(:NEW.MAKH, ' ') OR 
                NVL(:OLD.MANS, ' ') != NVL(:NEW.MANS, ' ') OR 
                NVL(:OLD.MAHOSO, ' ') != NVL(:NEW.MAHOSO, ' ') OR 
@@ -185,7 +184,7 @@ BEGIN
 END;
 /
 
--- 6. CT Hóa Đơn SP
+-- 6. CT Hóa Đơn Sản Phẩm: Kiểm tra hạn dùng, xuất kho trừ tồn kho vật lý và cộng dồn hóa đơn tự động
 CREATE OR REPLACE TRIGGER TRG_CT_HOA_DON_SP
 FOR INSERT OR UPDATE OR DELETE ON CT_HOA_DON
 COMPOUND TRIGGER
@@ -198,7 +197,7 @@ COMPOUND TRIGGER
         BEGIN
             SELECT TRANGTHAI INTO v_trangthai FROM HOA_DON WHERE MAHD = NVL(:NEW.MAHD, :OLD.MAHD);
             IF v_trangthai IN (N'Đã thanh toán', N'Đã hủy') THEN
-                RAISE_APPLICATION_ERROR(-20033, 'CTHD: Hoa don da dong!');
+                RAISE_APPLICATION_ERROR(-20033, 'CTHD: Hoa don da chốt, khong the thay doi chi tiet sản phẩm!');
             END IF;
         EXCEPTION WHEN NO_DATA_FOUND THEN NULL; 
         END;
@@ -206,34 +205,35 @@ COMPOUND TRIGGER
         IF INSERTING OR UPDATING THEN
             SELECT SOLUONGTON, NGAYHETHAN INTO v_ton, v_hsd FROM LO_HANG WHERE MALO = :NEW.MALO;
             IF v_hsd < TRUNC(SYSDATE) THEN
-                RAISE_APPLICATION_ERROR(-20006, 'CTHD: Lo hang da het han!');
+                RAISE_APPLICATION_ERROR(-20006, 'CTHD: Lo hang da het han su dung!');
             END IF;
             IF :NEW.SOLUONG <= 0 THEN
-                RAISE_APPLICATION_ERROR(-20014, 'CTHD: So luong phai > 0!');
+                RAISE_APPLICATION_ERROR(-20014, 'CTHD: So luong mua phai > 0!');
             END IF;
             IF :NEW.SOLUONG > (CASE WHEN UPDATING THEN v_ton + :OLD.SOLUONG ELSE v_ton END) THEN
-                RAISE_APPLICATION_ERROR(-20005, 'CTHD: Khong du hang trong kho!');
+                RAISE_APPLICATION_ERROR(-20005, 'CTHD: Khong du so luong hang trong kho vat ly!');
             END IF;
         END IF;
     END BEFORE EACH ROW;
 
     AFTER EACH ROW IS
     BEGIN
+        -- Tự động tính toán dòng tiền và cấu trừ trực tiếp vào bảng kho hàng LO_HANG
         IF INSERTING THEN
-            UPDATE HOA_DON  SET TONGTIEN  = NVL(TONGTIEN,0) + (:NEW.SOLUONG * :NEW.DONGIA) WHERE MAHD = :NEW.MAHD;
+            UPDATE HOA_DON SET TONGTIEN  = NVL(TONGTIEN,0) + (:NEW.SOLUONG * :NEW.DONGIA) WHERE MAHD = :NEW.MAHD;
             UPDATE LO_HANG SET SOLUONGTON = SOLUONGTON - :NEW.SOLUONG WHERE MALO = :NEW.MALO;
         ELSIF UPDATING THEN
-            UPDATE HOA_DON  SET TONGTIEN  = NVL(TONGTIEN,0) - (:OLD.SOLUONG * :OLD.DONGIA) + (:NEW.SOLUONG * :NEW.DONGIA) WHERE MAHD = :NEW.MAHD;
+            UPDATE HOA_DON SET TONGTIEN  = NVL(TONGTIEN,0) - (:OLD.SOLUONG * :OLD.DONGIA) + (:NEW.SOLUONG * :NEW.DONGIA) WHERE MAHD = :NEW.MAHD;
             UPDATE LO_HANG SET SOLUONGTON = SOLUONGTON + :OLD.SOLUONG - :NEW.SOLUONG WHERE MALO = :NEW.MALO;
         ELSIF DELETING THEN
-            UPDATE HOA_DON  SET TONGTIEN  = NVL(TONGTIEN,0) - (:OLD.SOLUONG * :OLD.DONGIA) WHERE MAHD = :OLD.MAHD;
+            UPDATE HOA_DON SET TONGTIEN  = NVL(TONGTIEN,0) - (:OLD.SOLUONG * :OLD.DONGIA) WHERE MAHD = :OLD.MAHD;
             UPDATE LO_HANG SET SOLUONGTON = SOLUONGTON + :OLD.SOLUONG WHERE MALO = :OLD.MALO;
         END IF;
     END AFTER EACH ROW;
 END TRG_CT_HOA_DON_SP;
 /
 
--- 7. CT Hóa Đơn DV
+-- 7. CT Hóa Đơn Dịch Vụ: Tự động cộng dồn chi phí dịch vụ khám khúc xạ vào hóa đơn tổng
 CREATE OR REPLACE TRIGGER TRG_CT_HOA_DON_DV
 FOR INSERT OR UPDATE OR DELETE ON CT_HOA_DON_DV
 COMPOUND TRIGGER
@@ -250,6 +250,7 @@ COMPOUND TRIGGER
 END TRG_CT_HOA_DON_DV;
 /
 
+-- 8. Phiếu Nhập Kho: Chặn sửa phiếu thu mua nếu hàng hóa đã đưa ra quầy bán lẻ
 CREATE OR REPLACE TRIGGER TRG_PHIEU_NHAP
 BEFORE INSERT OR UPDATE ON PHIEU_NHAP
 FOR EACH ROW
@@ -267,20 +268,19 @@ BEGIN
     END;
     
     IF v_tencv NOT IN (N'Thủ kho', N'Quản lý') THEN
-        RAISE_APPLICATION_ERROR(-20004, 'LOI: Chi Thu kho/Quan ly lap phieu nhap!');
+        RAISE_APPLICATION_ERROR(-20004, 'LOI: Chi Thu kho/Quan ly moi duoc phep lap phieu nhap!');
     END IF;
     
-    -- KIỂM TRA CHỈ KHI MAPN THAY ĐỔI (tránh đọc LO_HANG khi nó đang bị INSERT)
     IF UPDATING AND :OLD.MAPN != :NEW.MAPN THEN
         SELECT COUNT(*) INTO v_lo_daban FROM LO_HANG WHERE MAPN = :OLD.MAPN AND SOLUONGTON < SOLUONGNHAP;
         IF v_lo_daban > 0 THEN
-            RAISE_APPLICATION_ERROR(-20015, 'LOI: Phieu da xuat ban, khong the sua!');
+            RAISE_APPLICATION_ERROR(-20015, 'LOI: Phieu nhap da co lo hang xuat ban, khong the sua doi!');
         END IF;
     END IF;
 END;
 /
 
--- 9. Thanh Toán
+-- 9. Thanh Toán: Tính toán chốt công nợ và tự động cộng điểm tích lũy thành viên cho khách hàng
 CREATE OR REPLACE TRIGGER TRG_THANH_TOAN
 FOR INSERT OR UPDATE ON THANH_TOAN
 COMPOUND TRIGGER
@@ -303,10 +303,10 @@ COMPOUND TRIGGER
         BEGIN
             SELECT TONGTIEN INTO v_tong_hd FROM HOA_DON WHERE MAHD = :NEW.MAHD;
             IF :NEW.SOTIEN <= 0 THEN
-                RAISE_APPLICATION_ERROR(-20018, 'LOI: So tien thanh toan phai > 0!');
+                RAISE_APPLICATION_ERROR(-20018, 'LOI: So tien dong thanh toan phai > 0!');
             END IF;
         EXCEPTION WHEN NO_DATA_FOUND THEN
-            RAISE_APPLICATION_ERROR(-20018, 'LOI: Khong tim thay hoa don de thanh toan!');
+            RAISE_APPLICATION_ERROR(-20018, 'LOI: Khong tim thay thong tin hoa don thanh toan!');
         END;
     END BEFORE EACH ROW;
 
@@ -331,7 +331,6 @@ COMPOUND TRIGGER
             SELECT TONGTIEN, MAKH INTO v_tong_hd, v_makh FROM HOA_DON WHERE MAHD = v_mahd_arr(i);
             
             IF v_da_tt >= v_tong_hd THEN
-                -- Chỉ cộng điểm nếu hóa đơn chưa ở trạng thái 'Đã thanh toán'
                 DECLARE
                     v_trangthai_cu NVARCHAR2(50);
                 BEGIN
@@ -342,11 +341,10 @@ COMPOUND TRIGGER
                         IF v_makh IS NOT NULL THEN
                             v_diem_cong := FLOOR(v_tong_hd / 100000);
                             IF v_diem_cong > 0 THEN
-                                UPDATE KHACH_HANG SET DIEMTICHLUY = DIEMTICHLUY + v_diem_cong
-                                WHERE MAKH = v_makh;
+                                UPDATE KHACH_HANG SET DIEMTICHLUY = DIEMTICHLUY + v_diem_cong WHERE MAKH = v_makh;
                                 
                                 INSERT INTO LICH_SU_DIEM(MALSD, MAKH, LOAI, SO_DIEM, LY_DO, MAHD)
-                                VALUES ('LS' || LPAD(SEQ_LICH_SU_DIEM.NEXTVAL, 6, '0'), v_makh, N'Cong', v_diem_cong, N'Tích lũy từ thanh toán hóa đơn: ' || v_mahd_arr(i), v_mahd_arr(i));
+                                VALUES ('LS' || LPAD(SEQ_LICH_SU_DIEM.NEXTVAL, 6, '0'), v_makh, N'Cong', v_diem_cong, N'Tích lũy tự động từ hóa đơn: ' || v_mahd_arr(i), v_mahd_arr(i));
                             END IF;
                         END IF;
                     END IF;
@@ -357,7 +355,7 @@ COMPOUND TRIGGER
 END TRG_THANH_TOAN;
 /
 
--- 10. Audit Kết Luận
+-- 10. Audit Kết Luận Bệnh Án: Nhật ký theo dõi lịch sử chỉnh sửa kết luận lâm sàng
 CREATE OR REPLACE TRIGGER TRG_AUDIT_HO_SO
 AFTER UPDATE OF KETLUAN ON HO_SO_THI_LUC
 FOR EACH ROW
@@ -369,7 +367,7 @@ BEGIN
 END;
 /
 
--- 11. Lô Hàng
+-- 11. Lô Hàng Kho: Tự động khống chế số lượng tồn và kết toán tổng trị giá phiếu nhập hàng
 CREATE OR REPLACE TRIGGER TRG_LO_HANG
 FOR INSERT OR UPDATE ON LO_HANG
 COMPOUND TRIGGER
@@ -378,7 +376,7 @@ COMPOUND TRIGGER
         IF INSERTING THEN 
             :NEW.SOLUONGTON := :NEW.SOLUONGNHAP; 
             IF :NEW.NGAYHETHAN <= TRUNC(SYSDATE) THEN
-                RAISE_APPLICATION_ERROR(-20029, 'LOI: Lo hang da het han!');
+                RAISE_APPLICATION_ERROR(-20029, 'LOI: Lo hang dang nhap da het han su dung!');
             END IF;
         END IF;
     END BEFORE EACH ROW;
@@ -394,7 +392,7 @@ COMPOUND TRIGGER
 END TRG_LO_HANG;
 /
 
--- 12. Kê Đơn
+-- 12. Kê Đơn: Bảo mật chức năng kê đơn thuốc và kính chỉ dành riêng cho khối bác sĩ điều trị
 CREATE OR REPLACE TRIGGER TRG_VALIDATE_KE_DON
 BEFORE INSERT OR UPDATE ON PHIEU_KE_DON
 FOR EACH ROW
@@ -411,12 +409,12 @@ BEGIN
     END;
     
     IF v_tencv NOT IN (N'Bác sĩ', N'Kỹ thuật viên mắt kính') THEN
-        RAISE_APPLICATION_ERROR(-20025, 'LOI: Chi Bac si/KTV duoc Ke Don!');
+        RAISE_APPLICATION_ERROR(-20025, 'LOI: Chi Bac si hoac KTV do khúc xa moi co quyen Ke Don!');
     END IF;
 END;
 /
 
--- 13. Hủy Hóa Đơn
+-- 13. Hủy Hóa Đơn: Khấu hoàn số lượng tồn kho vật lý và trừ điểm thưởng tích lũy thành viên
 CREATE OR REPLACE TRIGGER TRG_HOA_DON_HUY
 AFTER UPDATE OF TRANGTHAI ON HOA_DON
 FOR EACH ROW
@@ -435,7 +433,6 @@ BEGIN
             SET DIEMTICHLUY = GREATEST(0, DIEMTICHLUY - v_diem_tru)
             WHERE MAKH = :NEW.MAKH;
 
-            -- Ghi nhận lịch sử khấu trừ điểm
             INSERT INTO LICH_SU_DIEM(MALSD, MAKH, LOAI, SO_DIEM, LY_DO, MAHD)
             VALUES ('LS' || LPAD(SEQ_LICH_SU_DIEM.NEXTVAL, 6, '0'), :NEW.MAKH, N'Tru', v_diem_tru, N'Khấu trừ tích lũy do hủy hóa đơn: ' || :NEW.MAHD, :NEW.MAHD);
         END IF;
@@ -443,7 +440,7 @@ BEGIN
 END;
 /
 
--- 14. Lịch sử giá
+-- 14. Nhật Ký Biến Động Giá Bán Sản Phẩm
 CREATE OR REPLACE TRIGGER TRG_LICH_SU_GIA
 AFTER UPDATE OF GIABAN ON SAN_PHAM
 FOR EACH ROW
@@ -454,15 +451,13 @@ BEGIN
 END;
 /
 
--- 15. Tự sinh mã hàng chờ và số thứ tự
+-- 15. Tự sinh mã hàng chờ và số thứ tự tự động theo ngày (Bảo đảm múi giờ Việt Nam 2026)
 CREATE OR REPLACE TRIGGER TRG_GEN_MAHC
 BEFORE INSERT ON HANG_CHO
 FOR EACH ROW
 DECLARE
     v_seq NUMBER;
     v_max_stt NUMBER;
-    v_start_of_day TIMESTAMP;
-    v_end_of_day TIMESTAMP;
 BEGIN
     IF :NEW.MAHC IS NULL THEN
         SELECT SEQ_HANG_CHO.NEXTVAL INTO v_seq FROM DUAL;
@@ -470,12 +465,11 @@ BEGIN
     END IF;
 
     IF :NEW.SO_THU_TU IS NULL THEN
-        v_start_of_day := TRUNC(CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Ho_Chi_Minh' AS DATE));
-        v_end_of_day := v_start_of_day + 1 - 1/86400;
-
+        -- FIX: Đồng bộ ép kiểu múi giờ Asia/Ho_Chi_Minh cho cả trường điều kiện quét để reset số thứ tự chuẩn xác lúc nửa đêm
         SELECT NVL(MAX(SO_THU_TU), 0) INTO v_max_stt
         FROM HANG_CHO
-        WHERE GIO_DANG_KY >= v_start_of_day AND GIO_DANG_KY <= v_end_of_day;
+        WHERE TRUNC(CAST(GIO_DANG_KY AT TIME ZONE 'Asia/Ho_Chi_Minh' AS DATE)) = 
+              TRUNC(CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Ho_Chi_Minh' AS DATE));
 
         :NEW.SO_THU_TU := v_max_stt + 1;
     END IF;

@@ -1,6 +1,6 @@
--- ============================================================
--- 2. STORED PROCEDURES (ĐÃ LOẠI BỎ TRIGGER SINH MÃ, DÙNG SEQUENCE)
--- ============================================================
+-- ============================================================================
+-- 2. STORED PROCEDURES (ĐÃ KHẮC PHỤC LỖI KHỞI TẠO KHO, TÍNH TỔNG TIỀN & ĐỒNG BỘ)
+-- ============================================================================
 
 -- SP 1: Lưu hồ sơ khám bệnh
 CREATE OR REPLACE PROCEDURE SP_LUU_HOSO_KHAM_BENH (
@@ -49,7 +49,7 @@ EXCEPTION
 END SP_LUU_HOSO_KHAM_BENH;
 /
 
--- SP 2: Chốt thanh toán
+-- SP 2: Chốt thanh toán hóa đơn
 CREATE OR REPLACE PROCEDURE SP_CHOT_THANH_TOAN_HOA_DON (
     p_mahd       IN  VARCHAR2,
     p_mans       IN  VARCHAR2,
@@ -76,8 +76,12 @@ BEGIN
     -- Tự sinh mã thanh toán
     v_matt := 'TT' || LPAD(SEQ_THANH_TOAN.NEXTVAL, 6, '0');
 
+    -- Chèn bản ghi giao dịch quyết toán tiền
     INSERT INTO THANH_TOAN(MATT, MAHD, MANS, NGAYTHANHTOAN, SOTIEN, PHUONGTHUC, TRANGTHAI)
     VALUES (v_matt, p_mahd, p_mans, SYSTIMESTAMP, v_tongtien, p_phuongthuc, N'Hoàn thành');
+
+    -- FIX 3: Cập nhật đồng bộ trạng thái hóa đơn gốc để khóa sổ kế toán phòng khám
+    UPDATE HOA_DON SET TRANGTHAI = N'Đã thanh toán' WHERE MAHD = p_mahd;
 
     p_matt_out := v_matt;
 EXCEPTION
@@ -129,10 +133,11 @@ BEGIN
         p_malo := 'LO' || LPAD(SEQ_LO_HANG.NEXTVAL, 6, '0');
     END IF;
 
-    INSERT INTO LO_HANG(MALO, MASP, MAPN, NGAYSANXUAT, NGAYHETHAN, SOLUONGNHAP, GIANHAP)
-    VALUES (p_malo, p_masp, p_mapn, p_ngaysx, p_ngayhethan, p_soluongnhap, p_gianhap);
+    -- FIX 1: Bổ sung chèn giá trị khởi tạo cho cột SOLUONGTON bằng SOLUONGNHAP để tránh bị rỗng kho (NULL) khi chạy hàm FEFO
+    INSERT INTO LO_HANG(MALO, MASP, MAPN, NGAYSANXUAT, NGAYHETHAN, SOLUONGNHAP, SOLUONGTON, GIANHAP)
+    VALUES (p_malo, p_masp, p_mapn, p_ngaysx, p_ngayhethan, p_soluongnhap, p_soluongnhap, p_gianhap);
 
-    -- Lấy tổng tiền sau khi Trigger TRG_LO_HANG đã chạy xong để trả về (Bỏ lệnh UPDATE để tránh nhân đôi tiền)
+    -- Lấy tổng tiền sau khi Trigger TRG_LO_HANG đã tính toán xong để trả về cho Backend hiển thị
     SELECT TONGTIEN INTO v_tongtien FROM PHIEU_NHAP WHERE MAPN = p_mapn;
     p_tongtien_out := v_tongtien;
 
@@ -157,8 +162,8 @@ BEGIN
                     ELSE N'Chú ý' END AS MUC_DO,
                ncc.TENNCC AS NHA_CUNG_CAP
         FROM   LO_HANG l
-        JOIN   SAN_PHAM     s   ON l.MASP  = s.MASP
-        JOIN   PHIEU_NHAP   pn  ON l.MAPN  = pn.MAPN
+        JOIN   SAN_PHAM   s   ON l.MASP  = s.MASP
+        JOIN   PHIEU_NHAP  pn  ON l.MAPN  = pn.MAPN
         JOIN   NHA_CUNG_CAP ncc ON pn.MANCC = ncc.MANCC
         WHERE  l.SOLUONGTON > 0
           AND  l.NGAYHETHAN > SYSDATE
@@ -341,7 +346,7 @@ END SP_CAP_NHAT_HANG_CHO;
 
 -- SP 9: Giao xử lý kính (tự sinh MAXL)
 CREATE OR REPLACE PROCEDURE SP_GIAO_XU_LY_KINH (
-   p_madon         IN  VARCHAR2,
+   p_madon           IN  VARCHAR2,
    p_mans_ky_thuat IN  VARCHAR2,
    p_thong_so_kinh IN  CLOB,
    p_maxl_out      OUT VARCHAR2
@@ -350,7 +355,7 @@ CREATE OR REPLACE PROCEDURE SP_GIAO_XU_LY_KINH (
    v_maxl   VARCHAR2(10);
 BEGIN
    BEGIN
-      SELECT 1 INTO v_tencv
+      SELECT N'Có đơn' INTO v_tencv
       FROM PHIEU_KE_DON
       WHERE MADON = p_madon AND ROWNUM = 1;
    EXCEPTION
@@ -395,12 +400,12 @@ BEGIN
 
    p_maxl_out := v_maxl;
 EXCEPTION
-   WHEN OTHERS THEN
-      RAISE;
+    WHEN OTHERS THEN
+       RAISE;
 END SP_GIAO_XU_LY_KINH;
 /
 
--- SP 10: Tạo hóa đơn qua JSON (tự sinh MAHD)
+-- SP 10: Tạo hóa đơn tổng hợp qua JSON
 CREATE OR REPLACE PROCEDURE SP_TAO_HOA_DON (
     p_makh     IN  VARCHAR2,
     p_mans     IN  VARCHAR2,
@@ -411,6 +416,8 @@ CREATE OR REPLACE PROCEDURE SP_TAO_HOA_DON (
     p_mahd_out OUT VARCHAR2
 ) AS
     v_mahd VARCHAR2(20);
+    v_total_sp NUMBER := 0;
+    v_total_dv NUMBER := 0;
 BEGIN
     -- Tự sinh mã hóa đơn
     v_mahd := 'HD' || LPAD(SEQ_HOA_DON.NEXTVAL, 6, '0');
@@ -418,56 +425,57 @@ BEGIN
     INSERT INTO HOA_DON(MAHD, MAKH, MANS, MAHOSO, MADON, NGAYLAP, TONGTIEN, TRANGTHAI, IS_DELETED)
     VALUES (v_mahd, p_makh, p_mans, p_mahoso, p_madon, SYSTIMESTAMP, 0, N'Chưa thanh toán', 0);
 
-    -- Nạp chi tiết sản phẩm
+    -- Nạp chi tiết sản phẩm lẻ qua JSON
     IF p_json_sp IS NOT NULL AND DBMS_LOB.GETLENGTH(p_json_sp) > 0 AND p_json_sp != '[]' THEN
         INSERT INTO CT_HOA_DON(MAHD, MALO, MASP, SOLUONG, DONGIA)
         SELECT v_mahd, j.malo, (SELECT MASP FROM LO_HANG WHERE MALO = j.malo), j.sl, j.gia
         FROM JSON_TABLE(p_json_sp, '$[*]' COLUMNS (malo VARCHAR2(20) PATH '$.malo', sl NUMBER PATH '$.sl', gia NUMBER PATH '$.gia')) j;
     ELSIF p_madon IS NOT NULL THEN
+        -- Tự động quét đơn thuốc / đơn kính được chỉ định để gộp vào hóa đơn tổng
         DECLARE
             v_malo    VARCHAR2(20);
             v_dongia  NUMBER(15,2);
             v_tensp   NVARCHAR2(100);
         BEGIN
             FOR rec IN (SELECT MASP, SOLUONG FROM CT_KE_DON WHERE MADON = p_madon) LOOP
-                -- Tìm lô hàng FEFO
+                -- Tìm lô hàng FEFO còn hạn và đủ số lượng tồn khả dụng
                 v_malo := FN_GET_MALO_FEFO(rec.MASP, rec.SOLUONG);
                 
                 IF v_malo IS NULL THEN
-                    SELECT TENSP INTO v_tensp FROM SAN_PHAM WHERE MASP = rec.MASP;
+                    SELECT  CONCAT(TENSP, ' ') INTO v_tensp FROM SAN_PHAM WHERE MASP = rec.MASP;
                     RAISE_APPLICATION_ERROR(-20035, 'Không đủ tồn kho cho sản phẩm ' || v_tensp || ' (Mã SP: ' || rec.MASP || ', Yêu cầu: ' || rec.SOLUONG || ')!');
                 END IF;
 
-                -- Lấy đơn giá bán
+                -- Lấy đơn giá bán hiện hành của sản phẩm
                 SELECT GIABAN INTO v_dongia FROM SAN_PHAM WHERE MASP = rec.MASP;
 
-                -- Lưu vào chi tiết hóa đơn
+                -- Lưu vào chi tiết hóa đơn sản phẩm
                 INSERT INTO CT_HOA_DON(MAHD, MALO, MASP, SOLUONG, DONGIA)
                 VALUES (v_mahd, v_malo, rec.MASP, rec.SOLUONG, v_dongia);
             END LOOP;
         END;
     END IF;
 
-    -- Nạp chi tiết dịch vụ
+    -- Nạp chi tiết hóa đơn dịch vụ y tế qua JSON
     IF p_json_dv IS NOT NULL AND DBMS_LOB.GETLENGTH(p_json_dv) > 0 AND p_json_dv != '[]' THEN
         INSERT INTO CT_HOA_DON_DV(MAHD, MADV, SOLUONG, DONGIA)
         SELECT v_mahd, j.madv, j.sl, j.gia
         FROM JSON_TABLE(p_json_dv, '$[*]' COLUMNS (madv VARCHAR2(20) PATH '$.madv', sl NUMBER PATH '$.sl', gia NUMBER PATH '$.gia')) j;
     ELSIF p_mahoso IS NOT NULL THEN
         DECLARE
-            v_makh      VARCHAR2(10);
+            v_makh_hs   VARCHAR2(10);
             v_ngaykham  DATE;
             v_magoi     VARCHAR2(10);
             v_has_dv    INT := 0;
         BEGIN
-            SELECT MAKH, TRUNC(NGAYKHAM) INTO v_makh, v_ngaykham FROM HO_SO_THI_LUC WHERE MAHOSO = p_mahoso;
+            SELECT MAKH, TRUNC(NGAYKHAM) INTO v_makh_hs, v_ngaykham FROM HO_SO_THI_LUC WHERE MAHOSO = p_mahoso;
             
             BEGIN
                 SELECT MAGOI INTO v_magoi
                 FROM (
                     SELECT MAGOI 
                     FROM LICH_HEN 
-                    WHERE MAKH = v_makh 
+                    WHERE MAKH = v_makh_hs 
                       AND TRANGTHAI != N'Đã hủy'
                       AND TRUNC(NGAYHEN) = v_ngaykham
                     ORDER BY NGAYHEN DESC
@@ -490,14 +498,14 @@ BEGIN
             END IF;
 
             IF v_has_dv = 0 THEN
-                -- Mặc định thêm dịch vụ Khám mắt tổng quát (DV01) nếu không có gói khám
+                -- Mặc định chèn chi phí Khám mắt tổng quát (DV01) nếu đi khám lẻ ngoài danh mục gói
                 INSERT INTO CT_HOA_DON_DV(MAHD, MADV, SOLUONG, DONGIA)
                 VALUES (v_mahd, 'DV01', 1, 150000);
             END IF;
         END;
     END IF;
 
-    -- Tự động thêm dịch vụ mài lắp kính nếu có phiếu gia công kính
+    -- Tự động quét bổ sung phí dịch vụ gia công mài lắp kính (DV06) nếu có lệnh kỹ thuật
     IF p_madon IS NOT NULL THEN
         DECLARE
             v_has_xlk INT := 0;
@@ -518,6 +526,12 @@ BEGIN
                 NULL;
         END;
     END IF;
+
+    -- FIX 2: Thực hiện tính toán tổng tiền thực tế từ cả hai mảng Dịch vụ và Sản phẩm để cập nhật ngược lại trường TONGTIEN
+    SELECT COALESCE(SUM(SOLUONG * DONGIA), 0) INTO v_total_sp FROM CT_HOA_DON WHERE MAHD = v_mahd;
+    SELECT COALESCE(SUM(SOLUONG * DONGIA), 0) INTO v_total_dv FROM CT_HOA_DON_DV WHERE MAHD = v_mahd;
+    
+    UPDATE HOA_DON SET TONGTIEN = (v_total_sp + v_total_dv) WHERE MAHD = v_mahd;
 
     p_mahd_out := v_mahd;
 EXCEPTION
@@ -609,6 +623,7 @@ EXCEPTION
         RAISE;
 END SP_CONG_DIEM;
 /
+
 -- SP 14: Thống kê doanh thu theo khoảng ngày
 CREATE OR REPLACE PROCEDURE SP_THONG_KE_DOANH_THU_THEO_NGAY (
     p_tu_ngay IN DATE,
@@ -636,8 +651,9 @@ EXCEPTION
         RAISE;
 END SP_THONG_KE_DOANH_THU_THEO_NGAY;
 /
+
 -- ============================================================
--- 3. FUNCTION
+-- 3. FUNCTIONS
 -- ============================================================
 
 CREATE OR REPLACE FUNCTION FN_GET_MALO_FEFO (
