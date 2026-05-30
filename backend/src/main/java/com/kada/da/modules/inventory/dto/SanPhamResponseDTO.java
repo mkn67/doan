@@ -21,5 +21,8 @@ public class SanPhamResponseDTO {
     private Integer tongTonKho; // Tổng số lượng từ tất cả các lô (LoHang)
     private String trangThai; // Lấy từ Enum TrangThaiSanPham.getValue()
     private Boolean laThuoc; // Để Frontend hiển thị icon khác nhau
+    private String donViTinh;
+    private String donViTinhKho;
+    private Integer tonKhoToiThieu;
     private List<LoHangResponseDTO> loHangList;
 }

@@ -30,6 +30,9 @@ interface SanPham {
   tongTonKho: number;
   trangThai?: string;
   loHangList?: LoHang[];
+  donViTinh?: string;
+  donViTinhKho?: string;
+  tonKhoToiThieu?: number;
 }
 
 export default function ProductsPage() {
@@ -458,8 +461,24 @@ export default function ProductsPage() {
                     {expandedProducts[sp.maSp] && (
                       <tr className="bg-slate-50/50">
                         <td colSpan={8} className="px-6 py-4 border-t border-b border-slate-100">
-                          <div className="bg-white rounded-2xl border border-slate-200/60 p-4 shadow-inner space-y-3">
-                            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                          <div className="bg-white rounded-2xl border border-slate-200/60 p-4 shadow-inner space-y-4">
+                            {/* Product Info Summary */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pb-3 border-b border-slate-100">
+                              <div className="space-y-1">
+                                <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Đơn vị bán lẻ:</span>
+                                <p className="text-sm font-extrabold text-slate-700">{sp.donViTinh || "Chưa xác định"}</p>
+                              </div>
+                              <div className="space-y-1">
+                                <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Đơn vị lưu kho:</span>
+                                <p className="text-sm font-extrabold text-slate-700">{sp.donViTinhKho || "Chưa xác định"}</p>
+                              </div>
+                              <div className="space-y-1">
+                                <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Định mức cảnh báo tồn:</span>
+                                <p className="text-sm font-extrabold text-slate-700">{sp.tonKhoToiThieu ?? 10} {sp.donViTinhKho || "Đơn vị"}</p>
+                              </div>
+                            </div>
+
+                            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5 pt-1">
                               <Layers className="w-4 h-4 text-blue-500" />
                               Chi tiết các lô hàng đang lưu kho
                             </h4>

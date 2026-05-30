@@ -78,6 +78,7 @@ export default function AppointmentsPage() {
   const [searchKeyword, setSearchKeyword] = useState("");
   const [filterDate, setFilterDate] = useState("");
   const [filterDoctor, setFilterDoctor] = useState("");
+  const [hidePast, setHidePast] = useState(false);
 
   // Booking customer tabs state
   const [bookingTab, setBookingTab] = useState<"existing" | "new">("existing");
@@ -168,10 +169,23 @@ export default function AppointmentsPage() {
     (listGoiKham as PageResponseDTO<DichVuKhamResponse>)?.data || 
     (Array.isArray(listGoiKham) ? listGoiKham : []);
 
-  const arrLichHen: UI_LichHen[] = 
+  const now = new Date();
+  const rawLichHen: UI_LichHen[] = 
     (listLichHen as PageResponseDTO<UI_LichHen>)?.content || 
     (listLichHen as PageResponseDTO<UI_LichHen>)?.data || 
     (Array.isArray(listLichHen) ? listLichHen : []);
+
+  const arrLichHen = hidePast 
+    ? rawLichHen.filter(item => {
+        if (!item.ngayHen || !item.gioHen) return true;
+        try {
+          const apptTime = new Date(`${item.ngayHen}T${item.gioHen}`);
+          return apptTime >= now;
+        } catch (e) {
+          return true;
+        }
+      })
+    : rawLichHen;
 
   const doctorsList = Array.isArray(doctorsData) ? doctorsData : [];
 
@@ -515,11 +529,21 @@ export default function AppointmentsPage() {
 
         <Button 
           variant="outline" 
-          onClick={() => { setSearchKeyword(""); setFilterDate(""); setFilterDoctor(""); }}
+          onClick={() => { setSearchKeyword(""); setFilterDate(""); setFilterDoctor(""); setHidePast(false); }}
           className="rounded-xl border-slate-200"
         >
           Làm mới bộ lọc
         </Button>
+
+        <label className="flex items-center gap-2 text-xs font-bold text-slate-600 cursor-pointer select-none bg-slate-100 px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-200/60 transition-all">
+          <input 
+            type="checkbox" 
+            checked={hidePast} 
+            onChange={(e) => setHidePast(e.target.checked)} 
+            className="rounded text-blue-600 focus:ring-blue-500 accent-blue-600 w-4 h-4"
+          />
+          <span>Ẩn lịch hẹn đã quá giờ</span>
+        </label>
       </div>
 
       {/* DATA TABLE */}

@@ -67,6 +67,7 @@ export default function PaymentsPage() {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [scanTerm, setScanTerm] = useState("");
+  const [sortBy, setSortBy] = useState<"unpaid_first" | "paid_first" | "default">("unpaid_first");
 
   const [isOpen, setIsOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] =
@@ -135,6 +136,24 @@ export default function PaymentsPage() {
       hd.maHd?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       hd.tenKhachHang?.toLowerCase().includes(searchTerm.toLowerCase()),
   );
+
+  const sortedInvoices = [...filteredInvoices].sort((a, b) => {
+    if (sortBy === "unpaid_first") {
+      const aUnpaid = a.trangThai === "Chưa thanh toán" || a.trangThai === "Chờ thanh toán";
+      const bUnpaid = b.trangThai === "Chưa thanh toán" || b.trangThai === "Chờ thanh toán";
+      if (aUnpaid && !bUnpaid) return -1;
+      if (!aUnpaid && bUnpaid) return 1;
+      return 0;
+    }
+    if (sortBy === "paid_first") {
+      const aPaid = a.trangThai === "Đã thanh toán" || a.trangThai === "Thành công";
+      const bPaid = b.trangThai === "Đã thanh toán" || b.trangThai === "Thành công";
+      if (aPaid && !bPaid) return -1;
+      if (!aPaid && bPaid) return 1;
+      return 0;
+    }
+    return 0;
+  });
 
   const handleOpenPayment = (invoice: HoaDonResponseDTO) => {
     setSelectedInvoice(invoice);
@@ -232,14 +251,25 @@ export default function PaymentsPage() {
             </p>
           </div>
         </div>
-        <div className="relative w-full md:w-80 group">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
-          <Input
-            placeholder="Tìm theo Mã HĐ, Tên khách hàng..."
-            className="pl-10 h-10 border-slate-200 bg-slate-50 focus-visible:ring-emerald-500 rounded-xl"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto items-center">
+          <div className="relative w-full sm:w-72 group">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
+            <Input
+              placeholder="Tìm theo Mã HĐ, Tên khách hàng..."
+              className="pl-10 h-10 border-slate-200 bg-slate-50 focus-visible:ring-emerald-500 rounded-xl"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as any)}
+            className="h-10 px-4 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all font-medium text-slate-700 w-full sm:w-48"
+          >
+            <option value="unpaid_first">Chưa thanh toán trước</option>
+            <option value="paid_first">Đã thanh toán trước</option>
+            <option value="default">Mặc định (Mã HĐ)</option>
+          </select>
         </div>
       </div>
 
@@ -304,8 +334,8 @@ export default function PaymentsPage() {
                   </div>
                 </TableCell>
               </TableRow>
-            ) : filteredInvoices.length > 0 ? (
-              filteredInvoices.map((hd: HoaDonResponseDTO) => (
+            ) : sortedInvoices.length > 0 ? (
+              sortedInvoices.map((hd: HoaDonResponseDTO) => (
                 <TableRow
                   key={hd.maHd}
                   className="hover:bg-emerald-50/30 transition-colors group"

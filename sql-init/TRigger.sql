@@ -134,15 +134,34 @@ BEFORE INSERT OR UPDATE OR DELETE ON HOA_DON
 FOR EACH ROW
 DECLARE
     v_tencv NVARCHAR2(100);
+    v_macv  VARCHAR2(10);
 BEGIN
     IF INSERTING OR UPDATING THEN
         BEGIN
-            SELECT cv.TENCV INTO v_tencv
+            SELECT ns.MACV, cv.TENCV INTO v_macv, v_tencv
             FROM NHAN_SU ns JOIN CHUC_VU cv ON ns.MACV = cv.MACV
             WHERE ns.MANS = :NEW.MANS;
 
-            IF v_tencv NOT IN (N'Thu ngân', N'Quản lý', N'Bác sĩ', N'Lễ tân', N'Kỹ thuật viên mắt kính') THEN
-                RAISE_APPLICATION_ERROR(-20003, 'LOI: Nhan vien khong co quyen tao Hoa Don!');
+            IF v_macv NOT IN ('CV01', 'CV02', 'CV04', 'CV06', 'CV07', 'CV08', 'CV10', 'CV11', 'CV001', 'CV002', 'CV004') THEN
+                DECLARE
+                    v_clean NVARCHAR2(100);
+                BEGIN
+                    v_clean := UPPER(TRIM(v_tencv));
+                    IF v_clean NOT LIKE '%THU NGAN%' 
+                       AND v_clean NOT LIKE '%THU NGÂN%'
+                       AND v_clean NOT LIKE '%QUAN LY%' 
+                       AND v_clean NOT LIKE '%QUẢN LÝ%'
+                       AND v_clean NOT LIKE '%BAC SI%' 
+                       AND v_clean NOT LIKE '%BÁC SĨ%'
+                       AND v_clean NOT LIKE '%LE TAN%' 
+                       AND v_clean NOT LIKE '%LỄ TÂN%'
+                       AND v_clean NOT LIKE '%KY THUAT%' 
+                       AND v_clean NOT LIKE '%KỸ THUẬT%' 
+                       AND v_clean NOT LIKE '%SEP TONG%'
+                       AND v_clean NOT LIKE '%SẾP TỔNG%' THEN
+                        RAISE_APPLICATION_ERROR(-20003, 'LOI: Nhan vien khong co quyen tao Hoa Don!');
+                    END IF;
+                END;
             END IF;
         EXCEPTION
             WHEN NO_DATA_FOUND THEN

@@ -623,4 +623,17 @@ VALUES ('XL_P_02_PR', 'KD_P_021', '{"sph_r": -3.00, "ax_r": 170}', N'Đang xử 
 -- Đơn Đã Hoàn thành
 INSERT INTO XU_LY_KINH (MAXL, MADON, THONG_SO_KINH, TRANG_THAI, NGAY_BAT_DAU, NGAY_HOAN_THANH, MANS_KY_THUAT, GHI_CHU)
 VALUES ('XL_P_02_DO', 'KD_P_022', '{"sph_r": -2.50, "sph_l": -3.00}', N'Hoàn thành', TIMESTAMP '2026-06-02 08:00:00', TIMESTAMP '2026-06-02 09:15:00', 'NS006', N'Đã căn chỉnh gọng titanium hoàn tất sạch sẽ');
+
+-- 6. Nhật ký thay đổi hồ sơ (Audit Logs)
+INSERT INTO AUDIT_HOSO_THILUC (MAAUDIT, MAHOSO, OLD_KETLUAN, NEW_KETLUAN, THOI_GIAN, NGUOI_THUC_HIEN)
+VALUES ('AUD000000001', 'HS_T11_01', N'Cận thị -2.00/-2.50. Đang theo dõi.', N'Cận thị -2.50/-3.00. Ổn định.', TIMESTAMP '2024-11-05 10:15:00', 'bacsi2');
+INSERT INTO AUDIT_HOSO_THILUC (MAAUDIT, MAHOSO, OLD_KETLUAN, NEW_KETLUAN, THOI_GIAN, NGUOI_THUC_HIEN)
+VALUES ('AUD000000002', 'HS_T12_01', N'Tái khám, độ cận cũ ổn định.', N'Tái khám, độ cận tăng nhẹ -0.25.', TIMESTAMP '2024-12-03 09:45:00', 'bacsi2');
+INSERT INTO AUDIT_HOSO_THILUC (MAAUDIT, MAHOSO, OLD_KETLUAN, NEW_KETLUAN, THOI_GIAN, NGUOI_THUC_HIEN)
+VALUES ('AUD000000003', 'HS_T02_01', N'Khám định kỳ sau Tết. Chưa thấy bất thường.', N'Hậu Tết tái khám, mắt mỏi. Đổi toa.', TIMESTAMP '2025-02-10 09:30:00', 'bacsi2');
+INSERT INTO AUDIT_HOSO_THILUC (MAAUDIT, MAHOSO, OLD_KETLUAN, NEW_KETLUAN, THOI_GIAN, NGUOI_THUC_HIEN)
+VALUES ('AUD000000004', 'HS_T04_02', N'Độ khúc xạ ổn định.', N'Cận tăng 0.5D. Đổi toa mới.', TIMESTAMP '2025-04-09 11:00:00', 'bacsi2');
+INSERT INTO AUDIT_HOSO_THILUC (MAAUDIT, MAHOSO, OLD_KETLUAN, NEW_KETLUAN, THOI_GIAN, NGUOI_THUC_HIEN)
+VALUES ('AUD000000005', 'HS_P_021', N'Nhãn áp tăng nhẹ 21mmHg.', N'Kiểm tra định kỳ áp lực nhãn cầu, nhãn áp ổn định.', TIMESTAMP '2026-06-02 11:20:00', 'bacsi3');
+
 COMMIT;
