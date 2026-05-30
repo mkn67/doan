@@ -175,21 +175,8 @@ export default function AppointmentsPage() {
     (listLichHen as PageResponseDTO<UI_LichHen>)?.data || 
     (Array.isArray(listLichHen) ? listLichHen : []);
 
-  // Bỏ những lịch hẹn đã hết thời gian (quá giờ/ngày cũ) mà chưa được duyệt (trạng thái là "Chờ xác nhận")
-  const filteredRawLichHen = rawLichHen.filter(item => {
-    if (!item.ngayHen || !item.gioHen) return true;
-    try {
-      const apptTime = new Date(`${item.ngayHen}T${item.gioHen}`);
-      const isPast = apptTime < now;
-      const isUnapproved = item.trangThai === "CHO_XAC_NHAN" || item.trangThai === "Chờ xác nhận";
-      if (isPast && isUnapproved) {
-        return false; // Bỏ đi khỏi list
-      }
-      return true;
-    } catch (e) {
-      return true;
-    }
-  });
+  // Giữ tất cả lịch hẹn để lễ tân có thể duyệt hoặc hủy (xóa) lịch quá giờ
+  const filteredRawLichHen = rawLichHen;
 
   const arrLichHen = hidePast 
     ? filteredRawLichHen.filter(item => {
@@ -579,74 +566,83 @@ export default function AppointmentsPage() {
             {loadingLich ? (
               <TableRow><TableCell colSpan={6} className="text-center py-10"><Loader2 className="animate-spin mx-auto text-blue-600" /></TableCell></TableRow>
             ) : arrLichHen.length > 0 ? (
-              arrLichHen.map((item) => (
-                <TableRow key={item.maLh} className="group hover:bg-slate-50/50 transition-colors">
-                  <TableCell className="pl-6">
-                    <div className="text-sm">
-                      <p className="font-extrabold text-slate-800">{item.gioHen}</p>
-                      <p className="text-slate-500 text-xs mt-0.5">{item.ngayHen}</p>
-                    </div>
-                  </TableCell>
-                  
-                  <TableCell className="font-semibold text-slate-700">
-                    <div>
-                      <p className="font-bold text-slate-800">{item.tenKhachHang || item.maKh}</p>
-                      {item.sdtKhachHang && <p className="text-xs text-slate-500 font-medium mt-0.5">{item.sdtKhachHang}</p>}
-                    </div>
-                  </TableCell>
-                  
-                  <TableCell className="text-sm font-semibold text-blue-600">
-                    BS. {item.tenBacSi || "Chưa phân công"}
-                  </TableCell>
-                  
-                  <TableCell className="text-sm font-medium text-slate-600">
-                    {item.tenGoiKham || item.tenDv || "Khám thường"}
-                  </TableCell>
-                  
-                  <TableCell><StatusBadge status={item.trangThai} /></TableCell>
-                  
-                  <TableCell className="text-right pr-6">
-                    <div className="flex items-center justify-end gap-2">
-                      {(item.trangThai === "CHUA_XAC_NHAN" || item.trangThai === "CHO_XAC_NHAN") && (
-                        <Button
-                          size="sm"
-                          onClick={() => handleUpdateStatus(item.maLh, "DA_XAC_NHAN")}
-                          className="h-8 px-2.5 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg gap-1 transition-colors"
-                          disabled={isAdmin}
-                        >
-                          <Check className="w-3.5 h-3.5" /> Duyệt
-                        </Button>
-                      )}
+              arrLichHen.map((item) => {
+                let isPastAppt = false;
+                if (item.ngayHen && item.gioHen) {
+                  try {
+                    const apptTime = new Date(`${item.ngayHen}T${item.gioHen}`);
+                    isPastAppt = apptTime < now;
+                  } catch (e) {}
+                }
+                return (
+                  <TableRow key={item.maLh} className="group hover:bg-slate-50/50 transition-colors">
+                    <TableCell className="pl-6">
+                      <div className="text-sm">
+                        <p className="font-extrabold text-slate-800">{item.gioHen}</p>
+                        <p className="text-slate-500 text-xs mt-0.5">{item.ngayHen}</p>
+                      </div>
+                    </TableCell>
+                    
+                    <TableCell className="font-semibold text-slate-700">
+                      <div>
+                        <p className="font-bold text-slate-800">{item.tenKhachHang || item.maKh}</p>
+                        {item.sdtKhachHang && <p className="text-xs text-slate-500 font-medium mt-0.5">{item.sdtKhachHang}</p>}
+                      </div>
+                    </TableCell>
+                    
+                    <TableCell className="text-sm font-semibold text-blue-600">
+                      BS. {item.tenBacSi || "Chưa phân công"}
+                    </TableCell>
+                    
+                    <TableCell className="text-sm font-medium text-slate-600">
+                      {item.tenGoiKham || item.tenDv || "Khám thường"}
+                    </TableCell>
+                    
+                    <TableCell><StatusBadge status={item.trangThai} isPast={isPastAppt} /></TableCell>
+                    
+                    <TableCell className="text-right pr-6">
+                      <div className="flex items-center justify-end gap-2">
+                        {(item.trangThai === "CHUA_XAC_NHAN" || item.trangThai === "CHO_XAC_NHAN") && !isPastAppt && (
+                          <Button
+                            size="sm"
+                            onClick={() => handleUpdateStatus(item.maLh, "DA_XAC_NHAN")}
+                            className="h-8 px-2.5 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg gap-1 transition-colors"
+                            disabled={isAdmin}
+                          >
+                            <Check className="w-3.5 h-3.5" /> Duyệt
+                          </Button>
+                        )}
 
-                      {item.trangThai === "DA_XAC_NHAN" && (
-                        <Button
-                          size="sm"
-                          onClick={() => handleCheckIn(item.maLh)}
-                          className="h-8 px-2.5 text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg gap-1 transition-colors"
-                          disabled={isAdmin}
-                        >
-                          <CheckCircle2 className="w-3.5 h-3.5" /> Check-in
-                        </Button>
-                      )}
-                      
-                      {item.trangThai !== "DA_HUY" && item.trangThai !== "DA_DEN" && item.trangThai !== "DA_CHECK_IN" && item.trangThai !== "HOAN_THANH" && (
-                        <Button
-                          size="sm"
-                          onClick={() => handleUpdateStatus(item.maLh, "DA_HUY")}
-                          className="h-8 px-2.5 text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg gap-1 transition-colors"
-                          disabled={isAdmin}
-                        >
-                          <X className="w-3.5 h-3.5" /> Hủy
-                        </Button>
-                      )}
+                        {item.trangThai === "DA_XAC_NHAN" && (
+                          <Button
+                            size="sm"
+                            onClick={() => handleCheckIn(item.maLh)}
+                            className="h-8 px-2.5 text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg gap-1 transition-colors"
+                            disabled={isAdmin}
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5" /> Check-in
+                          </Button>
+                        )}
+                        
+                        {item.trangThai !== "DA_HUY" && item.trangThai !== "DA_DEN" && item.trangThai !== "DA_CHECK_IN" && item.trangThai !== "HOAN_THANH" && (
+                          <Button
+                            size="sm"
+                            onClick={() => handleUpdateStatus(item.maLh, "DA_HUY")}
+                            className="h-8 px-2.5 text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg gap-1 transition-colors"
+                            disabled={isAdmin}
+                          >
+                            <X className="w-3.5 h-3.5" /> Hủy
+                          </Button>
+                        )}
 
-                      {(item.trangThai === "DA_HUY" || item.trangThai === "DA_DEN" || item.trangThai === "DA_CHECK_IN" || item.trangThai === "HOAN_THANH") && (
-                        <span className="text-xs text-slate-400 italic font-semibold">Không có thao tác</span>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
+                        {(item.trangThai === "DA_HUY" || item.trangThai === "DA_DEN" || item.trangThai === "DA_CHECK_IN" || item.trangThai === "HOAN_THANH") && (
+                          <span className="text-xs text-slate-400 italic font-semibold">Không có thao tác</span>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
             ) : (
               <TableRow><TableCell colSpan={6} className="text-center py-10 text-slate-400">Không có dữ liệu lịch hẹn.</TableCell></TableRow>
             )}
@@ -657,15 +653,24 @@ export default function AppointmentsPage() {
   );
 }
 
-function StatusBadge({ status }: { status: string }) {
+function StatusBadge({ status, isPast }: { status: string; isPast?: boolean }) {
   const configs: Record<string, { label: string; icon: React.ReactNode; class: string }> = {
     "CHUA_XAC_NHAN": { label: "Chờ duyệt", icon: <Timer className="w-3 h-3 mr-1" />, class: "bg-amber-100 text-amber-700 border-amber-200" },
     "CHO_XAC_NHAN": { label: "Chờ duyệt", icon: <Timer className="w-3 h-3 mr-1" />, class: "bg-amber-100 text-amber-700 border-amber-200" },
     "DA_XAC_NHAN": { label: "Đã xác nhận", icon: <CheckCircle2 className="w-3 h-3 mr-1" />, class: "bg-blue-100 text-blue-700 border-blue-200" },
+    "DA_CHECK_IN": { label: "Đã check-in", icon: <CheckCircle2 className="w-3 h-3 mr-1" />, class: "bg-indigo-100 text-indigo-700 border-indigo-200" },
+    "HOAN_THANH": { label: "Hoàn thành", icon: <CheckCircle2 className="w-3 h-3 mr-1" />, class: "bg-emerald-100 text-emerald-700 border-emerald-200" },
     "DA_DEN": { label: "Đã đến", icon: <CheckCircle2 className="w-3 h-3 mr-1" />, class: "bg-emerald-100 text-emerald-700 border-emerald-200" },
     "DA_HUY": { label: "Đã hủy", icon: <XCircle className="w-3 h-3 mr-1" />, class: "bg-red-100 text-red-700 border-red-200" },
+    "QUA_HAN": { label: "Quá hạn", icon: <XCircle className="w-3 h-3 mr-1" />, class: "bg-rose-100 text-rose-700 border-rose-200" },
   };
-  const config = configs[status] || configs["CHUA_XAC_NHAN"];
+
+  let displayStatus = status;
+  if (isPast && (status === "CHO_XAC_NHAN" || status === "CHUA_XAC_NHAN")) {
+    displayStatus = "QUA_HAN";
+  }
+
+  const config = configs[displayStatus] || configs["CHUA_XAC_NHAN"];
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold border ${config.class}`}>
       {config.icon} {config.label}

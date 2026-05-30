@@ -45,7 +45,7 @@ public class HoaDonMapper {
                 .maHd(entity.getMaHd())
                 .ngayLap(entity.getNgayLap())
                 .tongTien(entity.getTongTien())
-                .trangThai(entity.getTrangThai() != null ? entity.getTrangThai().name() : null)
+                .trangThai(entity.getTrangThai() != null ? entity.getTrangThai().getValue() : null)
                 .tenKhachHang(tenKhachHang)
                 .sdtKhachHang(sdtKhachHang)
                 .tenNhanVienLap(tenNhanVienLap)

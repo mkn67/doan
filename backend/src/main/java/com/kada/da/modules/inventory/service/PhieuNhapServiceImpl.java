@@ -155,16 +155,7 @@ public class PhieuNhapServiceImpl implements PhieuNhapService {
                 : loHangRepository.findByPhieuNhap_MaPn(entity.getMaPn());
 
         List<LoHangResponseDTO> loHangDTOs = loHangs.stream()
-                .map(lo -> LoHangResponseDTO.builder()
-                        .maLo(lo.getMaLo())
-                        .maSp(lo.getSanPham() != null ? lo.getSanPham().getMaSp() : null)
-                        .tenSanPham(lo.getSanPham() != null ? lo.getSanPham().getTenSp() : null)
-                        .ngaySanXuat(lo.getNgaySanXuat())
-                        .ngayHetHan(lo.getNgayHetHan())
-                        .soLuongNhap(lo.getSoLuongNhap())
-                        .soLuongTon(lo.getSoLuongTon())
-                        .giaNhap(lo.getGiaNhap())
-                        .build())
+                .map(com.kada.da.modules.inventory.mapper.LoHangMapper::toResponse)
                 .collect(Collectors.toList());
 
         return PhieuNhapResponseDTO.builder()

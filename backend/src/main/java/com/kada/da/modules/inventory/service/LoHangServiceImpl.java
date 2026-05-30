@@ -171,6 +171,15 @@ public class LoHangServiceImpl implements LoHangService {
     }
 
     private LoHangResponseDTO convertToResponseDTO(LoHang entity) {
+        String trangThai = "Con han";
+        if (entity.getNgayHetHan() != null) {
+            long soNgayConLai = java.time.temporal.ChronoUnit.DAYS.between(java.time.LocalDate.now(), entity.getNgayHetHan());
+            if (soNgayConLai <= 0) {
+                trangThai = "Het han";
+            } else if (soNgayConLai <= 30) {
+                trangThai = "Sap het han";
+            }
+        }
         return LoHangResponseDTO.builder()
                 .maLo(entity.getMaLo())
                 .maSp(entity.getSanPham().getMaSp())
@@ -180,6 +189,7 @@ public class LoHangServiceImpl implements LoHangService {
                 .soLuongNhap(entity.getSoLuongNhap())
                 .soLuongTon(entity.getSoLuongTon())
                 .giaNhap(entity.getGiaNhap())
+                .trangThaiHsd(trangThai)
                 .build();
     }
 }

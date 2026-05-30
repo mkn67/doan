@@ -21,6 +21,15 @@ public class LoHangMapper {
         if (entity == null)
             return null;
         String tenSanPham = entity.getSanPham() != null ? entity.getSanPham().getTenSp() : null;
+        String trangThai = "Con han";
+        if (entity.getNgayHetHan() != null) {
+            long soNgayConLai = java.time.temporal.ChronoUnit.DAYS.between(java.time.LocalDate.now(), entity.getNgayHetHan());
+            if (soNgayConLai <= 0) {
+                trangThai = "Het han";
+            } else if (soNgayConLai <= 30) {
+                trangThai = "Sap het han";
+            }
+        }
         return LoHangResponseDTO.builder()
                 .maLo(entity.getMaLo())
                 .maSp(entity.getSanPham() != null ? entity.getSanPham().getMaSp() : null)
@@ -30,6 +39,7 @@ public class LoHangMapper {
                 .giaNhap(entity.getGiaNhap())
                 .ngaySanXuat(entity.getNgaySanXuat())
                 .ngayHetHan(entity.getNgayHetHan())
+                .trangThaiHsd(trangThai)
                 .build();
     }
 }

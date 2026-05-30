@@ -509,11 +509,11 @@ export default function ProductsPage() {
                                       return new Date(a.ngayHetHan).getTime() - new Date(b.ngayHetHan).getTime();
                                     }).map((lo: LoHang) => {
                                       let statusColor = "bg-slate-100 text-slate-600";
-                                      if (lo.trangThaiHsd === "Đã hết hạn") {
+                                      if (lo.trangThaiHsd === "Đã hết hạn" || lo.trangThaiHsd === "Het han") {
                                         statusColor = "bg-rose-50 text-rose-700 border border-rose-100";
-                                      } else if (lo.trangThaiHsd === "Sắp hết hạn" || (lo.ngayHetHan && new Date(lo.ngayHetHan).getTime() - Date.now() < 30 * 24 * 60 * 60 * 1000)) {
+                                      } else if (lo.trangThaiHsd === "Sắp hết hạn" || lo.trangThaiHsd === "Sap het han" || (lo.ngayHetHan && new Date(lo.ngayHetHan).getTime() - Date.now() < 30 * 24 * 60 * 60 * 1000)) {
                                         statusColor = "bg-amber-50 text-amber-700 border border-amber-100";
-                                      } else if (lo.trangThaiHsd === "Còn hạn" || lo.trangThaiHsd === "CON_HAN") {
+                                      } else if (lo.trangThaiHsd === "Còn hạn" || lo.trangThaiHsd === "CON_HAN" || lo.trangThaiHsd === "Con han") {
                                         statusColor = "bg-emerald-50 text-emerald-700 border border-emerald-100";
                                       }
                                       
@@ -533,13 +533,19 @@ export default function ProductsPage() {
                                             {lo.ngaySanXuat ? new Date(lo.ngaySanXuat).toLocaleDateString('vi-VN') : "---"}
                                           </td>
                                           <td className="py-2 px-3 text-center">
-                                            <span className={lo.trangThaiHsd === "Đã hết hạn" ? "text-rose-600 font-bold" : "text-slate-500"}>
+                                            <span className={lo.trangThaiHsd === "Đã hết hạn" || lo.trangThaiHsd === "Het han" ? "text-rose-600 font-bold" : "text-slate-500"}>
                                               {lo.ngayHetHan ? new Date(lo.ngayHetHan).toLocaleDateString('vi-VN') : "---"}
                                             </span>
                                           </td>
                                           <td className="py-2 px-3 text-center">
                                             <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${statusColor}`}>
-                                              {lo.trangThaiHsd || "Chưa xác định"}
+                                              {lo.trangThaiHsd === "Con han" || lo.trangThaiHsd === "CON_HAN" || lo.trangThaiHsd === "Còn hạn" 
+                                                ? "Còn hạn" 
+                                                : lo.trangThaiHsd === "Sap het han" || lo.trangThaiHsd === "Sắp hết hạn"
+                                                  ? "Sắp hết hạn"
+                                                  : lo.trangThaiHsd === "Het han" || lo.trangThaiHsd === "Đã hết hạn"
+                                                    ? "Hết hạn"
+                                                    : lo.trangThaiHsd || "Chưa xác định"}
                                             </span>
                                           </td>
                                         </tr>

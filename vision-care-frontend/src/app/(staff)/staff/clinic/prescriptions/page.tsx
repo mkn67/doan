@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Plus, Trash2, Stethoscope } from "lucide-react";
 import { useSearchParams } from "next/navigation"; // LẤY DATA TỪ URL
+import { useQueryClient } from "@tanstack/react-query";
 
 import { clinicApi } from "@/lib/api/clinic.api";
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,7 @@ const prescriptionSchema = z.object({
 
 export default function PrescriptionPage() {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const queryClient = useQueryClient();
   
   // HỨNG DATA TỪ TRANG KHÁM BỆNH CHUYỂN SANG
   const searchParams = useSearchParams();
@@ -55,9 +57,10 @@ export default function PrescriptionPage() {
     setIsSubmitting(true);
     try {
       await clinicApi.createPhieuKeDon(values);
-      alert("Tạo đơn thuốc thành công! Hoàn thành quy trình khám.");
+      queryClient.invalidateQueries({ queryKey: ["xu-ly-kinh-can-xu-ly"] });
+      alert("Tạo đơn thành công! Nếu đơn có sản phẩm kính, phiếu xử lý đã tự chuyển sang xưởng.");
       form.reset();
-    } catch (error) {
+    } catch {
       alert("Có lỗi xảy ra khi tạo đơn!");
     } finally {
       setIsSubmitting(false);

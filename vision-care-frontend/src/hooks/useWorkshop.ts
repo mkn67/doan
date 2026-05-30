@@ -21,7 +21,8 @@ export const useXuLyKinhCanXuLy = () => {
   return useQuery({
     queryKey: ["xu-ly-kinh-can-xu-ly"],
     queryFn: () => staffApi.getXuLyKinhCanXuLy(),
-    refetchInterval: 15000, // Tự động làm mới sau 15 giây
+    refetchInterval: 5000,
+    refetchOnWindowFocus: true,
   });
 };
 

@@ -2,6 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { AxiosError } from "axios";
 import { inventoryApi } from "@/lib/api/inventory.api";
+import { reportApi } from "@/lib/api/report.api";
 import {
   SanPhamRequest,
   PhieuNhapRequest,
@@ -133,7 +134,7 @@ export const useDeleteNhaCungCap = () => {
 export const useCanhBaoHetHan = () => {
   return useQuery({
     queryKey: ["canh-bao-het-han"],
-    queryFn: () => inventoryApi.getCanhBaoHetHan(),
+    queryFn: () => reportApi.getCanhBaoHetHan(30),
     refetchInterval: 60 * 60 * 1000,
   });
 };
