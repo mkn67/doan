@@ -4,14 +4,14 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { 
-  Search, Plus, UserCircle, Phone, Loader2, ShieldAlert, Eye, Edit, Mail, MapPin, Calendar
+  Search, Plus, UserCircle, Phone, Loader2, ShieldAlert, Eye, Edit, Mail, MapPin, Trash2, AlertTriangle
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 
 // Import Hook và Type DTO từ file hook của bạn
-import { useDanhSachKhachHang, useCreateKhachHang, useUpdateKhachHang } from "@/hooks/useCustomer"; 
+import { useDanhSachKhachHang, useCreateKhachHang, useUpdateKhachHang, useDeleteKhachHang } from "@/hooks/useCustomer";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -68,6 +68,7 @@ export default function CustomersPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedDetailCustomer, setSelectedDetailCustomer] = useState<Customer | null>(null);
+  const [deleteCustomer, setDeleteCustomer] = useState<Customer | null>(null);
   const [isEditing, setIsEditing] = useState(false);
 
   const ALLOWED_ROLES = ["ROLE_LE_TAN", "NH06", "ROLE_ADMIN", "NH04"];
@@ -82,6 +83,7 @@ export default function CustomersPage() {
   const { data: listCustomers, isLoading } = useDanhSachKhachHang();
   const createCustomerMutation = useCreateKhachHang();
   const updateCustomerMutation = useUpdateKhachHang();
+  const deleteCustomerMutation = useDeleteKhachHang();
 
   const form = useForm<CustomerFormValues>({
     resolver: zodResolver(customerSchema),
@@ -186,6 +188,29 @@ export default function CustomersPage() {
       onError: (err: any) => {
         alert("Lỗi cập nhật: " + (err.response?.data?.message || err.message));
       }
+    });
+  }
+
+  function requestDeleteCustomer(customer: Customer) {
+    if (isAdmin) {
+      alert("Tài khoản Admin đang ở chế độ chỉ đọc, không thể xóa khách hàng!");
+      return;
+    }
+    setDeleteCustomer(customer);
+  }
+
+  function confirmDeleteCustomer() {
+    if (!deleteCustomer) return;
+    deleteCustomerMutation.mutate(String(deleteCustomer.maKh), {
+      onSuccess: () => {
+        alert("Đã xóa hồ sơ khách hàng thành công!");
+        setDeleteCustomer(null);
+        setSelectedDetailCustomer(null);
+        setIsEditing(false);
+      },
+      onError: (err: any) => {
+        alert("Không thể xóa hồ sơ: " + (err.response?.data?.message || err.response?.data || err.message));
+      },
     });
   }
 
@@ -471,6 +496,14 @@ export default function CustomersPage() {
                     <span className="text-[10px] text-slate-400 font-medium">Hồ sơ lập ngày: {selectedDetailCustomer.ngayTao ? new Date(selectedDetailCustomer.ngayTao).toLocaleDateString("vi-VN") : "N/A"}</span>
                     <div className="flex gap-2">
                       <Button variant="outline" onClick={() => setSelectedDetailCustomer(null)}>Đóng</Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => requestDeleteCustomer(selectedDetailCustomer)}
+                        className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                        disabled={isAdmin || deleteCustomerMutation.isPending}
+                      >
+                        <Trash2 className="w-4 h-4 mr-1.5" /> Xóa hồ sơ
+                      </Button>
                       <Button 
                         onClick={() => setIsEditing(true)} 
                         className="bg-blue-600 hover:bg-blue-700 text-white font-semibold"
@@ -563,6 +596,33 @@ export default function CustomersPage() {
               )}
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!deleteCustomer} onOpenChange={(open) => !open && setDeleteCustomer(null)}>
+        <DialogContent className="sm:max-w-[460px] bg-white rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-700">
+              <AlertTriangle className="h-5 w-5" />
+              Xác nhận xóa hồ sơ
+            </DialogTitle>
+            <DialogDescription>
+              Hành động này không thể hoàn tác trên giao diện. Hồ sơ sẽ được xóa mềm khỏi danh sách nghiệp vụ.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="rounded-xl border border-red-100 bg-red-50 p-4 text-sm text-red-800">
+            Bạn có chắc chắn muốn xóa hồ sơ <span className="font-bold">{deleteCustomer?.hoTen}</span>
+            {deleteCustomer?.maKh ? ` (${deleteCustomer.maKh})` : ""}?
+          </div>
+          <div className="flex justify-end gap-3 pt-2">
+            <Button variant="outline" onClick={() => setDeleteCustomer(null)} disabled={deleteCustomerMutation.isPending}>
+              Hủy bỏ
+            </Button>
+            <Button className="bg-red-600 hover:bg-red-700 text-white" onClick={confirmDeleteCustomer} disabled={deleteCustomerMutation.isPending}>
+              {deleteCustomerMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
+              Đồng ý xóa
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

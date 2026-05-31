@@ -17,6 +17,8 @@ public interface HoaDonRepository
     // Tìm hóa đơn theo trạng thái (Chưa thanh toán, Đã thanh toán)
     List<HoaDon> findByTrangThai(String trangThai);
 
+    boolean existsByKhachHang_MaKhAndTrangThai(String maKh, com.kada.da.modules.billing.Enum.TrangThaiHoaDon trangThai);
+
     // Tìm hóa đơn theo mã đơn thuốc (PhieuKeDon)
     List<HoaDon> findByPhieuKeDon_MaDon(String maDon);
 

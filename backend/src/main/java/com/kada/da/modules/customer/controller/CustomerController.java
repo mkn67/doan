@@ -136,6 +136,7 @@ public class CustomerController {
 
     // 6. Xóa khách hàng
     @DeleteMapping("/{maKh}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LE_TAN')")
     public ResponseEntity<String> xoaKhachHang(@PathVariable("maKh") String maKh) {
         khachHangService.xoaMemKhachHang(maKh);
         return ResponseEntity.ok("Đã xóa thành công khách hàng mã: " + maKh);

@@ -55,6 +55,20 @@ export const useCreateKhachHang = () => {
   });
 };
 
+export const useDeleteKhachHang = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (maKh: string) => customerApi.deleteKhachHang(maKh),
+    onSuccess: (_data, maKh) => {
+      queryClient.invalidateQueries({ queryKey: ["danh-sach-khach-hang"] });
+      queryClient.removeQueries({ queryKey: ["khach-hang", maKh] });
+    },
+    onError: (error: AxiosError) => {
+      console.error("Delete customer error:", error.response?.data || error.message);
+    },
+  });
+};
+
 export const useDatLichKham = () => {
   const queryClient = useQueryClient();
   return useMutation({

@@ -1,14 +1,18 @@
 package com.kada.da.modules.customer.service;
 
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.kada.da.modules.customer.domain.KhachHang;
+import com.kada.da.Exception.BusinessRuleException;
 import com.kada.da.Exception.ResourceNotFoundException;
+import com.kada.da.modules.billing.Enum.TrangThaiHoaDon;
+import com.kada.da.modules.billing.repository.HoaDonRepository;
+import com.kada.da.modules.booking.Enum.TrangThaiLichHen;
+import com.kada.da.modules.booking.repository.LichHenRepository;
+import com.kada.da.modules.customer.domain.KhachHang;
 import com.kada.da.modules.customer.repository.KhachHangRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -21,10 +25,11 @@ import lombok.extern.slf4j.Slf4j;
 public class KhachHangServiceImpl implements KhachHangService {
 
     private final KhachHangRepository khachHangRepository;
+    private final LichHenRepository lichHenRepository;
+    private final HoaDonRepository hoaDonRepository;
 
     @Override
     public List<KhachHang> layTatCaKhachHang() {
-        // Chỉ lấy những khách hàng chưa bị xóa mềm (isDeleted = 0 hoặc null)
         return khachHangRepository.findAll().stream()
                 .filter(kh -> kh.getIsDeleted() == null || kh.getIsDeleted() == 0)
                 .collect(Collectors.toList());
@@ -33,19 +38,15 @@ public class KhachHangServiceImpl implements KhachHangService {
     @Override
     public KhachHang timKhachHangTheoId(String maKh) {
         return khachHangRepository.findById(maKh)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy khách hàng mã: " + maKh));
+                .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay khach hang ma: " + maKh));
     }
 
     @Override
     public KhachHang timKhachHangTheoSdt(String sdt) {
-        // Hàm này ông cần thêm Optional<KhachHang> findBySdt(String sdt); vào
-        // KhachHangRepository nhé
-        // Tạm thời nếu chưa có hàm đó thì mình dùng vòng lặp, nhưng nên viết trong Repo
-        // cho tối ưu
         return layTatCaKhachHang().stream()
                 .filter(kh -> sdt.equals(kh.getSdt()))
                 .findFirst()
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy khách hàng với SĐT: " + sdt));
+                .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay khach hang voi SDT: " + sdt));
     }
 
     private String generateMaKh() {
@@ -59,24 +60,19 @@ public class KhachHangServiceImpl implements KhachHangService {
                     if (num > maxSeq) {
                         maxSeq = num;
                     }
-                } catch (NumberFormatException ignored) {}
+                } catch (NumberFormatException ignored) {
+                }
             }
         }
-        int nextNumber = maxSeq + 1;
-        return "KH" + String.format("%03d", nextNumber);
+        return "KH" + String.format("%03d", maxSeq + 1);
     }
 
     @Override
     @Transactional
     public KhachHang taoMoiKhachHang(KhachHang khachHang) {
-        // Sinh mã Khách hàng tự động sequential
-        String generatedMaKh = generateMaKh();
-        khachHang.setMaKh(generatedMaKh);
-
-        // Mặc định khách mới: Điểm tích lũy = 0, Chưa bị xóa = 0
+        khachHang.setMaKh(generateMaKh());
         khachHang.setDiemTichLuy(0);
         khachHang.setIsDeleted(0);
-
         return khachHangRepository.save(khachHang);
     }
 
@@ -84,15 +80,12 @@ public class KhachHangServiceImpl implements KhachHangService {
     @Transactional
     public KhachHang capNhatKhachHang(String maKh, KhachHang khachHangDetails) {
         KhachHang khachHang = timKhachHangTheoId(maKh);
-
-        // Cập nhật các thông tin cho phép sửa
         khachHang.setHoTen(khachHangDetails.getHoTen());
         khachHang.setCccd(khachHangDetails.getCccd());
         khachHang.setNgaySinh(khachHangDetails.getNgaySinh());
         khachHang.setGioiTinh(khachHangDetails.getGioiTinh());
         khachHang.setSdt(khachHangDetails.getSdt());
         khachHang.setDiaChi(khachHangDetails.getDiaChi());
-
         return khachHangRepository.save(khachHang);
     }
 
@@ -100,27 +93,42 @@ public class KhachHangServiceImpl implements KhachHangService {
     @Transactional
     public void xoaMemKhachHang(String maKh) {
         KhachHang khachHang = timKhachHangTheoId(maKh);
-        khachHang.setIsDeleted(1); // 1 = Đã xóa
+        if (Integer.valueOf(1).equals(khachHang.getIsDeleted())) {
+            throw new BusinessRuleException("Ho so khach hang da duoc xoa truoc do");
+        }
+
+        boolean hasActiveAppointment = lichHenRepository.existsByKhachHang_MaKhAndTrangThaiIn(
+                maKh,
+                List.of(
+                        TrangThaiLichHen.CHO_XAC_NHAN,
+                        TrangThaiLichHen.DA_XAC_NHAN,
+                        TrangThaiLichHen.DA_CHECK_IN));
+        if (hasActiveAppointment) {
+            throw new BusinessRuleException("Khong the xoa ho so da co lich hen chua hoan thanh");
+        }
+
+        if (hoaDonRepository.existsByKhachHang_MaKhAndTrangThai(maKh, TrangThaiHoaDon.CHUA_THANH_TOAN)) {
+            throw new BusinessRuleException("Khong the xoa ho so da co hoa don chua thanh toan");
+        }
+
+        khachHang.setIsDeleted(1);
         khachHangRepository.save(khachHang);
     }
 
     @Override
     @Transactional
     public void congDiemThuCong(String maKh, Integer soDiem, String lyDo, String maHd) {
-        log.info("Gọi SP_CONG_DIEM: khách={}, điểm={}, lý do={}, mã HD={}",
-                maKh, soDiem, lyDo, maHd != null ? maHd : "Không có");
-
-        // Bóp cò gọi SP
+        log.info("Goi SP_CONG_DIEM: khach={}, diem={}, ly do={}, ma HD={}",
+                maKh, soDiem, lyDo, maHd != null ? maHd : "Khong co");
         khachHangRepository.congDiemThuCong(maKh, soDiem, lyDo, maHd);
-
-        log.info("Cộng điểm thủ công thành công cho khách hàng: {}", maKh);
+        log.info("Cong diem thu cong thanh cong cho khach hang: {}", maKh);
     }
 
     @Override
     @Transactional(readOnly = true)
     public String layLichSuKhamMoiNhat(String maKh) {
-        log.info("Đang gọi Function Oracle lấy lịch sử cho khách hàng: {}", maKh);
+        log.info("Dang goi Function Oracle lay lich su cho khach hang: {}", maKh);
         String ketQua = khachHangRepository.getLichSuKhamCuoi(maKh);
-        return (ketQua != null) ? ketQua : "Không thể lấy thông tin lịch sử khám.";
+        return (ketQua != null) ? ketQua : "Khong the lay thong tin lich su kham.";
     }
 }
