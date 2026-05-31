@@ -166,7 +166,7 @@ public class WorkflowIntegrationTest {
 
         // 6. Chuyển sang bên thu ngân lập hóa đơn
         System.out.println("--- BƯỚC 6: Thu ngân lập hóa đơn ---");
-        Map<String, String> hoaDonRes = hoaDonService.taoHoaDonTuJson(maKh, maNsBs, maHoSo, maDon, "", "", "KhamBenh");
+        Map<String, String> hoaDonRes = hoaDonService.taoHoaDonTuJson(maKh, maNsBs, maHoSo, maDon, "", "", "CA_HAI");
         String maHd = hoaDonRes.get("maHd");
         assertNotNull(maHd);
         System.out.println("Lập hóa đơn thành công! Mã hóa đơn: " + maHd);

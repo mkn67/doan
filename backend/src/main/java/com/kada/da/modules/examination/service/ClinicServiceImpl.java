@@ -267,10 +267,8 @@ public class ClinicServiceImpl implements ClinicService {
             jdbcTemplate.update("DELETE FROM XU_LY_KINH WHERE MADON = ?", maDonThuocResult);
         }
 
-        // 4. Tự động tạo hóa đơn tách biệt cho kính và thuốc (nếu có)
-        if (maDonThuocResult != null) {
-            createInvoicesForPrescription(maDonThuocResult, mans);
-        }
+        // Hóa đơn sẽ được tự động tạo bởi PhieuKeDonServiceImpl.taoDonThuoc()
+        // sau khi bác sĩ kê xong sản phẩm (CtKeDon), không tạo ở đây tránh hóa đơn trống.
 
         Map<String, Object> response = new HashMap<>();
         response.put("maHoSo", maHoSoResult);

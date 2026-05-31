@@ -1,8 +1,12 @@
 package com.kada.da.modules.prescription.service;
 
 import java.util.List;
+import java.util.Map;
+import java.sql.Types;
+import java.time.LocalDateTime;
 import java.util.stream.Collectors;
 
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,53 +44,69 @@ public class PhieuKeDonServiceImpl implements PhieuKeDonService {
     private final CtKeDonRepository ctKeDonRepository;
     private final XuLyKinhRepository xuLyKinhRepository;
     private final XuLyKinhService xuLyKinhService;
+    private final JdbcTemplate jdbcTemplate;
 
     @Override
     @Transactional
     public PhieuKeDonResponseDTO taoDonThuoc(PhieuKeDonRequestDTO dto) {
-        PhieuKeDon phieuKeDon = PhieuKeDonMapper.toEntity(dto);
-        phieuKeDon.setMaDon(generateMaDon());
+        String maDon = "KD_" + dto.getMaHoSo();
+        
+        // Lấy phiếu kê đơn đã được tạo trước đó bởi thủ tục lưu hồ sơ, hoặc tạo mới nếu chưa có
+        PhieuKeDon phieuKeDon = phieuKeDonRepository.findById(maDon)
+                .orElseGet(() -> {
+                    PhieuKeDon p = new PhieuKeDon();
+                    p.setMaDon(maDon);
+                    return p;
+                });
         
         phieuKeDon.setHoSoThiLuc(hoSoThiLucRepository.findById(dto.getMaHoSo())
-                .orElseThrow(() -> new RuntimeException("KhÃ´ng tÃ¬m tháº¥y há»“ sÆ¡ thá»‹ lá»±c: " + dto.getMaHoSo())));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy hồ sơ thị lực: " + dto.getMaHoSo())));
         
         phieuKeDon.setNhanSu(nhanSuRepository.findById(dto.getMaNs())
-                .orElseThrow(() -> new RuntimeException("KhÃ´ng tÃ¬m tháº¥y bÃ¡c sÄ©: " + dto.getMaNs())));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy bác sĩ: " + dto.getMaNs())));
+
+        phieuKeDon.setNgayKeDon(LocalDateTime.now());
 
         if (dto.getDanhSachKeDon() != null) {
-            // Sáº¯p xáº¿p danh sÃ¡ch kÃª Ä‘Æ¡n theo mÃ£ sáº£n pháº©m tÄƒng dáº§n Ä‘á»ƒ trÃ¡nh deadlock khi khÃ³a hÃ ng loáº¡t
+            // Sắp xếp danh sách kê đơn theo mã sản phẩm tăng dần để tránh deadlock khi khóa hàng loạt
             List<PhieuKeDonRequestDTO.CtKeDonRequest> sortedList = dto.getDanhSachKeDon().stream()
                     .sorted((a, b) -> a.getMaSp().compareTo(b.getMaSp()))
                     .collect(Collectors.toList());
+
+            // Xóa chi tiết cũ trước khi gán chi tiết mới để tránh trùng lặp hoặc mâu thuẫn dữ liệu
+            if (phieuKeDon.getChiTietKeDons() != null && !phieuKeDon.getChiTietKeDons().isEmpty()) {
+                ctKeDonRepository.deleteAllInBatch(phieuKeDon.getChiTietKeDons());
+                phieuKeDon.getChiTietKeDons().clear();
+            }
 
             List<CtKeDon> chiTietList = sortedList.stream().map(ctDto -> {
                 CtKeDon ct = new CtKeDon();
                 ct.setPhieuKeDon(phieuKeDon);
                 
-                // Sá»­ dá»¥ng khÃ³a bi quan (FOR UPDATE) trÃªn hÃ ng cá»§a sáº£n pháº©m cá»¥ thá»ƒ Ä‘á»ƒ Ä‘á»“ng bá»™ luá»“ng
+                // Sử dụng khóa bị quan (FOR UPDATE) trên hàng của sản phẩm cụ thể để đồng bộ luồng
                 var sanPham = sanPhamRepository.findByIdWithWriteLock(ctDto.getMaSp())
-                        .orElseThrow(() -> new BusinessRuleException("KhÃ´ng tÃ¬m tháº¥y sáº£n pháº©m " + ctDto.getMaSp()));
+                        .orElseThrow(() -> new BusinessRuleException("Không tìm thấy sản phẩm " + ctDto.getMaSp()));
                 ct.setSanPham(sanPham);
                 
-                // Khá»Ÿi táº¡o khÃ³a phá»©c táº¡p Ä‘á»ƒ trÃ¡nh lá»—i mapsId khi hibernate persist
+                // Khởi tạo khóa phức tạp để tránh lỗi mapsId khi hibernate persist
                 ct.setId(new CtKeDonId(phieuKeDon.getMaDon(), sanPham.getMaSp()));
                 
                 int reqQty = ctDto.getSoLuong() != null ? ctDto.getSoLuong() : 1;
                 
-                // Kiá»ƒm tra tá»“n kho táº¡i thá»i Ä‘iá»ƒm kÃª Ä‘Æ¡n (Tá»•ng tá»“n kho váº­t lÃ½)
+                // Kiểm tra tồn kho tại thời điểm kê đơn (Tổng tồn kho vật lý)
                 int totalStock = loHangRepository.getDanhSachLoFefo(ctDto.getMaSp()).stream()
                         .mapToInt(lh -> lh.getSoLuongTon() != null ? lh.getSoLuongTon() : 0)
                         .sum();
                 
-                // Láº¥y lÆ°á»£ng Ä‘Ã£ Ä‘áº·t trÆ°á»›c bá»Ÿi cÃ¡c Ä‘Æ¡n thuá»‘c chÆ°a thanh toÃ¡n/chÆ°a láº­p hÃ³a Ä‘Æ¡n khÃ¡c
+                // Lấy lượng đã đặt trước bởi các đơn thuốc chưa thanh toán/chưa lập hóa đơn khác
                 int reservedQty = ctKeDonRepository.getReservedQuantity(ctDto.getMaSp());
                 int availableStock = Math.max(0, totalStock - reservedQty);
                 
                 if (availableStock < reqQty) {
-                    throw new BusinessRuleException("Sáº£n pháº©m " + sanPham.getTenSp() 
-                            + " khÃ´ng Ä‘á»§ sá»‘ lÆ°á»£ng tá»“n kho kháº£ dá»¥ng (YÃªu cáº§u: " + reqQty 
-                            + ", Váº­t lÃ½: " + totalStock + ", ÄÃ£ Ä‘áº·t trÆ°á»›c: " + reservedQty 
-                            + ", Kháº£ dá»¥ng: " + availableStock + ")!");
+                    throw new BusinessRuleException("Sản phẩm " + sanPham.getTenSp() 
+                            + " không đủ số lượng tồn kho khả dụng (Yêu cầu: " + reqQty 
+                            + ", Vật lý: " + totalStock + ", Đã đặt trước: " + reservedQty 
+                            + ", Khả dụng: " + availableStock + ")!");
                 }
                 
                 ct.setSoLuong(reqQty);
@@ -99,8 +119,11 @@ public class PhieuKeDonServiceImpl implements PhieuKeDonService {
         
         PhieuKeDon saved = phieuKeDonRepository.save(phieuKeDon);
 
-        // === Tá»° Äá»˜NG Táº O PHIáº¾U Xá»¬ LÃ KÃNH náº¿u Ä‘Æ¡n cÃ³ sáº£n pháº©m loáº¡i kÃ­nh (laThuoc = 0) ===
+        // === Tự động tạo phiếu xử lý kính nếu đơn có sản phẩm loại kính (laThuoc = 0) ===
         autoCreateXuLyKinhIfNeeded(saved);
+
+        // === Tự động lập hóa đơn hoặc cập nhật hóa đơn cho đơn thuốc này ===
+        createOrUpdateInvoiceForPrescription(saved);
 
         return mapToResponseDTO(saved);
     }
@@ -167,7 +190,7 @@ public class PhieuKeDonServiceImpl implements PhieuKeDonService {
                 maXl, saved.getMaDon(), thongSoKinh);
     }
 
-    // HÃ m sinh mÃ£ phiáº¿u kÃª Ä‘Æ¡n tá»± Ä‘á»™ng
+    // Hàm sinh mã phiếu kê đơn tự động
     private synchronized String generateMaDon() {
         String maxCode = phieuKeDonRepository.findMaxMaDon();
         if (maxCode == null || maxCode.length() < 3) {
@@ -178,6 +201,64 @@ public class PhieuKeDonServiceImpl implements PhieuKeDonService {
             return "PK" + String.format("%03d", nextNumber);
         } catch (NumberFormatException e) {
             return "PK001";
+        }
+    }
+
+    private void createOrUpdateInvoiceForPrescription(PhieuKeDon saved) {
+        String maDon = saved.getMaDon();
+        String maHoso = saved.getHoSoThiLuc().getMaHoSo();
+        String maKh = saved.getHoSoThiLuc().getKhachHang().getMaKh();
+        String maNs = saved.getNhanSu().getMaNs();
+
+        // 1. Kiểm tra xem đã có hóa đơn nào cho đơn thuốc/hồ sơ này chưa
+        String checkInvoiceSql = "SELECT MAHD, TRANGTHAI FROM HOA_DON WHERE MADON = ? AND (IS_DELETED = 0 OR IS_DELETED IS NULL)";
+        List<Map<String, Object>> existingInvoices = jdbcTemplate.queryForList(checkInvoiceSql, maDon);
+
+        for (Map<String, Object> inv : existingInvoices) {
+            String maHd = (String) inv.get("MAHD");
+            String trangThai = (String) inv.get("TRANGTHAI");
+
+            if ("Đã thanh toán".equals(trangThai) || "Thành công".equals(trangThai)) {
+                log.info("[AUTO-BILLING] Đơn thuốc {} đã có hóa đơn {} đã thanh toán. Bỏ qua tạo mới.", maDon, maHd);
+                return; // Nếu đã thanh toán, không thay đổi gì cả
+            } else {
+                // Nếu chưa thanh toán, thực hiện hủy/xóa hóa đơn cũ để tránh trùng lặp
+                log.info("[AUTO-BILLING] Hủy hóa đơn cũ chưa thanh toán {} cho đơn thuốc {}", maHd, maDon);
+                jdbcTemplate.update("DELETE FROM CT_HOA_DON WHERE MAHD = ?", maHd);
+                jdbcTemplate.update("DELETE FROM CT_HOA_DON_DV WHERE MAHD = ?", maHd);
+                jdbcTemplate.update("DELETE FROM HOA_DON WHERE MAHD = ?", maHd);
+            }
+        }
+
+        // 2. Kiểm tra danh sách sản phẩm trong đơn để quyết định tạo hóa đơn
+        if (saved.getChiTietKeDons() == null || saved.getChiTietKeDons().isEmpty()) {
+            log.info("[AUTO-BILLING] Đơn thuốc {} trống sản phẩm, không tự động tạo hóa đơn.", maDon);
+            return;
+        }
+
+        try {
+            // Lập 1 hóa đơn tổng hợp duy nhất gộp chung cả khám bệnh, thuốc và kính
+            jdbcTemplate.execute(
+                "{call SP_TAO_HOA_DON(?, ?, ?, ?, ?, ?, ?, ?)}",
+                (java.sql.CallableStatement cs) -> {
+                    cs.setString(1, maKh);
+                    cs.setString(2, maNs);
+                    cs.setString(3, maHoso);
+                    cs.setString(4, maDon);
+                    cs.setString(5, null);
+                    cs.setString(6, null);
+                    cs.registerOutParameter(7, Types.VARCHAR); // p_mahd_out
+                    cs.setString(8, "CA_HAI");
+                    
+                    cs.execute();
+                    
+                    String maHd = cs.getString(7);
+                    log.info("[AUTO-BILLING] Đã tự động lập hóa đơn {} cho đơn thuốc {} (loại: CA_HAI)", maHd, maDon);
+                    return maHd;
+                }
+            );
+        } catch (Exception e) {
+            log.error("Lỗi tự động tạo hóa đơn từ đơn thuốc {}: {}", maDon, e.getMessage(), e);
         }
     }
 
