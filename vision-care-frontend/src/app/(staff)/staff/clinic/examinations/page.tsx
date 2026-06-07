@@ -92,9 +92,96 @@ const examSchema = z.object({
       soLuong: z.number({ message: "Phải là số" }).min(1, "Số lượng phải >= 1"),
     })
   ).optional(),
+  // Chẩn đoán chuyên sâu & Thiết bị
+  motility: z.string().optional(),
+  iopOD: z.any().optional(),
+  iopOS: z.any().optional(),
+  fundus: z.string().optional(),
+  slitLamp: z.boolean().optional(),
+  octScan: z.boolean().optional(),
+  // Điều trị nội khoa
+  viemKetMac: z.boolean().optional(),
+  dauMatDo: z.boolean().optional(),
+  khoMat: z.boolean().optional(),
+  glocom: z.boolean().optional(),
+  // Can thiệp ngoại khoa
+  phauThuat: z.string().optional(),
 });
 
 type ExamFormValues = z.infer<typeof examSchema>;
+
+function parseKetLuan(ketLuanStr: string) {
+  const defaults = {
+    motility: "Bình thường",
+    iopOD: "",
+    iopOS: "",
+    fundus: "Bình thường, võng mạc áp phẳng, Gai thị hồng, bờ rõ",
+    slitLamp: false,
+    octScan: false,
+    viemKetMac: false,
+    dauMatDo: false,
+    khoMat: false,
+    glocom: false,
+    phauThuat: "NONE",
+    ketluanClean: ketLuanStr
+  };
+  
+  if (!ketLuanStr) return defaults;
+  
+  // Tách kết luận gốc ra khỏi chuỗi chi tiết để hiển thị đúng ô input kết luận
+  const parts = ketLuanStr.split("\n\n🔍 CHẨN ĐOÁN CHUYÊN SÂU:\n");
+  if (parts.length > 1) {
+    defaults.ketluanClean = parts[0];
+  } else {
+    const parts2 = ketLuanStr.split("\n\n💧 ĐIỀU TRỊ NỘI KHOA:");
+    if (parts2.length > 1) {
+      defaults.ketluanClean = parts2[0];
+    } else {
+      const parts3 = ketLuanStr.split("\n\n⚡ CAN THIỆP NGOẠI KHOA:");
+      if (parts3.length > 1) {
+        defaults.ketluanClean = parts3[0];
+      }
+    }
+  }
+
+  // Parse cơ vận nhãn
+  const motilityMatch = ketLuanStr.match(/- Cơ vận nhãn:\s*(.*)/i);
+  if (motilityMatch) defaults.motility = motilityMatch[1].trim();
+
+  // Parse nhãn áp IOP
+  const iopMatch = ketLuanStr.match(/- Nhãn áp IOP:\s*Mắt Phải \(OD\)\s*([0-9.]+)\s*mmHg\s*\|\s*Mắt Trái \(OS\)\s*([0-9.]+)\s*mmHg/i);
+  if (iopMatch) {
+    defaults.iopOD = iopMatch[1];
+    defaults.iopOS = iopMatch[2];
+  } else {
+    const iopODMatch = ketLuanStr.match(/- Nhãn áp IOP:\s*Mắt Phải \(OD\)\s*([0-9.]+)/i);
+    if (iopODMatch) defaults.iopOD = iopODMatch[1];
+    const iopOSMatch = ketLuanStr.match(/\|\s*Mắt Trái \(OS\)\s*([0-9.]+)/i);
+    if (iopOSMatch) defaults.iopOS = iopOSMatch[1];
+  }
+
+  // Parse soi đáy mắt
+  const fundusMatch = ketLuanStr.match(/- Soi đáy mắt \(Võng mạc\/Thần kinh\):\s*(.*)/i);
+  if (fundusMatch) defaults.fundus = fundusMatch[1].trim();
+
+  // Parse thiết bị
+  if (ketLuanStr.includes("Đèn khe khám mắt (Slit Lamp)")) defaults.slitLamp = true;
+  if (ketLuanStr.includes("Máy chụp cắt lớp võng mạc OCT")) defaults.octScan = true;
+
+  // Parse bệnh lý
+  if (ketLuanStr.includes("Viêm kết mạc")) defaults.viemKetMac = true;
+  if (ketLuanStr.includes("Đau mắt đỏ")) defaults.dauMatDo = true;
+  if (ketLuanStr.includes("Khô mắt")) defaults.khoMat = true;
+  if (ketLuanStr.includes("Tăng nhãn áp (Glô-côm)")) defaults.glocom = true;
+
+  // Parse phẫu thuật
+  if (ketLuanStr.includes("Mổ Phaco")) defaults.phauThuat = "PHACO";
+  else if (ketLuanStr.includes("Laser võng mạc")) defaults.phauThuat = "LASER_VONG_MAC";
+  else if (ketLuanStr.includes("Phẫu thuật Lasik")) defaults.phauThuat = "LASIK";
+  else if (ketLuanStr.includes("Phẫu thuật SMILE")) defaults.phauThuat = "SMILE";
+
+  return defaults;
+}
 
 // =========================================================
 // CUSTOMER DETAILS CARD COMPONENT
@@ -353,6 +440,17 @@ function ExaminationContent() {
       donKinh: "",
       danhSachKinh: [],
       danhSachThuoc: [],
+      motility: "Bình thường",
+      iopOD: "",
+      iopOS: "",
+      fundus: "Bình thường, võng mạc áp phẳng, Gai thị hồng, bờ rõ",
+      slitLamp: false,
+      octScan: false,
+      viemKetMac: false,
+      dauMatDo: false,
+      khoMat: false,
+      glocom: false,
+      phauThuat: "NONE",
     },
   });
 
@@ -443,6 +541,7 @@ function ExaminationContent() {
           throw new Error("Lỗi tải hồ sơ");
         })
         .then((data: HoSoKhamResponse) => {
+          const parsed = parseKetLuan(data.ketLuan || "");
           const od = data.danhSachThiLuc?.find((ct: ChiTietThiLuc) => ct.loaiMat === "P");
           const os = data.danhSachThiLuc?.find((ct: ChiTietThiLuc) => ct.loaiMat === "T");
           form.reset({
@@ -455,11 +554,22 @@ function ExaminationContent() {
             matPhaiCyl: od?.cyl ?? 0,
             matPhaiAx: od?.axis ?? 0,
             pd: os?.pd || od?.pd || 60,
-            ketluan: data.ketLuan || "",
+            ketluan: parsed.ketluanClean,
             maHoSo: data.maHoSo || "",
             donKinh: data.donKinh || "",
             danhSachKinh: [],
             danhSachThuoc: [],
+            motility: parsed.motility,
+            iopOD: parsed.iopOD,
+            iopOS: parsed.iopOS,
+            fundus: parsed.fundus,
+            slitLamp: parsed.slitLamp,
+            octScan: parsed.octScan,
+            viemKetMac: parsed.viemKetMac,
+            dauMatDo: parsed.dauMatDo,
+            khoMat: parsed.khoMat,
+            glocom: parsed.glocom,
+            phauThuat: parsed.phauThuat,
           });
           toast.success(`📝 Đã tải dữ liệu hồ sơ ${data.maHoSo} để cập nhật!`);
         })
@@ -542,6 +652,46 @@ function ExaminationContent() {
       return;
     }
 
+    // Format các trường chẩn đoán chuyên sâu và điều trị để lưu vào CSDL
+    let detailKham = "";
+    if (values.motility || values.iopOD || values.iopOS || values.fundus || values.slitLamp || values.octScan) {
+      detailKham += "🔍 CHẨN ĐOÁN CHUYÊN SÂU:\n";
+      if (values.motility) detailKham += `- Cơ vận nhãn: ${values.motility}\n`;
+      if (values.iopOD || values.iopOS) {
+        detailKham += `- Nhãn áp IOP: Mắt Phải (OD) ${values.iopOD || "---"} mmHg | Mắt Trái (OS) ${values.iopOS || "---"} mmHg\n`;
+      }
+      if (values.fundus) detailKham += `- Soi đáy mắt (Võng mạc/Thần kinh): ${values.fundus}\n`;
+      
+      const devices = [];
+      if (values.slitLamp) devices.push("Đèn khe khám mắt (Slit Lamp)");
+      if (values.octScan) devices.push("Máy chụp cắt lớp võng mạc OCT");
+      if (devices.length > 0) detailKham += `- Thiết bị sử dụng: ${devices.join(", ")}\n`;
+    }
+    
+    const benhLy = [];
+    if (values.viemKetMac) benhLy.push("Viêm kết mạc");
+    if (values.dauMatDo) benhLy.push("Đau mắt đỏ");
+    if (values.khoMat) benhLy.push("Khô mắt");
+    if (values.glocom) benhLy.push("Tăng nhãn áp (Glô-côm)");
+    
+    if (benhLy.length > 0) {
+      detailKham += `💧 ĐIỀU TRỊ NỘI KHOA: Điều trị bệnh lý ${benhLy.join(", ")}\n`;
+    }
+    
+    if (values.phauThuat && values.phauThuat !== "NONE") {
+      const pMap: Record<string, string> = {
+        "PHACO": "Mổ Phaco điều trị đục thủy tinh thể",
+        "LASER_VONG_MAC": "Laser võng mạc",
+        "LASIK": "Phẫu thuật Lasik xóa cận",
+        "SMILE": "Phẫu thuật SMILE xóa cận"
+      };
+      detailKham += `⚡ CAN THIỆP NGOẠI KHOA: Chỉ định ${pMap[values.phauThuat] || values.phauThuat}\n`;
+    }
+    
+    const finalKetLuan = detailKham 
+      ? `${values.ketluan}\n\n${detailKham.trim()}`
+      : values.ketluan;
+
     const payload: HoSoKhamRequest = {
       makh: values.maKh,
       mans: values.maNs,
@@ -552,7 +702,7 @@ function ExaminationContent() {
       matPhaiCyl: Number(values.matPhaiCyl) || 0,
       matPhaiAx: Number(values.matPhaiAx) || 0,
       pd: Number(values.pd) || 60,
-      ketluan: values.ketluan,
+      ketluan: finalKetLuan,
       maHoSo: values.maHoSo || undefined,
       donKinh: values.danhSachKinh?.length 
         ? values.danhSachKinh.map(k => productsList.find((p: SanPhamResponse) => p.maSp === k.maSp)?.tenSp).filter(Boolean).join(", ")
@@ -1134,6 +1284,194 @@ function ExaminationContent() {
                           ✅ Khúc xạ bình thường
                         </Button>
                       </div>
+                    </div>
+                  </div>
+
+                  {/* Chẩn đoán chuyên sâu (Thiết bị & Soi đáy mắt / Nhãn áp) */}
+                  <div className="p-5 border border-slate-200 rounded-2xl bg-indigo-50/30 space-y-6">
+                    <h3 className="font-bold flex items-center text-indigo-950 uppercase text-xs tracking-wider border-b border-indigo-100/60 pb-2">
+                      <Stethoscope className="w-4 h-4 mr-2 text-indigo-600" /> Chẩn đoán lâm sàng & chuyên sâu
+                    </h3>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Cơ vận nhãn */}
+                      <FormField control={form.control} name="motility" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs font-semibold text-slate-600">Đánh giá cơ vận nhãn</FormLabel>
+                          <FormControl>
+                            <Input className="bg-white h-9 text-xs" placeholder="Bình thường, lác mắt,..." {...field} readOnly={isAdmin} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+
+                      {/* Thiết bị chuyên dụng sử dụng */}
+                      <div className="space-y-2">
+                        <span className="text-xs font-semibold text-slate-600 block">Thiết bị y tế sử dụng</span>
+                        <div className="flex gap-4 pt-1">
+                          <FormField control={form.control} name="slitLamp" render={({ field }) => (
+                            <FormItem className="flex items-center gap-1.5 space-y-0">
+                              <FormControl>
+                                <input
+                                  type="checkbox"
+                                  checked={!!field.value}
+                                  onChange={field.onChange}
+                                  disabled={isAdmin}
+                                  className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 w-4 h-4"
+                                />
+                              </FormControl>
+                              <FormLabel className="text-xs font-medium text-slate-700 cursor-pointer select-none">Đèn khe khám mắt</FormLabel>
+                            </FormItem>
+                          )} />
+
+                          <FormField control={form.control} name="octScan" render={({ field }) => (
+                            <FormItem className="flex items-center gap-1.5 space-y-0">
+                              <FormControl>
+                                <input
+                                  type="checkbox"
+                                  checked={!!field.value}
+                                  onChange={field.onChange}
+                                  disabled={isAdmin}
+                                  className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 w-4 h-4"
+                                />
+                              </FormControl>
+                              <FormLabel className="text-xs font-medium text-slate-700 cursor-pointer select-none">Máy chụp OCT</FormLabel>
+                            </FormItem>
+                          )} />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      {/* Nhãn áp IOP OD */}
+                      <FormField control={form.control} name="iopOD" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs font-semibold text-slate-600">Nhãn áp Mắt Phải (IOP OD - mmHg)</FormLabel>
+                          <FormControl>
+                            <Input type="number" className="bg-white h-9 text-xs font-mono" placeholder="VD: 15" {...field} readOnly={isAdmin} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+
+                      {/* Nhãn áp IOP OS */}
+                      <FormField control={form.control} name="iopOS" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs font-semibold text-slate-600">Nhãn áp Mắt Trái (IOP OS - mmHg)</FormLabel>
+                          <FormControl>
+                            <Input type="number" className="bg-white h-9 text-xs font-mono" placeholder="VD: 16" {...field} readOnly={isAdmin} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                    </div>
+
+                    {/* Soi đáy mắt */}
+                    <FormField control={form.control} name="fundus" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-xs font-semibold text-slate-600">Soi đáy mắt (Võng mạc & Dây thần kinh thị giác)</FormLabel>
+                        <FormControl>
+                          <Input className="bg-white h-9 text-xs" placeholder="Mô tả võng mạc, gai thị, hoàng điểm..." {...field} readOnly={isAdmin} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                  </div>
+
+                  {/* Điều trị nội khoa & ngoại khoa */}
+                  <div className="p-5 border border-slate-200 rounded-2xl bg-amber-50/20 space-y-6">
+                    <h3 className="font-bold flex items-center text-amber-950 uppercase text-xs tracking-wider border-b border-amber-100/60 pb-2">
+                      <Activity className="w-4 h-4 mr-2 text-amber-600" /> Hướng điều trị & Can thiệp
+                    </h3>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Bệnh lý mắt điều trị nội khoa */}
+                      <div className="space-y-3">
+                        <span className="text-xs font-semibold text-slate-600 block">Điều trị bệnh lý nội khoa</span>
+                        <div className="grid grid-cols-2 gap-3">
+                          <FormField control={form.control} name="viemKetMac" render={({ field }) => (
+                            <FormItem className="flex items-center gap-1.5 space-y-0">
+                              <FormControl>
+                                <input
+                                  type="checkbox"
+                                  checked={!!field.value}
+                                  onChange={field.onChange}
+                                  disabled={isAdmin}
+                                  className="rounded border-slate-300 text-amber-600 focus:ring-amber-500 w-4 h-4"
+                                />
+                              </FormControl>
+                              <FormLabel className="text-xs font-medium text-slate-700 cursor-pointer select-none">Viêm kết mạc</FormLabel>
+                            </FormItem>
+                          )} />
+
+                          <FormField control={form.control} name="dauMatDo" render={({ field }) => (
+                            <FormItem className="flex items-center gap-1.5 space-y-0">
+                              <FormControl>
+                                <input
+                                  type="checkbox"
+                                  checked={!!field.value}
+                                  onChange={field.onChange}
+                                  disabled={isAdmin}
+                                  className="rounded border-slate-300 text-amber-600 focus:ring-amber-500 w-4 h-4"
+                                />
+                              </FormControl>
+                              <FormLabel className="text-xs font-medium text-slate-700 cursor-pointer select-none">Đau mắt đỏ</FormLabel>
+                            </FormItem>
+                          )} />
+
+                          <FormField control={form.control} name="khoMat" render={({ field }) => (
+                            <FormItem className="flex items-center gap-1.5 space-y-0">
+                              <FormControl>
+                                <input
+                                  type="checkbox"
+                                  checked={!!field.value}
+                                  onChange={field.onChange}
+                                  disabled={isAdmin}
+                                  className="rounded border-slate-300 text-amber-600 focus:ring-amber-500 w-4 h-4"
+                                />
+                              </FormControl>
+                              <FormLabel className="text-xs font-medium text-slate-700 cursor-pointer select-none">Khô mắt</FormLabel>
+                            </FormItem>
+                          )} />
+
+                          <FormField control={form.control} name="glocom" render={({ field }) => (
+                            <FormItem className="flex items-center gap-1.5 space-y-0">
+                              <FormControl>
+                                <input
+                                  type="checkbox"
+                                  checked={!!field.value}
+                                  onChange={field.onChange}
+                                  disabled={isAdmin}
+                                  className="rounded border-slate-300 text-amber-600 focus:ring-amber-500 w-4 h-4"
+                                />
+                              </FormControl>
+                              <FormLabel className="text-xs font-medium text-slate-700 cursor-pointer select-none">Glô-côm (TNA)</FormLabel>
+                            </FormItem>
+                          )} />
+                        </div>
+                      </div>
+
+                      {/* Chỉ định ngoại khoa */}
+                      <FormField control={form.control} name="phauThuat" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs font-semibold text-slate-600">Chỉ định can thiệp ngoại khoa</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value} disabled={isAdmin}>
+                            <FormControl>
+                              <SelectTrigger className="bg-white h-9 border-slate-200 text-xs">
+                                <SelectValue placeholder="Chọn chỉ định phẫu thuật" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent className="bg-white text-xs">
+                              <SelectItem value="NONE" className="text-xs">Không có chỉ định ngoại khoa</SelectItem>
+                              <SelectItem value="PHACO" className="text-xs">Mổ Phaco (Đục thủy tinh thể)</SelectItem>
+                              <SelectItem value="LASER_VONG_MAC" className="text-xs">Laser võng mạc</SelectItem>
+                              <SelectItem value="LASIK" className="text-xs">Phẫu thuật Lasik xóa cận</SelectItem>
+                              <SelectItem value="SMILE" className="text-xs">Phẫu thuật SMILE xóa cận</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
                     </div>
                   </div>
 

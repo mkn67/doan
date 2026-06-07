@@ -80,3 +80,17 @@ export const useUpdateTrangThaiXuLyKinh = () => {
     },
   });
 };
+
+export const useUpdateThongSoKinh = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ maXl, thongSoKinh }: { maXl: string; thongSoKinh: any }) =>
+      staffApi.updateThongSoKinh(maXl, thongSoKinh),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["xu-ly-kinh-can-xu-ly"] });
+    },
+    onError: (error: AxiosError) => {
+      console.error("Update glasses specs error:", error.response?.data || error.message);
+    },
+  });
+};

@@ -111,6 +111,10 @@ export const staffApi = {
     });
     return response.data;
   },
+  updateThongSoKinh: async (maXl: string, thongSoKinh: any): Promise<XuLyKinhResponseDTO> => {
+    const response = await axiosClient.put<XuLyKinhResponseDTO>(`/xu-ly-kinh/${maXl}/thong-so`, thongSoKinh);
+    return response.data;
+  },
 
   // FIX: Đổi axiosInstance thành axiosClient
   getHangChoHomNay: async (): Promise<HangChoHomNayDTO[]> => {

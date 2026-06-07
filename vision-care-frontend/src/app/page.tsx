@@ -39,10 +39,14 @@ export default function CustomerHomePage() {
             </span>
           </Link>
 
-          <nav className="hidden lg:flex gap-10 font-bold text-xs uppercase tracking-wider text-slate-600">
+          <nav className="hidden lg:flex gap-10 font-bold text-xs uppercase tracking-wider text-slate-600 items-center">
             <Link href="/chuyen-khoa" className="hover:text-blue-600 transition-colors">Chuyên khoa</Link>
             <Link href="/ve-chung-toi" className="hover:text-blue-600 transition-colors">Về chúng tôi</Link>
             <Link href="/huong-dan" className="hover:text-blue-600 transition-colors">Hướng dẫn</Link>
+            <Link href="/oracle-simulator" className="px-3 py-1.5 bg-blue-50 text-blue-650 hover:bg-blue-100/80 rounded-xl transition-all font-extrabold text-[11px] flex items-center gap-1 border border-blue-100">
+              <Sparkles className="w-3.5 h-3.5 text-blue-500 animate-spin" style={{ animationDuration: '3s' }} />
+              Giả lập DBMS Oracle
+            </Link>
             <Link href="/auth/login" className="hover:text-blue-600 transition-colors text-slate-400">Quản trị</Link>
           </nav>
 

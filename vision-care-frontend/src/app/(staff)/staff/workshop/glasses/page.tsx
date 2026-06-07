@@ -5,7 +5,7 @@ import { Suspense, useEffect, useState } from "react";
 import { 
   Hammer, ClipboardCheck, Loader2, Info, 
   AlertTriangle, AlertCircle, CheckCircle2, 
-  RefreshCw, Plus, Minus, Trash2, UserCheck, Calendar
+  RefreshCw, Plus, Minus, Trash2, UserCheck, Calendar, Settings
 } from "lucide-react";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -19,7 +19,8 @@ import {
   useBatDauXuLyKinh, 
   useHoanThanhXuLyKinh, 
   useHuyXuLyKinh, 
-  useUpdateTrangThaiXuLyKinh 
+  useUpdateTrangThaiXuLyKinh,
+  useUpdateThongSoKinh
 } from "@/hooks/useWorkshop"; 
 
 import { Button } from "@/components/ui/button";
@@ -100,6 +101,59 @@ function WorkshopContent() {
   const hoanThanhMutation = useHoanThanhXuLyKinh();
   const huyMutation = useHuyXuLyKinh();
   const updateTrangThaiMutation = useUpdateTrangThaiXuLyKinh();
+  const updateThongSoMutation = useUpdateThongSoKinh();
+
+  const [editingSpecs, setEditingSpecs] = useState<XuLyKinhResponseDTO | null>(null);
+  const [specPd, setSpecPd] = useState(64);
+  const [specHeight, setSpecHeight] = useState(18);
+  const [specTilt, setSpecTilt] = useState(8);
+  const [specMaterial, setSpecMaterial] = useState("Chống ánh sáng xanh");
+  
+  const [checkDinhTam, setCheckDinhTam] = useState(false);
+  const [checkGrinding, setCheckGrinding] = useState(false);
+  const [checkLensmeter, setCheckLensmeter] = useState(false);
+
+  const openSpecsModal = (item: XuLyKinhResponseDTO) => {
+    setEditingSpecs(item);
+    const existing = (item.thongSoKinh as any) || {};
+    setSpecPd(existing.pd || 64);
+    setSpecHeight(existing.chieuCaoTam || 18);
+    setSpecTilt(existing.doNghiengGong || 8);
+    setSpecMaterial(existing.loaiTrong || "Chống ánh sáng xanh");
+    setCheckDinhTam(!!existing.dinhTam);
+    setCheckGrinding(!!existing.maiLap);
+    setCheckLensmeter(!!existing.lensmeterCheck);
+  };
+
+  const handleSaveSpecs = () => {
+    if (!editingSpecs) return;
+    const payload = {
+      pd: Number(specPd) || 64,
+      chieuCaoTam: Number(specHeight) || 18,
+      doNghiengGong: Number(specTilt) || 8,
+      loaiTrong: specMaterial,
+      dinhTam: checkDinhTam,
+      maiLap: checkGrinding,
+      lensmeterCheck: checkLensmeter
+    };
+
+    const promise = new Promise((resolve, reject) => {
+      updateThongSoMutation.mutate({ maXl: editingSpecs.maXl, thongSoKinh: payload }, {
+        onSuccess: () => {
+          resolve("Đã cập nhật thông số kỹ thuật kính thuốc!");
+          setEditingSpecs(null);
+          refetch();
+        },
+        onError: (err) => reject(err.message)
+      });
+    });
+
+    toast.promise(promise, {
+      loading: "Đang lưu thông số kỹ thuật...",
+      success: (msg) => msg as string,
+      error: (err) => `Thất bại: ${err}`
+    });
+  };
 
   const orders: XuLyKinhResponseDTO[] = activeOrdersList || [];
 
@@ -581,7 +635,26 @@ function WorkshopContent() {
                       {item.maDon}
                     </td>
                     <td className="p-4 font-semibold text-slate-900">
-                      {item.tenKhachHang || "Khách Vãng Lai"}
+                      <div>
+                        <span>{item.tenKhachHang || "Khách Vãng Lai"}</span>
+                        {item.thongSoKinh && (item.thongSoKinh as any).loaiTrong ? (
+                          <div className="mt-2 flex flex-wrap gap-1 text-[10px] font-bold max-w-[220px] select-none">
+                            <span className="bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded border border-blue-100/80">PD: {(item.thongSoKinh as any).pd}mm</span>
+                            <span className="bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded border border-indigo-100/80">H: {(item.thongSoKinh as any).chieuCaoTam}mm</span>
+                            <span className="bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded border border-amber-100/80">Nghiêng: {(item.thongSoKinh as any).doNghiengGong}°</span>
+                            <span className="bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded block w-full mt-1 truncate border border-slate-200" title={(item.thongSoKinh as any).loaiTrong}>{(item.thongSoKinh as any).loaiTrong}</span>
+                            <div className="flex gap-1.5 mt-1 text-[9px] text-slate-400 font-semibold items-center">
+                              <span className={(item.thongSoKinh as any).dinhTam ? "text-emerald-600 font-bold" : ""}>🎯 Định tâm</span>
+                              <span>•</span>
+                              <span className={(item.thongSoKinh as any).maiLap ? "text-emerald-600 font-bold" : ""}>🔧 Mài lắp</span>
+                              <span>•</span>
+                              <span className={(item.thongSoKinh as any).lensmeterCheck ? "text-emerald-600 font-black" : ""}>🔍 Lensmeter</span>
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-[10px] text-slate-400 block mt-1 italic font-normal">Chưa nhập thông số</span>
+                        )}
+                      </div>
                     </td>
                     <td className="p-4">
                       {item.maHd ? (
@@ -628,6 +701,18 @@ function WorkshopContent() {
                     </td>
                     <td className="p-4 pr-6 text-right">
                       <div className="flex items-center justify-end gap-2">
+                        <Button
+                          onClick={() => openSpecsModal(item)}
+                          disabled={isActionPending}
+                          variant="outline"
+                          size="sm"
+                          className="h-8 px-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200 rounded-lg flex items-center gap-1 shadow-sm font-bold text-xs"
+                          title="Cập nhật thông số kỹ thuật mài lắp"
+                        >
+                          <Settings className="w-3.5 h-3.5" />
+                          <span>Thông số</span>
+                        </Button>
+
                         {item.trangThai === "Chờ xử lý" && (
                           <>
                             <Button
@@ -779,6 +864,138 @@ function WorkshopContent() {
                 className={showNoteModal.action === "fail" ? "bg-rose-600 hover:bg-rose-500 text-white" : "bg-amber-600 hover:bg-amber-500 text-white"}
               >
                 Xác nhận
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editingSpecs && (
+        <div className="fixed inset-0 z-50 bg-black/45 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-lg p-6 space-y-5 shadow-2xl text-slate-900 animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-indigo-50 text-indigo-700 rounded-xl">
+                  <Settings className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-extrabold text-slate-800">Thông số mài lắp kính</h3>
+                  <p className="text-xs text-slate-500 font-medium">Mã đơn xử lý: {editingSpecs.maXl} | KH: {editingSpecs.tenKhachHang}</p>
+                </div>
+              </div>
+              <Button 
+                variant="ghost" 
+                onClick={() => setEditingSpecs(null)}
+                className="text-slate-400 hover:text-slate-600 rounded-full h-8 w-8 p-0"
+              >
+                <span className="text-lg font-bold">×</span>
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              {/* Khoảng cách đồng tử */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-600">KC đồng tử (PD - mm)</label>
+                <Input
+                  type="number"
+                  value={specPd}
+                  onChange={(e) => setSpecPd(Number(e.target.value))}
+                  className="h-10 text-xs font-mono font-bold text-slate-800 bg-slate-50 border-slate-200"
+                />
+              </div>
+
+              {/* Chiều cao tâm */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-600">Chiều cao tâm (H - mm)</label>
+                <Input
+                  type="number"
+                  value={specHeight}
+                  onChange={(e) => setSpecHeight(Number(e.target.value))}
+                  className="h-10 text-xs font-mono font-bold text-slate-800 bg-slate-50 border-slate-200"
+                />
+              </div>
+
+              {/* Độ nghiêng gọng */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-600">Nghiêng gọng (độ)</label>
+                <Input
+                  type="number"
+                  value={specTilt}
+                  onChange={(e) => setSpecTilt(Number(e.target.value))}
+                  className="h-10 text-xs font-mono font-bold text-slate-800 bg-slate-50 border-slate-200"
+                />
+              </div>
+            </div>
+
+            {/* Loại vật liệu tròng kính */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-600">Vật liệu & Loại tròng kính</label>
+              <select
+                value={specMaterial}
+                onChange={(e) => setSpecMaterial(e.target.value)}
+                className="w-full h-10 px-3 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-bold focus:border-indigo-500 focus:outline-none"
+              >
+                <option value="Chống ánh sáng xanh">Chống ánh sáng xanh (Blue Control)</option>
+                <option value="Chống chói & Phản quang">Chống chói & Phản quang (Anti-Glare)</option>
+                <option value="Đổi màu khói khi ra nắng">Đổi màu khói khi ra nắng (Photochromic Grey)</option>
+                <option value="Đổi màu trà khi ra nắng">Đổi màu trà khi ra nắng (Photochromic Brown)</option>
+                <option value="Tròng siêu mỏng Polycarbonate 1.67">Tròng siêu mỏng Polycarbonate 1.67</option>
+                <option value="Tròng thường CR-39 1.56">Tròng thường CR-39 1.56</option>
+              </select>
+            </div>
+
+            {/* Quy trình kiểm soát chất lượng y khoa */}
+            <div className="space-y-3 p-4 bg-slate-50 border rounded-2xl">
+              <span className="text-xs font-bold text-slate-600 block uppercase tracking-wider">Kiểm soát quy trình mài lắp y khoa</span>
+              
+              <div className="space-y-2.5">
+                <label className="flex items-center gap-2.5 cursor-pointer text-xs font-semibold text-slate-700 select-none">
+                  <input
+                    type="checkbox"
+                    checked={checkDinhTam}
+                    onChange={(e) => setCheckDinhTam(e.target.checked)}
+                    className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 w-4.5 h-4.5"
+                  />
+                  <span>1. Xác định tâm quang học & đánh dấu tròng kính</span>
+                </label>
+
+                <label className="flex items-center gap-2.5 cursor-pointer text-xs font-semibold text-slate-700 select-none">
+                  <input
+                    type="checkbox"
+                    checked={checkGrinding}
+                    onChange={(e) => setCheckGrinding(e.target.checked)}
+                    className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 w-4.5 h-4.5"
+                  />
+                  <span>2. Gia công mài lắp tự động khớp viền gọng</span>
+                </label>
+
+                <label className="flex items-center gap-2.5 cursor-pointer text-xs font-semibold text-slate-700 select-none">
+                  <input
+                    type="checkbox"
+                    checked={checkLensmeter}
+                    onChange={(e) => setCheckLensmeter(e.target.checked)}
+                    className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 w-4.5 h-4.5"
+                  />
+                  <span>3. Đạt kiểm tra độ chính xác máy đo tròng (Lensmeter QC Pass)</span>
+                </label>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t">
+              <Button
+                onClick={() => setEditingSpecs(null)}
+                variant="outline"
+                className="bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200 h-10 px-4 rounded-xl text-xs font-bold"
+              >
+                Hủy bỏ
+              </Button>
+              <Button
+                onClick={handleSaveSpecs}
+                disabled={updateThongSoMutation.isPending}
+                className="bg-indigo-600 hover:bg-indigo-500 text-white h-10 px-5 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md shadow-indigo-500/10"
+              >
+                {updateThongSoMutation.isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                Lưu thông số kính
               </Button>
             </div>
           </div>

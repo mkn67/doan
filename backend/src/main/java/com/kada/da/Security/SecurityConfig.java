@@ -71,7 +71,8 @@ public class SecurityConfig {
                         "/api/v1/nhan-su/chuc-vu/**",
                         "/api/v1/goi-kham/active",
                         // Public slot lookup for booking pages
-                        "/api/v1/lich-lam-viec/slot-trong"
+                        "/api/v1/lich-lam-viec/slot-trong",
+                        "/api/concurrency/**"
                 ).permitAll()
                 // --- BẮT ĐẦU PHÂN QUYỀN CHUẨN THEO DB ---
 
